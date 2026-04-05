@@ -66,12 +66,12 @@ def verileri_yukle():
     documents = []
     for file in os.listdir(DATA_PATH):
         f_path = os.path.join(DATA_PATH, file)
+        # .md uzantısını da ekledik
         if file.endswith(".pdf"): documents.extend(PyPDFLoader(f_path).load())
-        elif file.endswith(".txt"): documents.extend(TextLoader(f_path, encoding="utf-8").load())
-    
-    splits = RecursiveCharacterTextSplitter(chunk_size=400, chunk_overlap=40).split_documents(documents)
+        elif file.endswith((".txt", ".md")): # Burayı güncelledik
+            documents.extend(TextLoader(f_path, encoding="utf-8").load())
+    splits = RecursiveCharacterTextSplitter(chunk_size=600, chunk_overlap=60).split_documents(documents)
     return Chroma.from_documents(documents=splits, embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"), persist_directory=DB_PATH)
-
 # --- ARAYÜZ ---
 st.set_page_config(page_title="Okeysin Live - Azure Voice", layout="wide")
 st.title("🎙️ Okeysin Live (Azure & Groq)")
