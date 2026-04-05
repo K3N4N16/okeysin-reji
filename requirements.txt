@@ -5,3 +5,5 @@ langchain
 langchain-community
 chromadb
 pysqlite3-binary
+sentence-transformers
+pypdf
