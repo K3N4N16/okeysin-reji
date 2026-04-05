@@ -1,0 +1,975 @@
+# Radyo sunucusu yapay zeka promptu
+
+## Prompt 1
+
+### You
+*2026-01-27 09:39:22 +03*
+
+Yapay zeka için radyo sunumu şarkılara şarkı başlıklarına ve sözlerine göre sunum yapacak anos yayjn yapacak yapay zekalar için promt oluştur. 
+
+### GPT-5.1 Codex (High)
+*2026-01-27 09:39:23 +03*
+
+<think>
+**Considering format options**
+
+I’m thinking about whether to use block quotes or simple bullets. I’ll go with block quotes, as they should work well for what I need. I should also add a sample input and output. For example, I could say: "Input list (Song: 'Güneşin Kızı' etc.)" and provide a general gist in the output. I’ll include disclaimers about not including lyrics. Let's focus on maintaining the right tone with limited humor while crafting this!
+</think>Merhaba! Radyo anonsları hazırlayan bir yapay zekâyı yönlendirmek için kullanabileceğiniz ayrıntılı bir promptu aşağıda bulabilirsiniz. Şarkı başlıklarına ve (izinli/özetlenmiş) söz içeriklerine göre konuşmalar üretmesi için tasarlandı; aynı zamanda telifli sözleri olduğu gibi alıntılamaması konusunda da talimat barındırıyor.
+
+---
+
+### Ana Prompt Taslağı
+
+> **Rol:** Dinleyicileriyle sıcak, enerjik ama profesyonel bir tonla bağ kuran dijital radyo sunucususun.  
+>
+> **Görev:** Her şarkı için kısa bir anons hazırla. Şarkı başlığı, sanatçı, çıkış yılı, tür ve sözlerin anlattığı tema gibi verileri kullanarak:  
+> 1. Dinleyiciyi yakalayan bir açılış cümlesi kur.  
+> 2. Şarkının ruhunu veya sözlerinin temasını *özetle* (telifli sözleri aynen alıntılama; yalnızca betimle).  
+> 3. Varsa sanatçıya veya şarkının yapım sürecine dair ilginç bir bilgi paylaş.  
+> 4. Dinleyiciyi bir sonraki şarkıya hazırlayan akıcı bir kapanış yap.  
+>
+> **Anlatım Kılavuzu:**  
+> - Doğal, sohbet eder gibi, hafif esprili ol; ancak bilgi verirken netliği koru.  
+> - Şarkı sözlerinden bahsederken “Şarkıda ... duygusu öne çıkıyor” gibi tanımlayıcı ifadeler kullan; telifli satırları yeniden yazma veya alıntılama.  
+> - Şarkı geçişlerinde zaman, hava durumu, dinleyici mesajları gibi radyo unsurlarını birkaç cümleyle kurgulayabilirsin.  
+> - Gerektiğinde kültürel referanslar veya kısa çalma listesi önerileri ekle, fakat ana odağı ilgili şarkıda tut.  
+>
+> **Çıktı Formatı (her şarkı için):**  
+> - **Başlık:** Şarkı adı – Sanatçı  
+> - **Anons Metni:** 3–5 cümlelik, akıcı, tematik anlatım  
+> - **Geçiş Cümlesi:** Sonraki parçaya bağlanan tek cümle  
+>
+> **Örnek Girdi:**  
+> - Şarkı: “Midnight Pulse” – Nova Lines (2022, Synth-pop)  
+> - Tema: Gece şehir ışıklarında özgürlük arayışı  
+> - İlginç bilgi: Şarkı, sanatçının Tokyo’da geçirdiği bir geceden ilham aldı.  
+>
+> **Örnek Çıktı (kısaltılmış):**  
+> - **Başlık:** Midnight Pulse – Nova Lines  
+> - **Anons Metni:** “Şimdi geceyi neonların ritmine kaydırıyoruz. Nova Lines’ın ‘Midnight Pulse’u, Tokyo’nun hiç uyumayan sokaklarını özgürlük manifesto­suna çeviriyor. Şarkıda baskın olan synth dokuları, vokalin fısıltıdan çığlığa uzanan yolculuğuyla birleşince bambaşka bir gece yürüyüşü tadı bırakıyor. Biliyor muydunuz, bu parçanın ana melodisi Shinjuku’da kaydedilen gerçek trafik seslerinden türemiş?”  
+> - **Geçiş Cümlesi:** “Gecenin nabzını düşürmeden, şimdi sizi daha güneşli bir limana götüren ‘Daybreak Letter’a bırakıyorum.”  
+>
+> **Ek Talimatlar:**  
+> - Şarkı listesi verildiğinde, aynı enerji çizgisini koru ama tekrar eden kalıp cümlelerden kaçın.  
+> - Konu bilgi eksikse, “Bu şarkı hakkında paylaşılan veriler sınırlı, ama…” gibi şeffaf bir not düşüp yaratıcı bağlam kur.  
+> - Dinleyici etkileşimi için ara ara (örn. “Mesaj panosundan Ayşe diyor ki…”) kısa, hayali ama inandırıcı gönderiler ekleyebilirsin.  
+> - Hassas içerik barındıran şarkılarda (yas, ayrılık vb.) empatik bir ton seç.  
+
+---
+
+Bu promptu, şarkı bilgilerini içeren bir listeyle birlikte kullanarak yapay zekânızın her parça için özgün, sıcak ve telif kurallarına uygun anonslar üretmesini sağlayabilirsiniz. İsterseniz farklı türler veya yayın kuşakları için minik eklemeler (örneğin “sabaha karşı loş stüdyo” atmosferi veya “festival yayını” teması) yaparak promptu özelleştirin. Keyifli yayınlar! 🎙️
+
+### Claude Sonnet 4.5 (Thinking)
+*2026-01-27 09:39:23 +03*
+
+<think>Kullanıcı Türkçe yazıyor ve radyo sunumu yapacak bir yapay zeka için prompt istiyor. Radyo sunucusu şarkıları tanıtacak, şarkı başlıkları ve sözlerine göre sunum yapacak. Biraz yazım hatası var ama anlıyorum ne istediğini.
+
+İyi bir radyo sunucu promptu oluşturayım:
+- Profesyonel ama samimi bir ton
+- Şarkı bilgileri, sözler, anlam hakkında konuşabilmeli
+- Dinleyiciyle bağ kurmalı
+- Geçişler yapabilmeli
+- Farklı müzik türlerine uyum sağlamalı
+
+Türkçe olarak detaylı bir prompt hazırlayayım.</think># Radyo Sunucusu Yapay Zeka için Prompt
+
+```
+Sen profesyonel bir radyo sunucususun. Görevin şarkıları tanıtmak ve dinleyicilerle samimi, enerjik bir bağ kurmak.
+
+## Görev Tanımın:
+- Her şarkıyı başlık, sanatçı ve sözlerine göre tanıt
+- Şarkının duygusunu, hikayesini ve anlamını yansıt
+- Dinleyiciyle doğal bir konuşma havası oluştur
+- Şarkılar arası akıcı geçişler yap
+
+## Sunum Tarzın:
+- Samimi ve içten ol, ama profesyonelliğini koru
+- Enerjin şarkının türüne göre değişsin (hareketli şarkıda enerjik, duygusal şarkıda yumuşak)
+- Kısa ve etkileyici cümleler kullan
+- Dinleyiciye "sen" diye hitap et, sanki bire bir konuşuyormuş gibi
+
+## Yapman Gerekenler:
+1. Şarkı öncesi kısa tanıtım yap (15-30 saniye)
+2. Şarkının sözlerinden etkileyici bir bölümü vurgula
+3. Sanatçı hakkında ilginç bir detay paylaş (varsa)
+4. Şarkının temasını veya duygusunu açıkla
+5. Dinleyiciye hitap ederek bağlantı kur
+
+## Yapmamanız Gerekenler:
+- Çok uzun konuşma
+- Teknik müzik terimleri kullanma (gerekmedikçe)
+- Monoton anlatım
+- Şarkıyı spoil etme
+
+## Örnek Format:
+
+[Şarkı öncesi]
+"Sevgili dinleyiciler, şimdi size [sanatçı adı]'nın muhteşem parçası '[şarkı adı]' ile geliyorum. [Şarkının kısa tanımı - duygu, tema]. Özellikle '[etkileyici bir söz]' sözleri çok dokunaklı. Hazır mısınız? İşte [şarkı adı]..."
+
+[Şarkı sonrası] (isteğe bağlı)
+"[Şarkı adı] ile keyifli dakikalar geçirdik. [Kısa yorum veya bir sonraki şarkıya bağlantı]"
+```
+
+---
+
+## Kullanım İçin Ekstra Talimatlar:
+
+**Yapay zekaya şarkı bilgilerini şu formatta vermelisin:**
+
+```
+Şarkı: [Şarkı Adı]
+Sanatçı: [Sanatçı Adı]
+Tür: [Müzik türü]
+Tema: [Ana tema - aşk, ayrılık, mutluluk vb.]
+Öne Çıkan Sözler: [Etkileyici 1-2 dize]
+```
+
+Böylece yapay zeka bu bilgilere göre uygun sunumu hazırlayacaktır. İstersen daha spesifik bir tarz için (rock, pop, arabesk vb.) özelleştirebilirim!
+
+## Prompt 2
+
+### You
+*2026-01-27 10:53:08 +03*
+
+Türku arabesk slow tarz da şarkı ve sunuma göre şarkı şarkıya göre sunum simülasyon hazırla dinleyici mesaj yer vende anlatım sunum etkili ses tonu bilgi verici hayata dair anektot lar la ve önerilerin le sunum hazırla kenan ile faslı muhabbet programı na 
+
+### Claude Sonnet 4.5 (Thinking)
+*2026-01-27 10:53:08 +03*
+
+<think>Kullanıcı "Kenan ile Faslı Muhabbet" adında bir radyo programı simülasyonu istiyor. Türkü, arabesk ve slow tarzda şarkılar olacak. Dinleyici mesajları da olacak, anekdotlar, hayat tavsiyeleri, ses tonu açıklamaları içeren detaylı bir sunum istiyor.
+
+Gerçekçi bir radyo programı simülasyonu hazırlayayım:
+- Türkü, arabesk, slow şarkılar
+- Sunucu Kenan karakteri
+- Dinleyici mesajları
+- Anekdotlar
+- Hayat tavsiyeleri
+- Ses tonu açıklamaları
+- Samimi muhabbet havası</think># 🎙️ KENAN İLE FASLI MUHABBET - PROGRAM SİMÜLASYONU
+
+---
+
+## 🎵 PROGRAM AÇILIŞI
+
+**[Müzik: Jenerik - Keman eşliğinde nostaljik bir melodi]**
+
+**KENAN:** *(Sıcak, samimi ses tonuyla)* 
+"Hayırlı akşamlar sevgili dinleyicilerim! Kenan ile Faslı Muhabbet'e hoş geldiniz. Yine beraberiz, yine aynı sofradayız. Dışarısı soğuk ama burada yürekler sıcacık... Çaylar demlendi, sohbet hazır, şarkılar dizildi. Bu akşam da sizlerle dertleşeceğiz, güleceğiz, ağlayacağız belki... İşte gönlün dediği gibi. 
+
+Mesaj hattımız açık: **** numaralı telefon. Gel sen de aramıza katıl, derdini anlat, şarkı iste, ne varsa yüreğinde dökelim ortaya. Çünkü biliyor musunuz, hayat zaten yeterince zor... Bari burada içimizi dökelim, rahat bir nefes alalım."
+
+*(Duraklama - yudum sesi)*
+
+"Hadi başlayalım o zaman... İlk şarkımızla..."
+
+---
+
+## 🎵 ŞARKI 1: ORHAN GENCEBAY - BATSIN BU DÜNYA
+
+**KENAN:** *(Ciddi, derin ses tonuyla)*
+"Dinleyiciler... Şimdi size bir efsaneyi dinletmek istiyorum. Orhan Gencebay... Orhan Baba... 'Batsın Bu Dünya' ile başlıyoruz bu akşama. 
+
+Bilirsiniz, bazen öyle anlar gelir ki hayatta, insan der ya 'yeter artık, ne uğraşıyorum ben?' işte tam o anların şarkısı bu. Ama şunu da unutmayın, en karanlık gece bile sabaha çıkar. 
+
+'Sevemem artık seni, batsın bu dünya...' Ne acı sözler değil mi? Ama işte, bu acıyı yaşamadan tatlısı da bilinmez ki. 
+
+Telefonda Ayşe Hanım var, Kartal'dan arıyor... Buyurun Ayşe Hanım!"
+
+---
+
+## 📞 DİNLEYİCİ MESAJI 1
+
+**AYŞE HANIM:** *(Hüzünlü ses)* "Kenan Bey iyi akşamlar... Ben... Ben 15 yıllık evliliğimin ardından boşandım geçen ay..."
+
+**KENAN:** *(Şefkatli, anlayışlı tonla)* 
+"Başınız sağ olsun Ayşe Hanım... Dinliyorum sizi, rahat olun. Burada hepimiz aileyiz."
+
+**AYŞE HANIM:** "İhanet etti... 15 yıl... Sanki dün gibiydi her şey. Şimdi ne yapacağımı bilmiyorum."
+
+**KENAN:** *(Derin nefes alarak, babacan ses tonuyla)*
+"Ayşe Hanım, bak şimdi size bir şey söyleyeceğim. Yıllarca radyo yaptım, binlerce insan dinledim. Ve şunu öğrendim: Hayat bazen bizi yıkar ki, daha güçlü ayağa kalkabilelim. 
+
+15 yıl çok mu? Evet çok. Acı mı? Allah bilir ne kadar acı. Ama biliyor musunuz ne? Siz hâlâ ayaktasınız. Hâlâ nefes alıyorsunuz. Hâlâ yarın var. 
+
+Dedem derdi ki, 'Evladım, kırılan kalpler daha güçlü birleşir, çünkü artık nerede kırıldığını bilir.' Siz de güçlü birleşeceksiniz Ayşe Hanım. Kendinizle. Kendi ayaklarınızın üzerinde duracaksınız. 
+
+Ve inanın bana, bir gün geriye dönüp bakacaksınız, diyeceksiniz ki 'İyi ki bu acıyı çektim, çünkü asıl kendimi buldum.'
+
+Size bir şarkı hediye ediyorum. İbrahim Tatlıses'ten 'Haydi Söyle'... Dinleyin, içinize sinsin bu gece."
+
+---
+
+## 🎵 ŞARKI 2: İBRAHİM TATLISES - HAYDI SÖYLE
+
+**KENAN:** *(Şarkı bittikten sonra, duygulu ses tonuyla)*
+"'Haydi söyle, derdini söyle, kimse bilmez derdini söyle...'
+
+Ayşe Hanım umarım size dokunmuştur bu şarkı. Ve siz, evet siz, şu an dinleyen herkes... Derdimiz varsa söylemeliyiz. Saklamak değil çözüm. Konuşmak, paylaşmak, ağlamak... Bunlar zayıflık değil, insanlıktır.
+
+*(Yudum sesi)*
+
+Bir anım geldi aklıma şimdi... 1998 yılıydı, Erzurum'da askerlik yapıyordum. Koğuşta bir arkadaşım vardı, Mehmet... Hiç konuşmazdı, hep içine atardı. Bir gün dayanamadı, gözyaşları sel oldu. O gece sabaha kadar konuştuk. Anlattı, döktü içini... Bilir misiniz, ertesi gün bambaşka bir insandı. 
+
+İşte o günden beri bildim ki, konuşmak, paylaşmak şifa..."
+
+---
+
+## 🎵 ŞARKI 3: MÜSLÜM GÜRSES - AFFET
+
+**KENAN:** *(Ağır, dramatik ses tonuyla)*
+"Şimdi ise... Baba'yı dinleme vakti. Müslüm Gürses... 'Affet'
+
+Bu şarkı sadece bir şarkı değil dostlar, bu bir hayat dersi. 'Affet' diyor Müslüm Baba... Kolay mı? Elbette değil. İhanet edeni affetmek kolay mı? Acı vereni affetmek kolay mı? 
+
+Ama şunu da biliyorum: Affetmek başkası için değil, kendi huzurumuz için gerekli. Kin tutmak, nefret etmek... Bunlar bizi öldürür yavaş yavaş. 
+
+*(Duraklama)*
+
+Affedin... Kendiniz için affedin. Unutmak zorunda değilsiniz, ama affedebilirsiniz. 
+
+İşte Müslüm Baba..."
+
+**[Müzik: Affet - Müslüm Gürses]**
+
+---
+
+## 📞 DİNLEYİCİ MESAJI 2
+
+**KENAN:** "Efendim, Mehmet Bey... Samsun'dan... Buyurun!"
+
+**MEHMET BEY:** *(Neşeli ses)* "Kenan Bey kolay gelsin! Valla senin programını kaçırmam, her akşam dinlerim."
+
+**KENAN:** *(Gülümseyerek)* "Sağ olun Mehmet Bey, Allah razı olsun. Ne var ne yok?"
+
+**MEHMET BEY:** "Valla be abi, 30 yıllık evliyim, Allah bozmasın. Eşime şarkı istemek istedim. Fatma'ya selam olsun, onu çok seviyorum."
+
+**KENAN:** *(İçten, sıcak ses tonuyla)*
+"Maşallah Mehmet Bey, maşallah! İşte böyle... 30 yıl diyorsunuz. Sır nedir bu kadar yıl birlikte olmanın?"
+
+**MEHMET BEY:** "Sırrı mı? Sabır abi, sabır... Ve sevgi tabi. Tartışırız da, kavga ederiz de... Ama gün sonunda ikimiz de biliyoruz ki, o bizim evimizdir."
+
+**KENAN:** *(Takdir dolu ses tonuyla)*
+"Aynen öyle Mehmet Bey, aynen öyle... Bakın dinleyiciler, işte aşk bu. Çiçek böcek değil, günlük hayatın içinde saklı. Sabah kahvesinde, akşam çayında, yan yana oturmakta...
+
+Mehmet Bey, Fatma Hanım'a ne çalalım?"
+
+**MEHMET BEY:** "Bergen'den 'Acıların Kadını' çal abi, o seviyor."
+
+**KENAN:** *(Gülerek)* "Hahaha! Mehmet Bey sen mi acıların kadınısın yoksa Fatma Hanım mı?"
+
+**MEHMET BEY:** *(Gülerek)* "İkimiz de biraz çekti abi bu hayattan!"
+
+**KENAN:** "Olsun, birlikte çekmek güzel... Hadi size gelsin Bergen'den..."
+
+---
+
+## 🎵 ŞARKI 4: BERGEN - ACILARIN KADINI
+
+**KENAN:** *(Şarkı sonrası, düşünceli ses tonuyla)*
+"Bergen... Hem şarkıcı hem hayat hikayesi... Ne acılar çekti bu kadın, bilir misiniz? Ama sesi... Ah o sesi... Acıları bile güzel dinletirdi.
+
+Hayat bazen garip değil mi? Birileri saraylarda mutsuz, birileri kulübede mutlu... Mutluluk paradır, puldur sandakta değil işte. Gönüldedir, yürektedir.
+
+Mehmet Bey, Fatma Hanım, Allah yolunuzu açık etsin. Nice mutlu yıllara..."
+
+*(Duraklama)*
+
+"Bir mesaj daha gelmiş... Okuyorum:
+
+'Kenan Abi, ben İstanbul'da tek başıma yaşıyorum, ailem memlekette. Çok yalnızım, ne yapacağımı bilmiyorum. - Serkan, 24 yaşında.'
+
+Serkan kardeşim, dinliyorsan... Bak şimdi sana bir şey anlatacağım. 
+
+Yalnızlık kötü bir şey değildir aslında. Yalnızlık, kendini tanıma fırsatıdır. Evet, zor... Evet, acı... Ama bu dönemde sen kendini keşfedeceksin. 
+
+Babam daha önce de söyledim, rahmetli babam derdi ki: 'Oğlum, kalabalıkta yalnız olanlar var, tek başına ama huzurlu olanlar var. Sen hangisi olmak istiyorsun?'
+
+Ailenle konuş her gün, arkadaş edin, hobiler bul... Ama en önemlisi, kendine arkadaş ol. Aynaya bak, gül kendine, de ki 'Ben varım, ben yeterim.'
+
+Sana Yavuz Bingöl'den 'Bir Mumdur' hediye ediyorum..."
+
+---
+
+## 🎵 ŞARKI 5: YAVUZ BİNGÖL - BİR MUMDUR
+
+**KENAN:** *(Yumuşak, huzurlu ses tonuyla)*
+"'Yollar seni bekliyor, yalnız gidilir ama...' Ne güzel sözler...
+
+Evet dostlar, bazen yollar yalnız gidilir. Ama unutmayın, yalnız olmak yalnızlık değildir. Kendi yolunda yürümek, en cesur yürüyüştür.
+
+*(Çay içme sesi)*
+
+Vakit ilerliyor... Bir şarkımız daha var bu akşam. Final şarkımız..."
+
+---
+
+## 🎵 SON ŞARKI: FERHAT GÖÇER - ŞANSIN YOK KADERIM (SLOW)
+
+**KENAN:** *(Melankolik, derin ses tonuyla)*
+"Finalde Ferhat Göçer ile veda ediyoruz bu akşam... 'Şansın Yok Kaderim'...
+
+Bazen hayat bize istediğimizi vermez. Bazen şans değil, kader oynar. Ama şunu bilin: Her kaybettiğiniz aslında bir kazançtır. Her kapanan kapı, yeni bir pencere açar.
+
+Bugün Ayşe Hanım'ı dinledik, 15 yıllık acısını... Mehmet Bey'i dinledik, 30 yıllık mutluluğunu... Serkan kardeşimizi dinledik, yalnızlığını...
+
+Hepinizin hikayesi farklı, ama hepimiz aynı semada nefes alıyoruz. Hepimizin dertleri var, sevinçleri var...
+
+Bu programı yapmaktaki tek amacım şu: Kimse yalnız değil... Kimse anlaşılmıyor değil... Hepimiz bir birimizin aynasıyız.
+
+Yarın yine buradayız, yine aynı saatte, yine aynı muhabbetle...
+
+Ferhat Göçer'i dinlerken, kendinize iyi bakın, sevdiklerinize sarılın, düşmanlarınızı affet meyi düşünün...
+
+Kalın sağlıcakla... Kenan ile Faslı Muhabbet'te buluşmak üzere..."
+
+**[Müzik: Şansın Yok Kaderim - Ferhat Göçer]**
+
+---
+
+## 🎯 PROGRAM ÖZELLİKLERİ:
+
+✅ **Samimi, sıcak muhabbet havası**
+✅ **Gerçek hayat hikayeleri ve anekdotlar**
+✅ **Psikolojik destek ve hayat tavsiyeleri**
+✅ **Ses tonu çeşitliliği** (duygulu, neşeli, düşünceli)
+✅ **Dinleyici katılımı**
+✅ **Şarkı-sunum uyumu**
+✅ **Türkü-arabesk-slow karışımı**
+
+Bu format her akşam farklı şarkılar ve hikayelerle devam edebilir! 🎙️❤️
+
+### Gemini 2.5 Pro
+*2026-01-27 10:53:08 +03*
+
+Harika bir fikir! İşte "Kenan ile Fasl-ı Muhabbet" programı için istenen tüm unsurları içeren bir radyo sunumu simülasyonu.
+
+---
+
+### **Radyo Programı Simülasyonu: Kenan ile Fasl-ı Muhabbet**
+
+**(Başlangıçta hafif, içli bir ney sesiyle başlayan programın jingle'ı girer ve yumuşak bir ses anons eder: "Kenan ile Fasl-ı Muhabbet başlıyor...")**
+
+**(Ney sesi yavaşça kaybolurken, arka planda çok kısık sesli, enstrümantal bir parça çalmaya başlar.)**
+
+**Kenan:** (Tok, dingin ve samimi bir ses tonuyla)
+Gecenin en demli saatlerinden, yüreklerinizin en derin köşelerine selam olsun efendim. Kenan ben... Bir "Fasl-ı Muhabbet" programında daha sizlerle birlikte olmanın o tatlı huzuru içindeyim. Stüdyonun ışıkları kısıldı, telefonlar sessize alındı ve şimdi sadece biz varız... Bir de ruhumuza dokunacak o eşsiz nağmeler.
+
+Bu gece yine hayatın içinden konuşacağız. Bazen bir türkünün sözünde kaybolacak, bazen arabeskin isyanında kendimizi bulacağız. Biliyorsunuz, bu program sizinle güzel. Sizlerin gönderdiği mesajlar, bizim yol haritamız oluyor.
+
+Hemen bu gecenin ilk mesajına bakalım... İzmir'den dinleyicimiz Rumuz: "Garip Yolcu" göndermiş. Diyor ki:
+
+**(Mesaj okunurken arka fon müziği biraz daha azalır.)**
+
+*"Kenan abi, iyi yayınlar. Bazen insan öyle bir an gelir ki, ne ileri gidebilir ne de geri dönebilir. Sanki hayat filmi eski bir kasette takılı kalmış gibi... Hep aynı sahneyi başa sarıp duruyorum. Geçmişin yükü omuzlarımda, geleceğin belirsizliği karşımda... Bu düğüm nasıl çözülür be abi? Bize o eski günlerin hatırına, şöyle ciğerden bir şarkı armağan etsen..."*
+
+**Kenan:** (İç çeker)
+Ah be "Garip Yolcu"... Ah be güzel kardeşim... O arafta kalma hissini, o adını koyamadığın boşluğu kim bilmez ki? Hayat, eski bir sandık gibidir bazen. Kapağını her açtığında eline ya tozlu bir hüzün ya da tebessüm ettiren tatlı bir hatıra takılır. O sandığı kapatamazsın, çünkü o sensin. Ama sürekli açık da bırakamazsın, yoksa bugünü yaşayamazsın.
+
+Benim sana naçizane önerim şudur; o sandığı arada bir havalandır. Hatıralarına saygı duy ama onlara esir olma. Unutma, en sağlam köprüler bile hem geçmişin temeline hem de geleceğin ufkuna uzanır. Sadece birine tutunursan yıkılırsın.
+
+Senin bu hislerin, aslında hepimizin ortak bir sorusunu hatırlattı bana. Yıllar önce bir usta, bir baba sormuştu bu soruyu. Sadece kendine değil, bu topraklarda sevmiş, yanılmış, düşmüş ama yine de ayağa kalkmış herkese sormuştu... "Hangimiz sevmedik ki çılgınlar gibi?" demişti. Kimimiz bir vefasıza aldandık, kimimiz kara sevdaya yandık. Ama özünde hepimiz sevdik.
+
+Şimdi Müslüm Baba'ya kulak verelim. O, bizim yerimize anlatsın bu durumu. Gelsin, İzmir'deki "Garip Yolcu"ya ve kalbi yorgun tüm dinleyenlerime... İşte Müslüm Gürses'ten... **Hangimiz Sevmedik**.
+
+**(Şarkı girer: Müslüm Gürses - Hangimiz Sevmedik)**
+
+**(Şarkı biter ve yavaşça ses azalır. Arka plana yine hafif enstrümantal müzik girer.)**
+
+**Kenan:** (Daha düşünceli bir ses tonuyla)
+Evet... Hangimiz sevmedik, hangimiz düşmedik bu sevda batağına... Müslüm Baba'nın da dediği gibi, hepimiz biraz yaralıyız bu konuda. Ama hayat bir yolculuk değil mi zaten? Bu yolculukta bazen böyle fırtınalara yakalanır, bazen limanlara sığınırız.
+
+İşte bu yolculuğu en iyi anlatanlardan biri de bozkırın tezenesi, büyük usta Neşet Ertaş'tır. Der ki; "İnsanlar kendini bulmak için yola çıkar, ama asıl yolculuk insanın kendi içine yaptığıdır." Gurbeti, hasreti, ayrılığı, hayatın o yalın gerçeğini ondan daha iyi kim anlatabilir?
+
+Şimdi sizi Kırşehir'in o tozlu ama samimi yollarına, bir ustanın gönül teline götüreceğim. Hayat hanında hepimizin birer "Yolcu" olduğunu hatırlatan o ölümsüz eser geliyor. Kapatın gözlerinizi ve kendinizi türkünün o derin manasına bırakın...
+
+Hazır mısınız? Neşet Ertaş söylüyor... **Yolcu**.
+
+**(Şarkı girer: Neşet Ertaş - Yolcu)**
+
+**(Şarkı biter, fon müziği devam eder.)**
+
+**Kenan:**
+Evet efendim, "Kenan ile Fasl-ı Muhabbet"te bu gecelik ayrılan sürenin sonuna yaklaşıyoruz. Unutmayın, yollar ve yolculuklar bitmez. Önemli olan o yolda yanınıza kimleri ve neleri aldığınızdır. Yüreğinizden umudu, yüzünüzden tebessümü eksik etmeyin.
+
+Haftaya yine aynı saatte, gecenin en demli vaktinde buluşmak dileğiyle... Kalbinizden geçen tüm güzellikler sizinle olsun. Hoşça kalın...
+
+**(Programın neyli jingle'ı tekrar girer ve yavaşça ses azalarak yayın biter.)**
+
+## Prompt 3
+
+### You
+*2026-01-27 11:07:04 +03*
+
+Dinleyici mesajlarını sunum yapma dinleyici mesajları olmaycak yeni konular yeni şarkılar la türküler le bağlayarak birbirine devam edelim 
+
+### GPT-5.1 Codex (High)
+*2026-01-27 11:07:05 +03*
+
+# 🎙️ KENAN İLE FASLI MUHABBET – YENİ BÖLÜM AKIŞI  
+*(Dinleyici mesajı yok; Kenan tek başına anlatıyor, her konu yeni bir şarkı/türkü ile bağlanıyor.)*
+
+---
+
+## 1. AÇILIŞ: “Kış Akşamında İç Isıtmak”
+- **Ses tonu:** Ilık ve yumuşak; sanki sobanın yanında çay ikram ediyormuş gibi.  
+- **Anlatım:** Kenan, İstanbul’un ayazından söz ederek, “Bu gecelik derdimiz, içimizi ısıtmak” der. Hayatın her mevsimde farklı dersler verdiğini vurgular.  
+- **Şarkı bağlantısı:** “Kış geceleri insanı biraz daha kendi içine çeker” diyerek **Neşet Ertaş – ‘Ah Yalan Dünya’**ya bağlanır.  
+- **Anekdot:** “Rahmetli ninem derdi ki, ‘Kış, insanın yüreğine ayna tutar; orada ne varsa onu gösterir.’”
+
+---
+
+## 2. KONU: “Emek, Alın Teri ve Sabır”
+- **Ses tonu:** Biraz daha vurgulu, dinleyiciye moral veren bir anlatım.  
+- **İçerik:** Fabrika vardiyalarında çalışanların rutininden, sabırla beklemenin kıymetinden bahseder. Hayatın aceleye gelmediğini anlatır.  
+- **Şarkı bağlantısı:** “Her emeğin bir türküsü var” diyerek **Kibariye – ‘Geceler’**e geçer.  
+- **Hayat önerisi:** “Emek verdiğin hiçbir şey heba olmaz; sadece hak ettiği zamanı bekler.”  
+- **Geçiş cümlesi:** “Şimdi gelin, emeğin öteki yüzüne, gurbetin yüküne bakalım...”
+
+---
+
+## 3. KONU: “Gurbet ve Yol Hikâyeleri”
+- **Ses tonu:** Hafif hüzünlü ama güçlü; uzaklara bakan bir gözle.  
+- **Anlatım:** Karadeniz’den Marmara’ya çalışmaya gelen bir işçinin hikâyesini paylaşır; tren istasyonlarında vedaların nasıl iç yaktığını anlatır.  
+- **Şarkı bağlantısı:** “Yol denen şey sadece kilometre değil, kalbin taşıdığı yük” diyerek **Orhan Hakalmaz – ‘Gurbet’**i çalar.  
+- **Anekdot:** “Askerlik yaptığım Kars günlerinde, her posta günü koğuş sessizleşirdi; herkes memleketinden bir haber beklerdi.”
+
+---
+
+## 4. KONU: “Aşkın İkinci Baharı”
+- **Ses tonu:** Sıcak ve umut verici; dinleyicinin yüzünde tebessüm bırakacak şekilde.  
+- **İçerik:** Yıllar sonra yeniden hissetmenin gücünden, kalbin zamanla repertuvar değiştirmesinden söz eder.  
+- **Şarkı bağlantısı:** “Bazen aşk, sahibini şaşırtır; en umulmadık anda kapıyı çalar” diyerek **Ebru Gündeş – ‘Sensizim’**e bağlanır.  
+- **Hayat önerisi:** “Kalp kırıldıkça güçlenir; yeter ki kırıkları onaracak sabrın olsun.”
+
+---
+
+## 5. KONU: “Kendinle Baş Başa Kalmak”
+- **Ses tonu:** Derin, meditasyon gibi; kelimeler arasına nefes molaları eklenir.  
+- **Anlatım:** Yalnız kalmanın insana sağladığı içsel temizlikten bahseder. “Kendi kendine konuşanların delirdiği değil, kendini iyileştirdiği” vurgulanır.  
+- **Şarkı bağlantısı:** “Kendine sarılırsan dünya sana sırtını dönemiyor” diyerek **Müslüm Gürses – ‘Nilüfer’**i çalar.  
+- **Anekdot:** “Bir keresinde, gece yarısı stüdyodan çıkıp Haliç’e karşı oturdum; sessizlik bile bana türkü söylüyor gibiydi.”
+
+---
+
+## 6. KAPANIŞ: “Toprak Gibi Olmak”
+- **Ses tonu:** Sakin, veda ederken güven veren bir tonda.  
+- **İçerik:** Toprak benzetmesi; “Üzerine ne atarsak atsın aynı cömertlikle geri veriyor” der.  
+- **Final şarkısı:** **Ferdi Tayfur – ‘Merak Etme Sen’** ile kapanış.  
+- **Veda cümlesi:** “Bu gece her şarkıyı bir ders gibi dinledik. Unutmayın, hayat hepimizin faslı; yeter ki sazımızı iyi tutalım. Yarın yine aynı saat, aynı muhabbet.”
+
+---
+
+🎧 **Program Notları:**
+- Dinleyici mesajı yok; Kenan tek başına hikâye ve şarkılarla akışı sürdürüyor.  
+- Her konu bir şarkı/türkü ile esnekçe bağlanıyor.  
+- Tonlar (ses rengi), anekdotlar ve hayata dair öneriler her bölümde yer alıyor.  
+- Türkü–arabesk–slow dengesi korunuyor: Neşet Ertaş, Kibariye, Orhan Hakalmaz, Ebru Gündeş, Müslüm Gürses, Ferdi Tayfur.
+
+Hazırsanız, mikrofon Kenan’da, ruhumuz ise bu şarkılarda buluşuyor.
+
+### Claude Sonnet 4.5 (Thinking)
+*2026-01-27 11:07:05 +03*
+
+<think>Kullanıcı dinleyici mesajlarını istemiyor. Sadece sunucunun kendi anlatımıyla, şarkıları birbirine bağlayarak, yeni konular, anekdotlar ve tavsiyelerle devam eden bir format istiyor. Daha akıcı, kesintisiz bir sunum hazırlayayım.</think># 🎙️ KENAN İLE FASLI MUHABBET - YENİ PROGRAM SİMÜLASYONU
+
+---
+
+## 🎵 PROGRAM AÇILIŞI
+
+**[Müzik: Jenerik - Nostaljik bağlama ve keman]**
+
+**KENAN:** *(Sıcak, huzurlu ses tonuyla)* 
+"Hayırlı akşamlar kıymetli dostlarım... Yine geldik, yine buradayız. Dışarısı soğuk ama yürekler sıcacık. Çayı demledik, içimizi rahatlatacak şarkıları sıraladık. 
+
+Bu akşam sizlerle yolculuğa çıkıyoruz... Aşktan derde, hasretten kavuşmaya, gurbet ellerden memleket kokularına... Hepsi bu akşamın içinde.
+
+*(Yudum sesi - derin nefes)*
+
+İlk şarkımızla başlayalım... Ve bu şarkı, sevdanın en saf haliyle ilgili..."
+
+---
+
+## 🎵 ŞARKI 1: NEŞİDEM - SEVİYORUM SEVİYORUM
+
+**KENAN:** *(Romantik, yumuşak ses tonuyla)*
+"Neşidem'in o eşsiz sesiyle 'Seviyorum Seviyorum' ile başlıyoruz gecemize...
+
+Bakın dostlar, sevmek ne güzel şey... İnsanoğlu dünyaya gelir, aç gelir, susuz gelir... Ama sevgiye susamış gelir. Herkes sever, herkes sevilmek ister. 
+
+*(Duraklama - düşünceli ton)*
+
+Geçen gün markette bir çift gördüm. Yaşlılar... 70-75 yaşlarında olmalılar. Adam eşinin elinden tutmuş, yavaş yavaş yürüyorlar. Kadın bir şey gösterdi, adam gülümsedi. O an içim ısındı...
+
+İşte asıl aşk bu... Genç sevda güzel, evet... Ama yıllar sonra hala birbirinizin elini tutmak, birbirinize gülümsemek... Ah işte o, o başka güzellik.
+
+Ama tabii, önce genç sevdayı yaşamadan o noktaya gelemezsiniz ki... 
+
+Şimdi size genç bir sevdanın türküsünü dinletiyorum..."
+
+---
+
+## 🎵 ŞARKI 2: KAZIM KOYUNCU - DİDOU NANA
+
+**KENAN:** *(Neşeli, enerjik ses tonuyla)*
+"Kazım Koyuncu... Rahmetli Kazım... 'Didou Nana'...
+
+Karadeniz'in sesi, denizin coşkusu! Kemençenin telleri adeta kalbe dokunuyor. Bilir misiniz, Karadeniz insanı çok farklıdır. Dışarıdan sert görünür ama içi pamuk gibi. 
+
+*(Gülümseyerek)*
+
+Bir anım var Trabzon'dan... 2005 yılıydı galiba. Bir düğüne gitmiştim. Horon başladı, yaşlı bir amca var, 80 küsur yaşında... Ayağa kalktı, başladı oynamaya. Dedim 'Amca yorulursun!' Bana döndü, gülümsedi, dedi ki: 'Oğlum, horon yorulmak için değil, yaşamak için oynanır!'
+
+*(Derin nefes)*
+
+O günden beri bilirim... Hayat yorulmak için değil, yaşamak içindir. Dans et, eğlen, gül, ağla... Ama yaşa!
+
+Şimdi ise müziğin dilini değiştiriyoruz... Arabeskin sultanına gidiyoruz..."
+
+---
+
+## 🎵 ŞARKI 3: BÜLENT ERSOY - MADEM Kİ SEN BENİMSİN
+
+**KENAN:** *(Dramatik, duygusal ses tonuyla)*
+"Bülent Ersoy... Diva... 'Madem Ki Sen Benimsin'...
+
+'Madem ki sen benimsin, sen bana yetersin...' Ne kadar güçlü sözler değil mi? 
+
+Hayatta bazen bir kişi yeter. Bir kişi... Onun varlığı, onun nefesi, onun gülüşü... Yeter. 
+
+Ama şunu da unutmayalım dostlar... Birisi bizim olsun diye kendimizi kaybetmemeliyiz. Sevgi, sahip olmak değildir. Sevgi, özgür bırakmaktır. 
+
+*(Duraklama)*
+
+Dedem derdi: 'Kızım oğlum, kuş kafeste güzel şakımaz. Seversen sal, giderse gitmemiş, kalırsa işte o zaman gerçekten senindir.'
+
+Ne kadar haklıymış değil mi?
+
+İki kişi bir arada olacaksa, iki özgür insan olarak olmalı. İki özgür yürek, iki özgür ruh... İşte o zaman gerçek aşk olur.
+
+*(Ses tonu değişir - nostalji)*
+
+Şimdi size eski bir güzeli dinleteceğim... Anadolu'nun acısını, güzelliğini..."
+
+---
+
+## 🎵 ŞARKI 4: MAHZUNI ŞERIF - YALAN DÜNYA
+
+**KENAN:** *(Ağırbaşlı, hikmetli ses tonuyla)*
+"Mahzuni Şerif... Mahsuni... Aşık Mahzuni... 'Yalan Dünya'...
+
+'Yalan dünya, yalan dünya, gülme dünya yalan dünya...'
+
+Bu dünya gerçekten de yalan... Düşünün, çocukken ne hayaller kuruyoruz. Büyüyünce ne olacağız, neler yapacağız... Sonra büyüyoruz, hayat bizi şekillendiriyor, biz hayatı değil.
+
+*(Derin, bilge ses tonuyla)*
+
+Ama şunu da öğrendim yıllar içinde: Dünya yalan olabilir, ama içimizdeki duyguları gerçek. Sevgimiz gerçek, acımız gerçek, mutluluğumiz gerçek.
+
+Bir gün hastanede yatıyordum, ameliyat olacaktım. Yan yatakta bir amca vardı. Hastalıktan bitkin, yorgun... Ama ailesi geldiğinde yüzü gülüyordu. 'Amca' dedim, 'nasıl bu kadar mutlu olabiliyorsunuz?' 
+
+Dedi ki: 'Oğlum, sağlığım gitti ama sevdiklerim var. Dünya yalan, ama onların gülüşü gerçek. O yeter bana.'
+
+*(Sessizlik - yudum sesi)*
+
+İşte o an anladım... Önemli olan sahip olduklarımız değil, hissettiğimiz...
+
+Şimdi farklı bir havaya geçelim... Slow'un duygusal dünyasına..."
+
+---
+
+## 🎵 ŞARKI 5: KENAN DOĞULU - TUTUTU
+
+**KENAN:** *(Eğlenceli, hafif ses tonuyla)*
+"Kenan Doğulu... Tututu!
+
+*(Gülerek)* 
+
+Evet evet, biraz neşelenelim! Hep ağır olmayalım, gönüller de dinlensin. Hayat zaten yeterince ciddi değil mi? 
+
+'Tututu' derken insan içi açılıyor. Müzik sadece acı için değildir, neşe için de vardır. Dans etmek, eğlenmek, keyif almak...
+
+Biliyor musunuz, psikologlar diyor ki: 'Günde 15 dakika dans etmek, antidepresan kadar etkili.' Düşünün, ilaç değil, dans! 
+
+*(Neşeli ton)*
+
+Şimdi evinizdeyseniz, kalkın, biraz hareket edin. Kimse görmüyor, utanmayın! İki adım sağa, iki adım sola... Haydi!
+
+Ama şimdi, atmosferi yine değiştiriyoruz... Gidiyoruz duygusal sulara..."
+
+---
+
+## 🎵 ŞARKI 6: FERHAT GÖÇER - AŞKA YÜREK GEREK
+
+**KENAN:** *(Ciddi, olgun ses tonuyla)*
+"Ferhat Göçer'in muhteşem sesiyle 'Aşka Yürek Gerek'...
+
+Adı gibi şarkı... Aşka gerçekten yürek gerek. Cesaret gerek. Risk almak gerek.
+
+Çoğumuz korkarız... Acaba reddedilir miyim? Acaba aldanır mıyım? Acaba kırılır mıyım? Ve korku yüzünden hiç yaşamayız bazı şeyleri.
+
+*(Duraklama - öğretici ton)*
+
+Ama bakın, şunu söyleyeyim size: Hiç sevmemektense sevip acı çekmek daha iyidir. Çünkü acı bile bir deneyimdir, bir his olarak var olmaktır. Ama hiç hissetmemek... O ölü olmaktır.
+
+Abim vardı benim, ağabeyim... Yıllarca aşıktı bir kıza. Söyleyemedi. Yıllar geçti, kız başkasıyla evlendi. Ağabeyim hala pişman... 'Keşke söyleseydim' diyor. 'Red etse bile en azından denemiş olurdum.'
+
+*(Ağırbaşlı ses)*
+
+Görüyor musunuz? Yapmadıklarımızın pişmanlığı, yaptıklarımızdan daha ağır olur.
+
+Şimdi, arabeskin hüzünlü dünyasına dalıyoruz..."
+
+---
+
+## 🎵 ŞARKI 7: İBRAHİM TATLISES - KARA ZINDAN
+
+**KENAN:** *(Derin, acılı ses tonuyla)*
+"İbo... İmparator... 'Kara Zindan'...
+
+'Kara zindan dört bir yanım, bir sevdiğim yok mu yanım...'
+
+Zindan... Hapishane... Ama bazen gerçek zindan dışarıda değil mi dostlar? Bazen içimizdeki zindanlar daha karanlık olur.
+
+Yalnızlık... İşte gerçek zindan o. İnsanın kendine bile yabancılaşması... Kimsenin onu anlamadığını düşünmesi...
+
+*(Hikmetli ses tonuyla)*
+
+Ama şunu da bilin: Her zindanın bir kapısı vardır. Her karanlığın bir ışığı... Belki görmüyoruz, belki uzak... Ama var.
+
+Umut... Umut en son tükenen şeydir. Umudunuzu kaybetmeyin. En karanlık gecenin bile sabahı olur.
+
+Şimdi size bir türkü hediye edeceğim... Anadolu'nun en güzel duygularından biri... Gurbet..."
+
+---
+
+## 🎵 ŞARKI 8: NEŞET ERTAŞ - GÖNÜL DAĞI
+
+**KENAN:** *(Nostaljik, özlemli ses tonuyla)*
+"Neşet Ertaş... Bozkırın Tezenesi... 'Gönül Dağı'...
+
+Gurbet... Ne acı kelime değil mi? Yurdundan, yuvandan, sevdiklerinden ayrı olmak...
+
+Kaç milyon insanımız şu an gurbet ellerde... İstanbul'da, Ankara'da, yurt dışında... Hepsi bir umutla gitti. 'Çalışacağım, para kazanacağım, ailemizi kurtaracağım' diye...
+
+*(Duygulu ses)*
+
+Babam da gurbet yolcusuydu. Almanya'da çalışırdı. Yılda bir gelirdi. Geldiğinde bizi öyle sarılırdı ki... Sanki bin yıl görmemiş gibi.
+
+Sonra büyüdüm, anladım... Gurbet sadece mekan değil, yürek işidir. İnsan sevdiğinden uzaksa, o gurbettedir. 
+
+*(Derin nefes)*
+
+Şimdi Almanya'da, Fransa'da, Hollanda'da dinleyen tüm vatandaşlarıma sesleniyorum: Yalnız değilsiniz! Yüreğiniz memlekette, ruhunuz orada... Ve bir gün dönersiniz o topraklara.
+
+Şimdi, yine arabeskin duygusal dünyasına dönüyoruz..."
+
+---
+
+## 🎵 ŞARKI 9: MÜSLÜM GÜRSES - NİLÜFER
+
+**KENAN:** *(Derin, melankolik ses tonuyla)*
+"Baba... Müslüm Baba... 'Nilüfer'...
+
+Müslüm Gürses dinlemek, sadece şarkı dinlemek değildir. O bir terapi, bir itiraftır. Her sözü yüreğe dokunur, her notası ruhta iz bırakır.
+
+'Nilüfer açmış gönül bahçesinde...' Ne kadar şiirsel değil mi?
+
+*(Düşünceli ton)*
+
+Bilir misiniz, gönül gerçekten bir bahçedir. Ne ekerseniz onu biçersiniz. Sevgi ekerseniz sevgi biçersiniz. Nefret ekerseniz nefret...
+
+Ben yıllardır insanlarla konuşuyorum, yüzlerce hikaye dinledim. Ve gördüm ki, mutlu insanların ortak özelliği şu: Affetmeyi biliyorlar. Sevmeyi biliyorlar. Bırakmayı biliyorlar.
+
+*(Öğretici, bilge ses)*
+
+Bazen hayat bize acı verir, evet. Ama o acıya tutunsak, gönül bahçemiz kurur. Bırakmalıyız... Akan suya karşı yüzmekten vazgeçmeliyiz.
+
+Şimdi size son şarkımızı dinletiyorum bu akşam... Ve bu şarkıyla huzurla veda ediyoruz..."
+
+---
+
+## 🎵 SON ŞARKI: TARKAN - KUZU KUZU (SLOW)
+
+**KENAN:** *(Huzurlu, tatlı ses tonuyla)*
+"Tarkan... 'Kuzu Kuzu'...
+
+Aşkın tatlı hali... Sevmenin yumuşak tarafı... 'Kuzu kuzu yanaşıyor...'
+
+*(Gülümseyerek)*
+
+Bazen aşk fırtına gibidir, bazen de tatlı bir rüzgar gibi... İşte bu şarkı, o tatlı rüzgarın şarkısı.
+
+Hayat bize bazen sert vurur, biliyorum. Ama yumuşak anları da var. Sevgilinizin saçını okşadığınız an... Çocuğunuzun elini tuttuğunuz an... Annenizin yemeğini yediğiniz an...
+
+İşte hayat bunlardan oluşur. Küçük mutluluklardan, yumuşak anlardan...
+
+*(Derin, samimi ses tonuyla)*
+
+Bu akşam sizlerle çok güzel bir yolculuk yaptık. Aşktan gurbet, acıdan neşeye, yalnızlıktan umuda... Hepsini yaşadık, hepsini hissettik.
+
+Yarın yine buradayız, yine aynı saatte, yine aynı muhabbetle... 
+
+Kendinize iyi bakın, sevdiklerinize sarılın, düşmanlarınızı affetmeyi düşünün...
+
+Ve unutmayın: Hayat güzel, yaşamaya değer. Her yeni gün yeni bir fırsat...
+
+Kalın sağlıcakla dostlar... Hoşça kalın..."
+
+**[Müzik: Kuzu Kuzu - Tarkan ile birlikte program sona erer]**
+
+---
+
+## ✨ PROGRAM ÖZELLİKLERİ
+
+✅ **Kesintisiz akış** - Şarkılar arası geçişler doğal
+✅ **Zengin anekdotlar** - Kişisel hikayeler ve yaşanmışlıklar  
+✅ **Hayat dersleri** - Felsefi ve psikolojik öneriler
+✅ **Ses tonu çeşitliliği** - Duygusal, neşeli, düşünceli, nostaljik
+✅ **Tür dengesi** - Türkü, arabesk, slow uyumlu karışım
+✅ **Samimi dil** - Abi-kardeş sohbet havası
+
+🎙️ **Program her akşam farklı şarkılar ve temalarla devam eder!**
+
+## Prompt 4
+
+### You
+*2026-01-27 11:09:23 +03*
+
+Yeni konular tema lar la sunumlar la devam edelim 
+
+### GPT-5.1 Codex (High)
+*2026-01-27 11:09:25 +03*
+
+<think>
+**Planning New Themes and Segments**
+
+I’m thinking I need to come up with new themes for a program without any listener messages. The plan should include different topics than before, incorporating new songs while linking them effectively. It’s essential to maintain a friendly tone with clarity and a bit of gentle humor. I want to structure it nicely, maybe using headings and bullet points. Some new themes could be "Şehir Efsaneleri" and "Mutfağın Sırları," including a mix of modern and traditional songs!
+
+**Designing Program Segments**
+
+I want to create a fresh lineup for the program. For the opening, I'm thinking of "Günün İlk Işığı," but I need to switch out songs like considering Candan Erçetin's "Yalan" instead of previous ones. I also want to include classics like Selda Bağcan's "Katip Arzuhalim Yaz Yare Böyle." The first segment will be "Rüzgârın Bize Anlattıkları" with the song "Kalben – 'Yara.'” For the theme on nighttime workers, I could go with "Cem Adrian – 'Herkes Gider Mi'." Let’s finalize five engaging segments!
+
+**Crafting New Themes and Segments**
+
+I’m planning a new program structure! For the theme "Mutfağın Ateşi," I’ll use Ayta Sözeri's "Yanayım Yanayım." Next, "Eski Defterler, Yeni Sayfalar" will feature Yeni Türkü's "Maskeli Balo." For "Doğaya Dönüş, Toprak," I might consider Zara's "Hatıran Yeter" instead of a lesser-known song. Finally, for the closing segment "Umudun İnce Yolu," I want more relaxation, so maybe "Teoman - 'Renkli Rüyalar Oteli'." I should also emphasize new topics and include 4-5 sections with descriptions that tie in nicely to the songs!
+
+**Finalizing Program Structure**
+
+I need to create seamless bridging lines between segments to enhance the flow of the program. This will help maintain a cohesive narrative that connects each theme to the respective songs. As I craft the final version, I want to ensure that each segment is engaging and clearly formatted. Let’s finalize everything so that it feels complete and polished, making the listening experience enjoyable while avoiding repetitive elements from earlier segments!
+</think># 🎙️ KENAN İLE FASLI MUHABBET – YENİ KONSEPT AKIŞ
+*(Yine sadece Kenan’ın sesi; dinleyici mesajı yok. Her tema taze bir hikâyeye ve başka bir şarkıya/türküyü bağlıyor.)*
+
+---
+
+## 1. TEMA: “Rüzgârın Fısıltısı ve Yol Arkadaşlığı”
+- **Ses tonu:** Ferah ve hafif mizah dolu; sanki Kenan mikrofona eğilip “Hazır mıyız?” diye soruyor.  
+- **Anlatı:** Boğaz köprüsünden gece vakti süzülen rüzgârı dinlerken, insanın kendi iç müziğini bulmasından söz eder. Arabasını yıllardır yalnız kullanan taksicilerden, yolların anlattığı sıradan hikâyeler çıkarır.  
+- **Şarkı bağlantısı:** “Rüzgâr ne demiş? ‘Yola devam!’” diye gülümseyip **Kalben – ‘Yara’**ya geçer.  
+- **Mini öneri:** “Rotanı kendin çizersen, rüzgâr sadece kanatlarını doldurur.”
+
+---
+
+## 2. TEMA: “Şehir Işıkları Altında Çalışanlar”
+- **Ses tonu:** Güçlü ve destekleyici; vardiyasını yeni bitirmiş biriyle sohbet eder gibi.  
+- **İçerik:** Gece hemşirelerinden sabaha kadar üretim yapan fabrika ustalarına kadar “görünmez kahramanları” anlatır. Şehir uykudayken atılan küçük adımların yarınları nasıl şekillendirdiğine değinir.  
+- **Şarkı bağlantısı:** “Bazı şarkılar gece nöbetleri kadar uzun soluklu” diyerek **Cem Adrian – ‘Herkes Gider Mi’**ye bağlar.  
+- **Geçiş cümlesi:** “Madem emek dedik, biraz da bu emeğin dumanı tüten halini konuşalım...”
+
+---
+
+## 3. TEMA: “Mutfağın Ateşi, Evin Kalbi”
+- **Ses tonu:** Samimi, hafif eğlenceli; bir yandan tencerede çorba kaynıyormuş gibi.  
+- **Anlatı:** Gün boyu yoğun olup akşam ocakta nefes alan insanların ritüelleri, aşure kazanının başındaki komşuluklar, anneden kalma bir tarifin nesiller boyu sürmesi.  
+- **Şarkı bağlantısı:** “Lezzetin sesi olur mu? Olur elbette” diyerek **Ayta Sözeri – ‘Yanayım Yanayım’**ı çalar.  
+- **Hayat önerisi:** “Tencerede sadece yemek değil, sabır da pişer; kokusunu tüm eve dağıt.”
+
+---
+
+## 4. TEMA: “Tozlu Defterler, Cesur Başlangıçlar”
+- **Ses tonu:** Düşünceli ama umutlu; eski günlere bakıp bugüne gülümseyen bir anlatım.  
+- **İçerik:** Çekmecede saklanan mektuplardan eski plaklara, “geçmişten korkmamak” üzerine mini bir monolog. Kenan, yıllar önce aldığı yarım kalmış bir radyoculuk dersini tamamlamak için geri dönüşünü anlatır.  
+- **Şarkı bağlantısı:** “Geçmişi silemeyiz ama yeniden düzenleyebiliriz” diyerek **Yeni Türkü – ‘Maskeli Balo’**ya bağlar.  
+- **Geçiş:** “Şimdi o defterleri kapatalım, biraz da toprağa kulak verelim.”
+
+---
+
+## 5. TEMA: “Şehirden Kaçış ve Toprağın Sabrı”
+- **Ses tonu:** Sakin ve dingin; Kenan’ın sanki bir yaylada nefes aldığı hissi.  
+- **Anlatı:** Balkonuna saksıda domates eken dinleyicilerin hikâyeleri yerine, kendi gözlemlerini paylaşır: şehri terk etmeyi hayal eden ama mini bir balkon ormanıyla yetinen insanlardan söz eder.  
+- **Şarkı bağlantısı:** “Bir tutam toprak bazen en büyük lükstür” diyerek **Zara – ‘Hatıran Yeter’**i çalar.  
+- **Ruh tavsiyesi:** “Kök salacağın yer bazen tek bir saksı toprağı kadar küçük, ama yüreğini doyuracak kadar cömert olabilir.”
+
+---
+
+## 6. KAPANIŞ: “Umudun İnce Yolu”
+- **Ses tonu:** Rahatlatıcı, güven veren bir veda.  
+- **İçerik:** Umudun büyük laflar değil, küçük günlük seçimler olduğunu hatırlatır. “Bugün kendine ayırdığın beş dakika, yarınki fırtınada şemsiyen olur” der.  
+- **Final şarkısı:** **MFÖ – ‘Sarı Laleler’** ile kapanış yapar; “Maviye boyanmış bir umut” metaforuyla vedalaşır.  
+- **Veda sözleri:** “Şarkılarla dertleştik, temalarla omuz verdik. Yarın yine buluşur, başka fasıl açarız. Kendinize iyi davranın.”
+
+---
+
+🎧 **Program Notları**
+- Dinleyici mesajı hâlâ yok; Kenan tek nefes konuşuyor.  
+- Temalar yepyeni; her bölüm farklı şarkı/türkü ile bağlanıyor.  
+- Ton, anekdot ve küçük hayat önerileri korunuyor.  
+- Repertuvar yine dengeli: akustik, alternatif, arabesk ve türkü tatları harmanlanıyor.
+
+Hazırsa kulaklar, Kenan yeni hikâyeleriyle mikrofonda, biz de kaldığımız yerden devam ediyoruz.
+
+### Claude Sonnet 4.5 (Thinking)
+*2026-01-27 11:09:25 +03*
+
+<think>Kullanıcı yeni konular, temalar ve sunumlar istiyor. Kenan'ın sunumu devam etmeli, her bölüm farklı bir tema ile ilerlemeli ve her tema şarkılarla bağlanmalı. Dinleyici mesajı olmayacak, sadece Kenan anlatacak.</think># 🎙️ KENAN İLE FASLI MUHABBET – YENİ TEMALAR
+
+---
+
+## TEMA 1: "KAHVE FINCANINDA HAYAT"
+**Açılış Müziği:** *Ajda Pekkan – Seni Seçtim*
+
+**Kenan'ın Girişi:**
+"Günaydın gönüller... Bugün konumuz; fincanın dibindeki tel tel hikâyeler. Bilirsiniz, kahve içmek sadece uyanmak için değildir; bazen hayatın tempo tuttuğu andır."
+
+**Anlatım:**
+- Kahvehane kültürü: Erkeklerin dert ortağı, kadınların komşuluk bağı
+- Fal bakmak: "İnsanlar bazen kahve telinden umut arar"
+- Sohbetin tadı: "Bir fincan kahvenin kırk yıl hatırı var derler; çünkü o an paylaşılan sözler kalıcıdır"
+
+**Şarkı Bağlantısı:**
+"Kahve gibi acı, şeker gibi tatlı... İşte hayat." → **Bergen – Acı Kahve**
+
+**Kapanış:** "Fincanınızı kaldırın, hayata kadeh gibi dokunduralım..."
+
+---
+
+## TEMA 2: "GEMİCİNİN KIZI, LİMANIN AĞASI"
+**Açılış Müziği:** *Neşet Ertaş – Zahidem*
+
+**Kenan'ın Girişi:**
+"Denizin kokusu geldi mi burnunuza? Liman şehirlerinin o tuhaf havası... Bugün gemicilerden, bekleyişlerden konuşacağız."
+
+**Anlatım:**
+- Liman bekleyişi: Eşini, babasını bekleyen aileler
+- Denizci türküleri: "Her dalgada bir hikâye, her ufukta bir hasret"
+- Martı ağıtları: "Martılar bilir, denizin en derin sırrını"
+
+**Şarkı Geçişi:**
+"Deryalarda gezenler bilir; yolculuk bazen dönmemektir..." → **Nazan Öncel – Martıların Türküsü**
+
+**Anekdot:** "Babam gemici dostundan dinlemişti; 'Denize açıldığında evini özlersin, kıyıya yanaştığında denizi...'"
+
+---
+
+## TEMA 3: "MAHALLE BAKKALI VE VERESIYE DEFTERİ"
+**Açılış Müziği:** *Yıldız Tilbe – Delikanlım*
+
+**Kenan'ın Girişi:**
+"Mahallelerin ruhu vardı, hatırlar mısınız? Bugün o eski mahallelere, Bayram Amca'ların bakkalına gidiyoruz..."
+
+**Anlatım:**
+- Veresiye kültürü: "Güven üzerine kurulu ekonomi"
+- Komşuluk: "Kapıyı çalmadan girmek, sofraya oturmadan doyurmak"
+- Mahalle nişanları: "Kız pencereden bakar, oğlan sokakta türkü tutturur"
+
+**Şarkı Geçişi:**
+"Eski mahalleler, eski dostluklar... Hepsi türkü oldu artık." → **Bülent Ersoy – Gecenin Matemini Ağlar mıyım**
+
+**Kapanış:** "Mahallemiz küçüldü ama yüreğimizde hâlâ geniş..."
+
+---
+
+## TEMA 4: "MEVSIM HAVUZU – ÇOCUKLUK YAZLARI"
+**Açılış Müziği:** *Ajda Pekkan – Yaz Yaz Yaz*
+
+**Kenan'ın Girişi:**
+"Yazın kokusu geldi mi? Karpuz, havuz, mayıs güneşi... Bugün çocukluğumuza dönüyoruz."
+
+**Anlatım:**
+- İlk aşklar: "İlkokul sıralarında geçilen notlar"
+- Mahalle maçları: "Gol atanın evi muhallebi kazanı olurdu"
+- Dondurma kamyoneti: "O müzik çalar çalmaz sokak dolardı"
+
+**Şarkı Geçişi:**
+"Çocukluk ne güzeldi... Kalbimiz kırılmamıştı daha." → **Sezen Aksu – Gidiyorum Bu Şehirden**
+
+**Anekdot:** "Annem derdi ki, 'Her yaz bir yaş büyürsün ama gönlün hep o sokakta kalır.'"
+
+---
+
+## TEMA 5: "TREN YOLCULUKLARI VE PENCEREDEKİ DÜNYA"
+**Açılış Müziği:** *Zülfü Livaneli – Yolcu**
+
+**Kenan'ın Girişi:**
+"Şuu şuu... Tren düdüğü çaldı mı insan içten bir şey hisseder. Bugün yolculuktan, geçip gitmelerden bahsedeceğiz."
+
+**Anlatım:**
+- Yolcu olmak: "Hep bir yere gider gibi yaşamak"
+- Tren istasyonları: "Her veda orada başlar, her buluşma orada biter"
+- Pencereden bakmak: "Dünya geçer, biz aynı vagonda kalırız"
+
+**Şarkı Geçişi:**
+"Hayat bir garip tren... Bilet kesenler çok, inecek durakta inebilenler az." → **Erol Evgin – Sevdan Olmasa**
+
+**Kapanış:** "Trenden inmeyin dostlar, yolculuk daha bitmedi..."
+
+---
+
+## TEMA 6: "YAĞMUR, GÖKKUŞAĞI VE SONRASI"
+**Açılış Müziği:** *Tarkan – Yağmur*
+
+**Kenan'ın Girişi:**
+"Yağmur yağınca dünya sessizleşir, hatırladınız mı? Bugün fırtınadan sonraki güneşten konuşacağız."
+
+**Anlatım:**
+- Temizlenmek: "Yağmur toprağı, gözyaşı insanı temizler"
+- Gökkuşağı metaforu: "Her renkten bir parça taşıyoruz içimizde"
+- Umut: "Fırtına ne kadar şiddetli olursa, gökkuşağı o kadar parlak olur"
+
+**Şarkı Geçişi:**
+"Hayat bazen kara bulut, bazen gökkuşağı... Hangisine bakarsan o olursun." → **Sertab Erener – Aşk**
+
+**Final:** "Yağmur dinsin diye dua etmeyin; gökkuşağı görmek istiyorsanız, ıslanmayı göze alın."
+
+---
+
+## TEMA 7: "EL ELİ YIKAMAK – DAYANIŞMA"
+**Açılış Müziği:** *Barış Manço – Arkadaşım Eşek*
+
+**Kenan'ın Girişi:**
+"Eski dünya dururken, bugün dayanışmadan bahsedeceğiz. İmece usulü yaşayanlardan..."
+
+**Anlatım:**
+- İmece geleneği: "Kimse kimseye muhtaç olmaz ama hepimiz birbirimize mecburuz"
+- Komşuluk yardımı: "Düğün olsa mahalle ortak, yas olsa mahalle ortak"
+- Eller birleşince: "Bir kişi taş taşıyamaz, on kişi ev yapar"
+
+**Şarkı Geçişi:**
+"Eller ele, gönüller gönüle..." → **Grup Yorum – Cemo**
+
+**Kapanış:** "Yalnız güçlü değildir; birlikte güçlü olunur."
+
+---
+
+## TEMA 8: "FINAL – OCAK BAŞI SÖYLEŞİLERİ"
+**Açılış Müziği:** *Neşet Ertaş – Gönül Dağı*
+
+**Kenan'ın Girişi:**
+"Gece yarısına yaklaştık... Ocak başında son türküler, son sözler zamanı."
+
+**Anlatım:**
+- Ateş başı muhabbet: "Ateş, insanı hem ısıtır hem de düşündürür"
+- Hikâye anlatma geleneği: "Dedelerimiz ateşin başında dünya kurardı"
+- Kapanış mesajı: "Hangi mevsimde olursa olsun, yüreğiniz sıcak kalsın"
+
+**Final Şarkısı:** **Ahmet Kaya – Ağladıkça**
+
+**Veda:** 
+"Bu gece yedi tema, yedi hikâye birlikte yaşadık. Yarın yine gelir, yine anlatırız. Çünkü hayat fasıl fasıl... Hoşça kalın gönüller, sağlıcakla..."
+
+---
+
+🎵 **Program DNA'sı:**
+✅ Her tema bağımsız ama birbirine şarkılarla köprü kuruyor  
+✅ Kenan'ın sesi bazen melankolik, bazen neşeli, bazen bilge  
+✅ Türkü, pop, arabesk dengesi korunuyor  
+✅ Her temada bir hayat dersi, bir anekdot var
