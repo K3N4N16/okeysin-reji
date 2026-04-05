@@ -38,8 +38,15 @@ DB_PATH = "vektor_db"
 
 # --- AZURE (EDGE-TTS) SESLENDİRME FONKSİYONU ---
 async def ses_uret(text, filename):
-    # 'tr-TR-EmelNeural' en doğal ve zarif Türkçe kadın sesidir
-    communicate = edge_tts.Communicate(text, "tr-TR-EmelNeural")
+    # Ava Multilingual: Duygusal geçişleri en iyi yansıtan yeni nesil ses
+    # rate="-5%": Çok hafif yavaşlatarak o radyo ağırbaşlılığını veriyoruz
+    # pitch="-2Hz": Sesi çok az kalınlaştırıp daha kadifemsi (radyofonik) yapıyoruz
+    communicate = edge_tts.Communicate(
+        text, 
+        "en-US-AvaMultilingualNeural", 
+        rate="-5%", 
+        pitch="-2Hz"
+    )
     await communicate.save(filename)
 
 def metni_seslendir(text):
