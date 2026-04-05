@@ -1,3 +1,10 @@
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+# --- BURADAN SONRA SENİN IMPORTLARIN BAŞLAR ---
+import os
+import sys
+# ... devamı aynı ...
 import os
 import sys
 import base64
@@ -16,10 +23,19 @@ import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
+import streamlit as st
+from groq import Groq
+import os
 
-# --- KONFİGÜRASYON ---
-GROQ_API_KEY = "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" 
+# --- KONFİGÜRASYON (BULUT UYUMLU) ---
+# Streamlit Secrets üzerinden anahtarı güvenli bir şekilde çeker
+if "GROQ_API_KEY" in st.secrets:
+    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+else:
+    # Eğer bulutta değil de yereldeysen hata almamak için boş bırakır
+    GROQ_API_KEY = "" 
+
 client = Groq(api_key=GROQ_API_KEY)
 MODEL_NAME = "llama-3.3-70b-versatile"
 DATA_PATH = "veriler"
@@ -59,7 +75,7 @@ def verileri_yukle():
         elif file.endswith(".txt"): documents.extend(TextLoader(f_path, encoding="utf-8").load())
     
     splits = RecursiveCharacterTextSplitter(chunk_size=400, chunk_overlap=40).split_documents(documents)
-    return Chroma.from_documents(documents=splits, embedding=OllamaEmbeddings(model="llama3.2:1b"), persist_directory=DB_PATH)
+    return Chroma.from_documents(documents=splits, embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"), persist_directory=DB_PATH)
 
 # --- ARAYÜZ ---
 st.set_page_config(page_title="Okeysin Live - Azure Voice", layout="wide")
