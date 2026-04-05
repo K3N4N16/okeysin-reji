@@ -1,12 +1,7 @@
 __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-# --- BURADAN SONRA SENİN IMPORTLARIN BAŞLAR ---
 import os
-import sys
-# ... devamı aynı ...
-import os
-import sys
 import base64
 import shutil
 import asyncio
