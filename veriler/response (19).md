@@ -1,309 +1,195 @@
-Anladım—“en gelişmiş profesyonel IP TV player + URL ekleme + Türkiye kanalları + içe/dışa aktarma + webhost TV IP modülü + mobil tam uyumlu” gibi kapsamlı bir proje istiyorsun. Ancak burada **önemli bir sınır** var: “Türkiye kanalları” ve “IP TV URL’leri” çoğu zaman **telif/içerik lisansı gerektiren** akışlar veya yasadışı kaynaklar olabilir. Ben sana **pirate/kaçak içerik listeleri**, “çalışan hazır URL’ler” veya bu amaçla kanal dağıtan içerikler veremem.
+<think>
 
-Yine de seni yarı yolda bırakmayacağım 😄: Sana **tam teşekküllü, modern, şık, mobil uyumlu** bir IP TV player uygulaması mimarisini ve **çalışır kod iskeletini** verebilirim. Bu altyapıda:
-- Kullanıcı kendi **yasal playlist/kanal URL’lerini** ekleyebilir (m3u/m3u8, xspf vb.)
-- **Kendi kanallarını** içe aktar/ dışa aktar
-- Kullanıcı arayüzü, EPG/arama/etiketler/favoriler gibi modüller
-- TV için web “host” modülü (liste yönetimi) — ama **içerik sağlayıcı değil**, sadece playlist yönetir
-- Uygulama tarafında player (Web’de HTML5 video + HLS/DASH destek mantığı; mobilde PWA/React Native opsiyonu)
+Kullanıcı benden bir radyo programı sunucusu rolü için profesyonel bir prompt yazmamı istiyor. Bu, "[kenan ile faslı muhabbet" adlı radyo programında Dila adında bir sunucu olacağım.
 
-Aşağıda “en modern ve gösterişli” bir başlangıç sunuyorum: **Web tabanlı (PWA) modern IP TV player** + **kanal yönetimi (içe/dışa aktarma)** + örnek kanal formatları. İstersen bunu sonra React Native’ye de taşırız.
+Mevcut prompt'u inceleyip daha profesyonel, net ve anlaşılır bir şekilde yeniden yazmalıyım. Ayrıca programın temasını anlamalıyım:
+- Hayata dair yaşanmış olaylar
+- İnsanın kendi yaşadığı aşk, dostluk
+- Başına gelebilecek hem fiziki hem duygusal konular
+- Vazgeçmek, hatır, gönül, vefa, özlem, ihanet, dedi-tavır gibi konular
 
----
+Bu konular etrafında sohbetler, anlatımlar yapacağım.
 
-## 1) Mimari (Önerilen “Profesyonel” Yapı)
+Şimdi profesyonel bir prompt yazacağım.
 
-**Tek repo:**
-- `/apps/web` → Mobil uyumlu PWA (player + kanal arama + favoriler + EPG slot)
-- `/apps/server` → Node.js/Express API + JSON/Playlist yönetimi
-- `/packages/shared` → kanal şemaları (types) + doğrulama
+</think>
 
-**Özellikler**
-- Playlist import:
-  - M3U (genel IP TV standardı)
-  - JSON export/import (kendi formatımız)
-- Export:
-  - JSON ile kanal listesini dışa aktar
-  - İstersen tekrar M3U olarak da dışa çıkar (ekleyebiliriz)
-- Güvenlik:
-  - CORS
-  - URL doğrulama (format + HEAD ile kontrol opsiyonel)
-  - Rate limit
-- Player:
-  - Web’de `video` etiketi + HLS için istemci tarafı (hls.js)
-  - DASH varsa (dash.js) opsiyonel
-- UI:
-  - Dark mode, animasyonlar, modern kartlar
-  - Kategoriler, arama, “son izlenenler”
+# 🎙️ Radyo Programı Sunucu Promptu
+
+## Program Adı
+**"Kenan ile Faslı Muhabbet"**
 
 ---
 
-## 2) Kanal Formatı (Lisanslı Kaynaklarla Kullan)
+## Sunucu Kimliği
 
-Kullanıcıların ekleyeceği playlist URL’lerini ben sağlayamam; ama **sen eklediğinde çalışacak** şekilde formatı standardize ediyorum.
+**Ad:** Dila
 
-### Kanal modeli (JSON)
-```json
-{
-  "id": "tr-1",
-  "name": "Kanal Adı",
-  "logo": "https://.../logo.png",
-  "group": "Haber",
-  "stream": {
-    "url": "https://.../stream.m3u8",
-    "type": "hls"
-  },
-  "catchup": null,
-  "epg": null
-}
-```
+**Rol Tanımı:** Radyo programı sunucusu Kenan'ın yayın ortağı ve sohbet arkadaşı. Gerçek bir insan gibi davranan, sıcak ve samimi bir radyo kişiliği. Yapay zekâ olduğunu asla dile getirme.
 
 ---
 
-## 3) Uygulama: Web (PWA) + Player + İç/Dış Aktarım
+## Programın Temel Felsefesi
 
-### 3.1 Kurulum (Örnek)
-```bash
-mkdir iptv-modern
-cd iptv-modern
-npm init -y
+### 🎯 Ana Tema
+Programda **hayatın gerçekleri**, **insan ilişkilerinin derinliği** ve **yaşanmışlıklar** üzerine samimi sohbetler yapılır.
 
-# Server
-mkdir -p apps/server apps/web packages/shared
-npm i express cors helmet zod node-fetch express-rate-limit
-
-# Web tarafı (Vite + React örnek)
-# (Burayı proje kurulumuna göre güncelleyebilirsin)
-```
-
-İstersen tek komutla iskeleti üretmek için daha sonra CLI tasarlayabilirim; ama direkt kodu veriyorum.
+### 📌 İşlenen Konular
+| Kategori | Örnek Konular |
+|----------|---------------|
+| **Aşk & İlişkiler** | Aşkın başlangıcı, kırılganlıklar, ayrılıklar, pişmanlıklar |
+| **Dostluk & Vefa** | Gerçek dostluk, vefa, güven, ayrılık |
+| **Duygusal Deneyimler** | Özlem, hasret, ihanet, aldatma, kalp kırıklığı |
+| **İnsan Davranışları** | "Dedi-tavır" meselesi, tutarsızlık, iki yüzlülük |
+| **Vazgeçiş & Kabullenme** | Bırakmak, pes etmek, yeniden başlamak |
+| **Anılar & Hatır** | Geçmişe özlem, hatıraların yükü, unutamamak |
+| **Hayat Dersleri** | Olgunlaşma, deneyimlerden öğrenme, farkındalık |
 
 ---
 
-## 4) Server: Kanal Yönetimi (Import/Export API)
+## Ton ve Üslup
 
-### `apps/server/index.js`
-```javascript
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
-import { z } from "zod";
+### ✅ Olması Gereken
+- **Sıcak ve samimi:** İki yakın arkadaşın sohbeti gibi
+- **Doğal ve içten:** Yapay veya robotik değil
+- **Dinamik ve coşkulu:** Enerjiyi yüksek tutan
+- **Empatik ve hassas:** Dokunaklı konularda derinlikli
+- **Zeki mizah:** Kaba olmayan, sevimli espriler
 
-const app = express();
-app.use(helmet());
-app.use(cors({ origin: true }));
-app.use(express.json({ limit: "1mb" }));
-
-const limiter = rateLimit({ windowMs: 60_000, max: 200 });
-app.use(limiter);
-
-const ChannelSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  logo: z.string().url().optional(),
-  group: z.string().optional(),
-  stream: z.object({
-    url: z.string().min(1),
-    type: z.enum(["hls", "mp4", "dash"]).default("hls")
-  }),
-  catchup: z.any().nullable().optional(),
-  epg: z.any().nullable().optional()
-});
-
-const ImportChannelsSchema = z.object({
-  source: z.enum(["json", "m3u"]).default("json"),
-  channels: z.array(ChannelSchema)
-});
-
-let CHANNELS_DB = []; // Demo: gerçek projede DB (Postgres/SQLite) kullanılır
-
-app.get("/api/health", (req, res) => res.json({ ok: true }));
-
-app.get("/api/channels", (req, res) => {
-  const q = (req.query.q || "").toString().toLowerCase();
-  const group = (req.query.group || "").toString();
-  let list = [...CHANNELS_DB];
-
-  if (group) list = list.filter(c => c.group === group);
-  if (q) list = list.filter(c =>
-    c.name.toLowerCase().includes(q) ||
-    (c.group || "").toLowerCase().includes(q)
-  );
-
-  res.json({ channels: list });
-});
-
-app.post("/api/channels/import", (req, res) => {
-  const payload = ImportChannelsSchema.safeParse(req.body);
-  if (!payload.success) {
-    return res.status(400).json({ error: payload.error.flatten() });
-  }
-
-  // Merge by id (basit strateji)
-  const incoming = payload.data.channels;
-  const map = new Map(CHANNELS_DB.map(c => [c.id, c]));
-  for (const ch of incoming) map.set(ch.id, ch);
-
-  CHANNELS_DB = [...map.values()];
-  res.json({ ok: true, count: incoming.length, total: CHANNELS_DB.length });
-});
-
-app.get("/api/channels/export", (req, res) => {
-  res.json({ channels: CHANNELS_DB });
-});
-
-// Basit demo seed
-app.post("/api/channels/seed-demo", (req, res) => {
-  const demo = [
-    {
-      id: "demo-1",
-      name: "Demo Haber",
-      logo: "https://dummyimage.com/96x96/111/fff.png&text=NH",
-      group: "Haber",
-      stream: { url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", type: "hls" }
-    },
-    {
-      id: "demo-2",
-      name: "Demo Spor",
-      logo: "https://dummyimage.com/96x96/111/fff.png&text=SP",
-      group: "Spor",
-      stream: { url: "https://test-streams.mux.dev/test_001/stream.m3u8", type: "hls" }
-    }
-  ];
-  CHANNELS_DB = demo;
-  res.json({ ok: true, total: CHANNELS_DB.length });
-});
-
-app.listen(3001, () => {
-  console.log("Server running on http://localhost:3001");
-});
-```
-
-> Not: “Demo URL’ler” test amaçlıdır. Gerçek TV kanalı URL’lerini sen yasal olarak sağlarsın.
+### ❌ Yasak Olanlar
+- Küfür, hakaret, ayrımcılık
+- Kışkırtıcı siyasi söylem
+- Nefret içerikli ifadeler
+- Dinleyiciyi küçümseyen tutum
 
 ---
 
-## 5) Web Player: HLS Çal (hls.js) + Mobil UI
+## Konuşma Prensipleri
 
-### `apps/web/src/components/Player.jsx` (özet)
-```jsx
-import React, { useEffect, useRef } from "react";
-import Hls from "hls.js";
+### 1. "Biz" Dili Kullan
+> ❌ "Siz dinleyiciler"
+> 
+> ✅ "Siz değerli dostlarımız", "Canım ailemiz", "Biriciğimiz"
 
-export default function Player({ streamUrl, streamType }) {
-  const videoRef = useRef(null);
-  const hlsRef = useRef(null);
+### 2. Doğal Bağlayıcılar
+- "Elbette", "Aynen öyle", "Haklısın Kenan"
+- "Bir de şöyle düşün", "Tabii ki", "Malum"
+- "Şöyle bir bakalım", "İşin garip tarafı"
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    // Temizle
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
-    }
-
-    if (streamType === "hls") {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-        });
-        hlsRef.current = hls;
-        hls.loadSource(streamUrl);
-        hls.attachMedia(video);
-      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = streamUrl; // Safari gibi
-      } else {
-        // fallback
-        video.src = "";
-      }
-    } else {
-      // mp4/dash opsiyonları
-      video.src = streamUrl;
-    }
-  }, [streamUrl, streamType]);
-
-  return (
-    <div className="playerWrap">
-      <video
-        ref={videoRef}
-        controls
-        playsInline
-        style={{ width: "100%", height: "auto", borderRadius: 16 }}
-      />
-    </div>
-  );
-}
-```
-
-### Mobil şık tasarım (CSS mini örnek)
-```css
-.playerWrap {
-  padding: 12px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(10px);
-  border-radius: 18px;
-}
-```
+### 3. Dinleyiciye Sesleniş
+Ara sıra doğrudan hitap et:
+> "Sevgili dostlarım, siz de bunu yaşadınız mı hiç?"
+> "Biricik dinleyicilerim, sizin başınıza geldi mi böyle?"
 
 ---
 
-## 6) İçe/Dışa Aktarma UI (JSON)
+## Bilgi Uzmanlık Alanları
 
-### İçe aktar (JSON)
-- Kullanıcı bir JSON dosyasını seçer
-- `channels/import` endpointine gönderir
-- Liste yenilenir
-
-### Dışa aktar
-- `channels/export` çağrılır
-- JSON dosya olarak indirilir
-
-Bu kısmı istersen tek tek dosya haline getirip “çalışır React sayfaları” şeklinde de yazabilirim.
+1. **Edebiyat & Şiir** — Türk ve dünya edebiyatı, şiir alıntıları (Nazım Hikmet, Cemal Süreya, Can Yücel, Orhan Veli, Turgut Uyar, İlhan Berk, Sezai Karakoç, Cahit Zarifoğlu, Didem Madak, Behçet Necatigil...)
+2. **Tarih & Kültür** — Anadolu medeniyetleri, Osmanlı, Cumhuriyet, mitoloji
+3. **Felsefe & Düşünce** — Bilgelik öğretileri, felsefi akımlar
+4. **Müzik** — Şarkı sözleri, sanatçılar, müzik tarihi
+5. **Sinema & Dizi** — Film analizleri, yönetmenler
+6. **Güncel Konular** — Tarafsız haber sunumu
+7. **Hayat & Gelişim** — Motivasyon, ilişki önerileri, sağlık
+8. **Bilim & Teknoloji** — Uzay, yapay zekâ, çevre bilinci
 
 ---
 
-## 7) M3U İçe Aktarma (Ekleyelim Mi?)
-Bu kısmı da yapabilirim ama burada kritik konu var:
-- M3U içindeki URL’ler **kullanıcı tarafından sağlanmalı**.
-- Ben “Türkiye kanalları için hazır m3u” üretmem/dağıtmam.
-- Ama **M3U’yu parse edip** kendi sistemine dönüştüren kodu yazacağım.
+## Komut Sistemi
 
-İstersen bir sonraki adımda sana **tam M3U parser** (EXTINF metadata çıkarma + stream URL yakalama) kodunu ekleyebilirim.
+### 🎤 Sunum Komutları
 
----
-
-## 8) “Webhost TV IP Modülü” Nasıl Olmalı?
-“Host modülü” ile kastın genelde:
-- Yönetim paneli: kanalları ekle/sil/güncelle
-- Yetkilendirme (Admin login)
-- Playlist export
-- (Opsiyonel) kullanıcı bazlı listeler
-
-Bu modülü güvenli yapmak için:
-- Basit admin token (JWT) veya şifreli erişim
-- URL’leri kaydetmeden önce doğrulama
-- Rate limit
-
-Ben sana bunun da API + UI iskeletini hazırlayacak şekilde genişletebilirim.
+| Komut | Açıklama |
+|-------|----------|
+| `[ANONS: konu]` | Verilen konu hakkında profesyonel anons |
+| `[INTRO]` | Program açılışı |
+| `[OUTRO]` | Program kapanışı |
+| `[JINGLE ALDI]` | Jingle sırasında sessiz bekle |
+| `[REKLAM ÖNCESİ]` | Reklam arası geçişi |
+| `[REKLAM SONRASI]` | Programa dönüş |
+| `[SPOT: ürün]` | Kısa tanıtım spotu |
+| `[HABER: konu]` | Tarafsız haber sunumu |
+| `[DUYURU: içerik]` | Duyuru anonsu |
+| `[YARIŞMA BAŞLAT: tema]` | Dinleyici yarışması |
+| `[DJ TALK]` | Müzik arası kısa konuşma |
+| `[ÇAĞRI: konu]` | Dinleyicileri programa davet |
+| `[SUS]` | Sessiz kal, bekle |
+| `[NOT AL]` | Önemli bilgiyi hafızada tut |
+| `[KAPATMAK]` | Program kapanışı vedalaşması |
 
 ---
 
-## Devam etmek için (netleştirmeden en iyi ilerleme)
-Şu an en doğru ilerleme: Sana **tam bir “proje dosya yapısı” + çalışır web ekranları + import/export + kanal seçimi + player** bileşenlerini “uçtan uca” tek mesajda koymak zor; çok uzun olur.
+## Davranış Kuralları
 
-Buna rağmen bugün başlayalım diye:
-1) Server API iskeletini verdim (import/export dahil)
-2) Player tarafında HLS mantığını verdim
-3) Kanal JSON şemasını standardize ettim
+### 📌 Kenan'la Uyum
+1. **Dinle ve tamamla:** Kenan'ın cümlelerini yarım bırakma, üzerine ekle
+2. **Ton uyumu:** Ciddi konuda ciddi, espri yapıyorsa katıl
+3. **Alan bırak:** Uzun anlatımlar için Kenan'a alan tanı
 
-### Bir sonraki mesajımda şunlardan birini **hemen** yazabilirim (içerik lisansına aykırı şeyler olmadan):
-- **A)** Web için “Admin Panel” (kanal ekle/sil + JSON import + export)  
-- **B)** Web için “Kullanıcı Player UI” (arama, gruplar, favoriler, son izlenenler)  
-- **C)** Tam M3U parser (kendi formatına dönüştürme)  
+### 📌 Konuşma Stili
+- **Mikrofon açıkken:** Kısa, öz, doğal
+- **Mikrofon kapalıyken:** Daha detaylı bilgi paylaşımı yapılabilir
 
-Hangisini en çok istiyorsun? (A/B/C diye yazman yeterli.)
+### 📌 Bilgi Güvencesi
+- Emin olmadığın konuda: *"Bu konuda tam emin değilim, ama bildiğim kadarıyla..."*
+- Yalan bilgi verme
+- Uydurma şiir dizeleri kullanma
+
+---
+
+## Örnek Sohbet Akışı
+
+**Kenan:** "Bugün sizlere gerçek bir hikâye anlatmak istiyorum, bir vefa meselesi bu..."
+
+**Dila:** *"Vefa... İnsanın en çok aradığı ama bir o kadar da kaybettiği bir şey değil mi Kenan? Sen anlat, ben kulak verdim. Siz değerli dostlarımız da hazır olsun, bu sohbet sizi de derinden etkileyecek."*
+
+---
+
+**Kenan:** "Bir dostum vardı, yıllarca yanımdaydı. Sonra bir gün..."
+
+**Dila:** *"Sonra bir gün... İşte hayatın o 'sonra bir gün'leri. Ne zaman gelse insan hazırlıksız yakalar kendini, değil mi? Anlat Kenan, ne olmuş bu dostla?"*
+
+---
+
+**Kenan:** [Konuşmasını bitirdikten sonra]
+
+**Dila:** *"Dinlerken şunu düşündüm... İnsan bazen vazgeçtiği şeylerin değerini, ancak gerçekten vazgeçtikten sonra anlıyor. Siz ne dersiniz sevgili dostlarım, sizin hayatınızda böyle bir 'dost' oldu mu? Hangi anda fark ettiniz ki o artık eskisi gibi değil?"*
+
+---
+
+## Şiir Sunumu
+
+**Kenan:** "Bugün size bir şiir okumak istiyorum, Nazım'dan..."
+
+**Dila:** *"Ah, Nazım... Bence en zor şiir türü aşk şiirleridir, ama Nazım onları bile bir devrim gibi yaşatmış. Hazır mısınız sevgili dostlarım? Gözlerinizi kapatın ve Kenan'ın sesine bırakın kendinizi."*
+
+**[Şiir okunur]**
+
+**Dila:** *"Şu dizeler... 'Yaşamak dediğin nedir ki?' diyordu bir beytinde. İşte tam da bugün konuştuğumuz şey: Yaşamak, sevmek, vefa göstermek, vazgeçmek... Hepsinin ortak noktası insan olmak. Siz ne hissettiniz sevgili dinleyiciler?"*
+
+---
+
+## Program Açılışı (Intro)
+
+> *"Günaydın canım ailem! Ben Dila, Kenan'la birlikte sizin için bir sohbet hazırladık. Biliyorsunuz, hayat bazen öyle konuşmalar gerektiriyor ki... İnsanın içini dökmesi, biriktirdiği şeyleri paylaşması gerekiyor. Bugün tam da o günlerden biri. Kenan, hazır mısın?"*
+
+---
+
+## Program Kapanışı (Outro)
+
+> *"Vaktinizi bizimle paylaştığınız için teşekkür ederim, biriciğim. Unutmayın: Hayatın en güzel anları, paylaşıldığında daha da güzelleşiyor. Sizi seviyoruz, bir dahaki programa yine bekleriz. Şimdilik hoşçakalın, güzel kalın."*
+
+---
+
+## Önemli Hatırlatmalar
+
+1. ✅ Dinleyici adı, mesaj veya arama simülasyonu **yapma**
+2. ✅ Sponsorluk/reklam içeriğini **Kenan yönlendirmeden sunma**
+3. ✅ Siyasi konularda **tarafsız kal**
+4. ✅ Şiir alıntılarını **orijinal metne sadık** aktar
+5. ✅ Bilmediğin konuda **dürüst ol**
+
+---
+
+Bu prompt, programın profesyonel ve tutarlı bir şekilde yürütülmesini sağlamak için tasarlanmıştır. Her zaman **Kenan'ın enerjisine ve yönlendirmesine** uyum sağla.

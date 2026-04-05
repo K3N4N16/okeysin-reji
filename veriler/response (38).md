@@ -1,1322 +1,1374 @@
 <think>
-Kullanıcı sadece bir player widget istiyor:
+Kullanıcı radyo widget'ını daha da geliştirmemi, daha modern, "git git tarzında" (muhtemelen "gitgide" veya "Git tarzı/modern UI" kastediyor, genel olarak çok daha modern, ileri seviye, şık bir UI istiyor) ve player'ı daha gelişmiş, görsel açıdan zengin bir şekilde tasarlamamı istiyor.
 
-1. Sadece player widget - mobil uyumlu
-2. Stream URL: https://radyocast.com/8028/Stream
-3. API URL: https://radyocast.com/cp/get_info.php?p=8028
-4. Şarkı isteği gönderme formu
-5. İstek mesajları kayan yazı alanı (marquee)
-6. Temiz, minimal kod
+Yeni hedefler:
+1.  **Aşırı Modern UI/UX:** Neomorfizm, Glassmorphism, Brutalizm veya çok şık bir Dark Mode UI (Apple Music / Spotify karışımı fütüristik bir konsept).
+2.  **Görsel Odaklı Player:** Büyük, dönen bir plak (vinyl) veya 3D görünümlü bir albüm kapağı, etrafında ses dalgaları.
+3.  **Daha Gelişmiş Animasyonlar:** Ses dalgalarının müziğe (simüle edilmiş) daha akıcı tepki vermesi. Plak dönüşü.
+4.  **Tuner Knob (Radyo Kadranı):** Eski usul radyo frekans arama hissini modern bir tekerlek (knob/dial) ile birleştirmek.
+5.  **Genişletilebilir İçerik:** Şarkı sözleri (lyrics) ekranı.
+6.  **Renk Paleti:** Daha neon, cyberpunk veya ultra-premium hissettiren derin siyahlar, altın/mor neon geçişler.
+7.  **Responsive:** Iframe içinde kusursuz çalışacak şekilde esnek.
 
-Sadeleştirilmiş bir player widget yapalım:
+Yapısal Değişiklikler:
+-   Üstte şık bir header.
+-   Ortada büyük bir plak/CD animasyonu (içinde istasyon logosu/emojisi). Etrafında dönen circular visualizer veya neon glow.
+-   Hemen altında frekans seçici (yatay kaydırılabilir frekans cetveli veya çevrilebilir bir düğme).
+-   Alt kısımda modern playback kontrolleri.
+-   Daha aşağıda veya yan panellerde (sekmeler) İstayonlar, Ekolayzer, Şarkı Sözleri.
 
-- Mini player widget (compact)
-- Müzik kontrolü (play/pause, volume)
+Görsel Öğeler (Sadece HTML/CSS/JS ile):
+-   Dönen plak efekti için CSS `border-radius: 50%`, `conic-gradient` ve `box-shadow`.
+-   Frekans çubuğu için yatay scroll edilebilen bir cetvel (canvas veya div'ler ile).
+-   Circular (Dairesel) Audio Visualizer (Canvas kullanarak plağın etrafında çizen bir yapı).
+-   Daha akıcı geçişler ve mikro etkileşimler (hover efektleri, dalgalanmalar).
 
+Adım Adım Tasarım:
+1.  **Renkler & Tema:** Koyu uzay grisi (#0f0f13), neon vurgular (cyan #00f3ff, magenta #ff00ea).
+2.  **Düzen (Layout):**
+    -   Header: Kapsül şeklinde, canlı göstergesi, ayarlar.
+    -   Hero: Büyük dairesel plak. Üzerinde oynatma/duraklatma durumuna göre iğne (stylus) animasyonu eklenebilir.
+    -   Tuner: Yatay kaydırmalı frekans bandı. Kullanıcı sürükledikçe frekans değişir.
+    -   Info: Şarkı adı, Sanatçı (kayan yazı marquee efekti).
+    -   Controls: Play/Pause, Prev/Next, Ses seviyesi (kavisli veya şık bir slider).
+    -   Dock/Tabs: Alt barda icon tabanlı menü (İstasyonlar, Ekolayzer, Sözler).
+3.  **Canvas Animasyonları:**
+    -   Dairesel ses spektrumu (plağın arkasında veya etrafında).
+    -   Arka planda süzülen neon dalgalar (Sine waves).
+4.  **JS Mantığı:**
+    -   Frekans kaydırıcısını (horizontal scroll) dinleyip, en yakın istasyona "snap" (yapışma) özelliği.
+    -   Rastgele şarkı sözleri üreten/gösteren bir sistem.
 
-- Başlık ve istek formu ile birlikte istek mesajlarının kayan metin olarak gösterimi
+Kodlamaya geçelim:
+-   `conic-gradient` ile plak dokusu oluşturma.
+-   Canvas ile dairesel spektrum.
+-   Modern sliderlar.
+-   Glassmorphism efektleri.
 
-Tek dosya halinde tüm widget'ı yazacağım.
+*Self-Correction during thought process:*
+"Git git tarzı" muhtemelen yazım hatası, "gitgide daha modern" veya "widget tarzında" demek istemiş olabilir. Ben en üst düzey modern, Dribbble'da görebileceğimiz tarzda fütüristik bir müzik çalar/radyo arayüzü yapacağım.
+
+Plan:
+- `body`: Derin siyah arka plan.
+- `#app`: Ana kapsayıcı. Cam efekti.
+- `Circular Player`: Merkezde.
+- `Frequency Band`: `overflow-x: auto`, tick işaretleri olan bir cetvel.
+- `Lyrics Panel`: Şık bir overlay.
+- Emojilerle görsellik.
+
+Şimdi bu devasa ve harika kodu yazalım.
 </think>```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📻 Radio Player Widget</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #050510;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      overflow: hidden;
-    }
-
-    /* ── ANİMASYONLU ARKA PLAN ── */
-    .bg-anim {
-      position: fixed; inset: 0; z-index: 0;
-      overflow: hidden; pointer-events: none;
-    }
-
-    .bg-anim .blob {
-      position: absolute; border-radius: 50%;
-      filter: blur(100px); opacity: 0.2;
-      animation: blobMove 20s ease-in-out infinite alternate;
-    }
-
-    .bg-anim .blob:nth-child(1) {
-      width: 500px; height: 500px;
-      background: #00e0ff;
-      top: -20%; left: -15%;
-    }
-    .bg-anim .blob:nth-child(2) {
-      width: 400px; height: 400px;
-      background: #c760ff;
-      bottom: -20%; right: -15%;
-      animation-delay: -7s;
-    }
-    .bg-anim .blob:nth-child(3) {
-      width: 300px; height: 300px;
-      background: #ff6b9d;
-      top: 50%; left: 60%;
-      animation-delay: -14s;
-    }
-
-    @keyframes blobMove {
-      0%   { transform: translate(0,0) scale(1); }
-      50%  { transform: translate(60px,-40px) scale(1.2); }
-      100% { transform: translate(-30px,50px) scale(0.9); }
-    }
-
-    /* ── WIDGET CONTAINER ── */
-    .widget {
-      position: relative; z-index: 1;
-      width: 100%; max-width: 460px;
-      background: rgba(10, 10, 40, 0.85);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 24px;
-      overflow: hidden;
-      backdrop-filter: blur(30px);
-      box-shadow:
-        0 30px 80px rgba(0,0,0,0.6),
-        0 0 60px rgba(0,224,255,0.08);
-    }
-
-    /* ── LIVE BAR ── */
-    .live-bar {
-      display: flex; align-items: center; justify-content: center;
-      gap: 8px; padding: 8px 0;
-      background: linear-gradient(90deg, rgba(0,224,255,0.1), rgba(199,96,255,0.1));
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      font-size: 0.65rem; letter-spacing: 3px; font-weight: 700;
-      color: #00e0ff; text-transform: uppercase;
-    }
-
-    .live-bar .dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: #00ff88;
-      animation: blink 1.2s infinite;
-      box-shadow: 0 0 8px #00ff88;
-    }
-
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
-
-    .live-bar span.listeners {
-      color: rgba(255,255,255,0.4);
-      font-weight: 400; letter-spacing: 1px;
-    }
-
-    /* ── SCROLLING TEXT (KAYAN YAZI) ── */
-    .scroll-strip {
-      position: relative;
-      width: 100%; height: 36px;
-      overflow: hidden;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-    }
-
-    .scroll-track {
-      display: flex;
-      width: max-content;
-      animation: marquee var(--speed, 20s) linear infinite;
-      height: 100%;
-      align-items: center;
-    }
-
-    .scroll-track:hover { animation-play-state: paused; }
-
-    .scroll-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 0 24px;
-      white-space: nowrap;
-      font-size: 0.78rem;
-      color: rgba(255,255,255,0.5);
-    }
-
-    .scroll-item .si-icon {
-      color: #00e0ff;
-      font-size: 0.7rem;
-    }
-
-    .scroll-item .si-name {
-      color: #ff6b9d;
-      font-weight: 600;
-    }
-
-    .scroll-item .si-song {
-      color: rgba(255,255,255,0.7);
-    }
-
-    .scroll-sep {
-      padding: 0 6px;
-      color: rgba(255,255,255,0.15);
-    }
-
-    @keyframes marquee {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-
-    /* ── COVER ART ── */
-    .cover-section {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16/10;
-      overflow: hidden;
-    }
-
-    .cover-bg {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      filter: brightness(0.5) blur(1px);
-      transform: scale(1.05);
-    }
-
-    .cover-overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(180deg,
-        rgba(5,5,16,0.3) 0%,
-        rgba(5,5,16,0.85) 100%
-      );
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    .cover-art {
-      width: 140px; height: 140px;
-      border-radius: 20px;
-      object-fit: cover;
-      box-shadow: 0 15px 50px rgba(0,0,0,0.7);
-      transition: transform 0.5s;
-    }
-
-    .cover-section:hover .cover-art {
-      transform: scale(1.08);
-    }
-
-    .cover-glow {
-      position: absolute;
-      width: 140px; height: 140px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, #00e0ff, #c760ff);
-      opacity: 0.3; filter: blur(30px);
-      pointer-events: none;
-    }
-
-    /* Bars */
-    .cover-bars {
-      position: absolute; bottom: 12px; left: 50%;
-      transform: translateX(-50%);
-      display: flex; gap: 3px; align-items: flex-end; height: 20px;
-    }
-
-    .cover-bars span {
-      width: 3px; background: #00e0ff;
-      border-radius: 2px;
-      animation: barAnim 0.7s ease-in-out infinite;
-    }
-
-    .cover-bars span:nth-child(1) { height: 6px;  animation-delay: 0s; }
-    .cover-bars span:nth-child(2) { height: 16px; animation-delay: 0.12s; }
-    .cover-bars span:nth-child(3) { height: 10px; animation-delay: 0.24s; }
-    .cover-bars span:nth-child(4) { height: 18px; animation-delay: 0.36s; }
-    .cover-bars span:nth-child(5) { height: 8px;  animation-delay: 0.48s; }
-
-    .cover-bars.paused span { animation-play-state: paused; height: 4px; }
-
-    @keyframes barAnim {
-      0%,100% { transform: scaleY(0.3); }
-      50%     { transform: scaleY(1); }
-    }
-
-    /* Quality badge */
-    .q-badge {
-      position: absolute; top: 12px; right: 12px;
-      padding: 3px 10px;
-      background: rgba(0,0,0,0.6);
-      border: 1px solid rgba(0,224,255,0.3);
-      border-radius: 10px;
-      font-size: 0.58rem; font-weight: 700;
-      letter-spacing: 1px; color: #00e0ff;
-    }
-
-    /* ── TRACK INFO ── */
-    .track-info {
-      padding: 18px 22px 6px;
-      text-align: center;
-    }
-
-    .track-label {
-      font-size: 0.62rem;
-      color: #00e0ff; letter-spacing: 4px;
-      text-transform: uppercase;
-      font-weight: 600; margin-bottom: 6px;
-    }
-
-    .track-title {
-      font-size: 1.15rem;
-      font-weight: 700; color: #fff;
-      line-height: 1.35;
-      max-height: 2.7em;
-      overflow: hidden;
-    }
-
-    .track-artist {
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.45);
-      margin-top: 4px;
-    }
-
-    /* ── PROGRESS ── */
-    .progress-area {
-      padding: 14px 22px 0;
-    }
-
-    .prog-track {
-      width: 100%; height: 4px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 2px;
-      cursor: pointer; position: relative;
-      overflow: visible;
-    }
-
-    .prog-fill {
-      height: 100%; border-radius: 2px;
-      background: linear-gradient(90deg, #00e0ff, #c760ff);
-      width: 0%; transition: width 0.4s;
-      position: relative;
-    }
-
-    .prog-thumb {
-      position: absolute; right: -5px; top: 50%;
-      transform: translateY(-50%) scale(0);
-      width: 10px; height: 10px; border-radius: 50%;
-      background: #00e0ff;
-      box-shadow: 0 0 10px rgba(0,224,255,0.5);
-      transition: transform 0.2s;
-    }
-
-    .prog-track:hover .prog-thumb { transform: translateY(-50%) scale(1); }
-
-    .prog-times {
-      display: flex; justify-content: space-between;
-      margin-top: 6px;
-      font-size: 0.65rem; color: rgba(255,255,255,0.3);
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* ── CONTROLS ── */
-    .controls {
-      display: flex; align-items: center; justify-content: center;
-      gap: 16px; padding: 16px 22px;
-    }
-
-    .c-btn {
-      width: 42px; height: 42px; border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.03);
-      color: rgba(255,255,255,0.5);
-      font-size: 0.85rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.25s;
-    }
-
-    .c-btn:hover {
-      border-color: rgba(0,224,255,0.3);
-      color: #00e0ff;
-      background: rgba(0,224,255,0.06);
-      transform: scale(1.1);
-    }
-
-    .c-btn.active {
-      color: #00e0ff;
-      border-color: rgba(0,224,255,0.4);
-      background: rgba(0,224,255,0.1);
-    }
-
-    .c-btn.like-active {
-      color: #ff6b9d;
-      border-color: rgba(255,107,157,0.4);
-    }
-
-    .c-btn-play {
-      width: 60px; height: 60px; border-radius: 50%;
-      border: none;
-      background: linear-gradient(135deg, #00e0ff, #7b5fff);
-      color: #fff; font-size: 1.4rem;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 30px rgba(0,224,255,0.3);
-      transition: all 0.25s;
-    }
-
-    .c-btn-play:hover {
-      transform: scale(1.1);
-      box-shadow: 0 0 50px rgba(0,224,255,0.4);
-    }
-
-    .c-btn-play.playing {
-      animation: playGlow 2.5s ease-in-out infinite;
-    }
-
-    @keyframes playGlow {
-      0%,100% { box-shadow: 0 0 25px rgba(0,224,255,0.25); }
-      50%     { box-shadow: 0 0 55px rgba(0,224,255,0.45), 0 0 90px rgba(123,95,255,0.15); }
-    }
-
-    /* ── VOLUME ROW ── */
-    .vol-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 0 22px 10px;
-    }
-
-    .vol-icon {
-      color: rgba(255,255,255,0.35);
-      font-size: 0.85rem; cursor: pointer;
-      transition: color 0.2s;
-      min-width: 18px; text-align: center;
-    }
-
-    .vol-icon:hover { color: #00e0ff; }
-
-    .vol-slider {
-      flex: 1; -webkit-appearance: none; appearance: none;
-      height: 3px; background: rgba(255,255,255,0.08);
-      border-radius: 2px; outline: none;
-      cursor: pointer;
-    }
-
-    .vol-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 13px; height: 13px; border-radius: 50%;
-      background: #00e0ff;
-      cursor: pointer;
-      box-shadow: 0 0 8px rgba(0,224,255,0.4);
-    }
-
-    .vol-pct {
-      font-size: 0.65rem; font-weight: 600;
-      color: rgba(255,255,255,0.3);
-      min-width: 32px; text-align: right;
-    }
-
-    /* ── TABS ── */
-    .tabs {
-      display: flex;
-      border-top: 1px solid rgba(255,255,255,0.04);
-    }
-
-    .tab {
-      flex: 1; padding: 12px 0;
-      background: transparent; border: none;
-      color: rgba(255,255,255,0.3);
-      font-size: 0.72rem; font-weight: 600;
-      cursor: pointer; transition: all 0.25s;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      border-bottom: 2px solid transparent;
-    }
-
-    .tab:hover { color: rgba(255,255,255,0.5); }
-
-    .tab.active {
-      color: #00e0ff;
-      border-bottom-color: #00e0ff;
-      background: rgba(0,224,255,0.04);
-    }
-
-    .tab i { font-size: 0.8rem; }
-
-    /* ── TAB PANELS ── */
-    .tab-panels {
-      min-height: 0;
-      overflow: hidden;
-      transition: max-height 0.4s ease;
-    }
-
-    .tab-panel {
-      display: none; padding: 16px 22px;
-    }
-
-    .tab-panel.active { display: block; }
-
-    /* ── HISTORY LIST ── */
-    .hist-list {
-      display: flex; flex-direction: column; gap: 6px;
-      max-height: 220px; overflow-y: auto;
-    }
-
-    .hist-list::-webkit-scrollbar { width: 3px; }
-    .hist-list::-webkit-scrollbar-thumb { background: rgba(0,224,255,0.3); border-radius: 2px; }
-
-    .hist-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid transparent;
-      transition: all 0.2s;
-    }
-
-    .hist-item:hover {
-      background: rgba(0,224,255,0.04);
-      border-color: rgba(0,224,255,0.08);
-    }
-
-    .hist-item.now {
-      background: rgba(0,224,255,0.06);
-      border-color: rgba(0,224,255,0.12);
-    }
-
-    .hist-num {
-      font-size: 0.65rem; font-weight: 700;
-      color: rgba(255,255,255,0.2);
-      min-width: 18px; text-align: center;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .hist-item.now .hist-num { color: #00e0ff; }
-
-    .hist-art {
-      width: 32px; height: 32px; border-radius: 6px;
-      background: linear-gradient(135deg, rgba(0,224,255,0.15), rgba(199,96,255,0.15));
-      display: flex; align-items: center; justify-content: center;
-      color: rgba(0,224,255,0.6); font-size: 0.65rem; flex-shrink: 0;
-      overflow: hidden;
-    }
-
-    .hist-art img { width: 100%; height: 100%; object-fit: cover; }
-
-    .hist-info { flex: 1; min-width: 0; }
-
-    .hist-title {
-      font-size: 0.78rem; color: rgba(255,255,255,0.75);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    .hist-item.now .hist-title { color: #fff; font-weight: 600; }
-
-    .hist-time {
-      font-size: 0.62rem; color: rgba(255,255,255,0.25);
-      min-width: 40px; text-align: right;
-    }
-
-    /* ── REQUEST FORM ── */
-    .req-form {
-      display: flex; flex-direction: column; gap: 10px;
-    }
-
-    .req-row {
-      display: flex; gap: 8px;
-    }
-
-    .req-input {
-      flex: 1; padding: 11px 14px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
-      color: #fff; font-family: 'Inter', sans-serif;
-      font-size: 0.82rem; outline: none;
-      transition: border-color 0.25s;
-    }
-
-    .req-input::placeholder { color: rgba(255,255,255,0.2); }
-    .req-input:focus { border-color: rgba(0,224,255,0.4); }
-
-    .req-submit {
-      width: 100%; padding: 12px;
-      background: linear-gradient(135deg, #00e0ff, #7b5fff);
-      border: none; border-radius: 10px;
-      color: #fff; font-family: 'Inter', sans-serif;
-      font-size: 0.82rem; font-weight: 700;
-      cursor: pointer; letter-spacing: 1px;
-      text-transform: uppercase;
-      transition: all 0.25s;
-    }
-
-    .req-submit:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0,224,255,0.2);
-    }
-
-    .req-submit:active { transform: translateY(0); }
-
-    .req-msg-list {
-      display: flex; flex-direction: column; gap: 8px;
-      margin-top: 10px; max-height: 160px; overflow-y: auto;
-    }
-
-    .req-msg-list::-webkit-scrollbar { width: 3px; }
-    .req-msg-list::-webkit-scrollbar-thumb { background: rgba(0,224,255,0.2); border-radius: 2px; }
-
-    .req-msg-item {
-      padding: 10px 12px;
-      background: rgba(0,224,255,0.04);
-      border: 1px solid rgba(0,224,255,0.08);
-      border-radius: 10px;
-      animation: fadeInUp 0.3s ease;
-    }
-
-    .req-msg-item .rm-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 4px;
-    }
-
-    .req-msg-item .rm-name {
-      font-size: 0.7rem; font-weight: 700; color: #00e0ff;
-    }
-
-    .req-msg-item .rm-time {
-      font-size: 0.58rem; color: rgba(255,255,255,0.2);
-    }
-
-    .req-msg-item .rm-song {
-      font-size: 0.78rem; color: rgba(255,255,255,0.7);
-      font-weight: 500;
-    }
-
-    .req-msg-item .rm-note {
-      font-size: 0.7rem; color: rgba(255,255,255,0.35);
-      margin-top: 2px; font-style: italic;
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── VISUALIZER ── */
-    .vis-canvas {
-      width: 100%; height: 60px;
-      display: block;
-    }
-
-    /* ── EQUALIZER ── */
-    .eq-row {
-      display: flex; justify-content: space-between;
-      padding: 12px 22px 16px;
-      border-top: 1px solid rgba(255,255,255,0.03);
-    }
-
-    .eq-bar {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; gap: 4px;
-    }
-
-    .eq-slider {
-      -webkit-appearance: none; appearance: none;
-      width: 3px; height: 50px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 2px; outline: none;
-      writing-mode: vertical-lr; direction: rtl; cursor: pointer;
-    }
-
-    .eq-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 10px; height: 10px; border-radius: 50%;
-      background: #00e0ff; cursor: pointer;
-    }
-
-    .eq-lbl {
-      font-size: 0.52rem; color: rgba(255,255,255,0.2);
-      font-weight: 500;
-    }
-
-    /* ── TOAST ── */
-    .toast {
-      position: fixed; bottom: 30px; left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      padding: 10px 22px;
-      background: rgba(0,224,255,0.12);
-      border: 1px solid rgba(0,224,255,0.25);
-      backdrop-filter: blur(20px);
-      border-radius: 25px;
-      font-size: 0.8rem; color: #00e0ff;
-      z-index: 999;
-      opacity: 0; pointer-events: none;
-      transition: all 0.35s ease;
-      white-space: nowrap;
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 480px) {
-      body { padding: 10px; }
-      .widget { border-radius: 18px; }
-      .cover-art { width: 110px; height: 110px; }
-      .track-title { font-size: 1rem; }
-      .controls { gap: 12px; padding: 14px 16px; }
-      .c-btn { width: 38px; height: 38px; font-size: 0.8rem; }
-      .c-btn-play { width: 52px; height: 52px; font-size: 1.2rem; }
-      .track-info { padding: 14px 16px 4px; }
-      .vol-row { padding: 0 16px 10px; }
-      .req-form { padding: 0; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra Modern Radyo & Müzik İstasyonu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #050507;
+            --surface-1: rgba(20, 20, 25, 0.6);
+            --surface-2: rgba(35, 35, 45, 0.4);
+            --neon-cyan: #00f3ff;
+            --neon-magenta: #ff00ea;
+            --neon-purple: #b026ff;
+            --text-primary: #ffffff;
+            --text-secondary: #8b8b9f;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glow-cyan: 0 0 20px rgba(0, 243, 255, 0.4);
+            --glow-magenta: 0 0 20px rgba(255, 0, 234, 0.4);
+            --radius-xl: 32px;
+            --radius-lg: 24px;
+            --radius-md: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2vmin;
+            overflow: hidden;
+        }
+
+        /* Ambient Background */
+        .ambient-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            opacity: 0.6;
+            filter: blur(40px);
+        }
+
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* App Container */
+        .app-container {
+            width: 100%;
+            max-width: 420px;
+            height: 90vh;
+            max-height: 850px;
+            background: var(--surface-1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 
+                0 30px 80px rgba(0,0,0,0.8),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            padding: 24px 24px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Syncopate', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-pill {
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--neon-cyan);
+            box-shadow: var(--glow-cyan);
+            transition: all 0.3s ease;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 243, 255, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(0, 243, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 243, 255, 0); }
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface-2);
+            transition: 0.3s;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255,255,255,0.1);
+            transform: rotate(90deg);
+        }
+
+        /* Circular Player Hero */
+        .hero-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 20px 0;
+            min-height: 320px;
+        }
+
+        .vinyl-container {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .circular-visualizer {
+            position: absolute;
+            inset: -40px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .vinyl-record {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #111;
+            background-image: 
+                repeating-radial-gradient(
+                    #111 0, 
+                    #111 2px, 
+                    #1a1a1a 3px, 
+                    #1a1a1a 4px
+                ),
+                conic-gradient(
+                    rgba(255,255,255,0.1) 0deg,
+                    transparent 45deg,
+                    rgba(255,255,255,0.1) 90deg,
+                    transparent 135deg,
+                    rgba(255,255,255,0.1) 180deg,
+                    transparent 225deg,
+                    rgba(255,255,255,0.1) 270deg,
+                    transparent 315deg,
+                    rgba(255,255,255,0.1) 360deg
+                );
+            box-shadow: 
+                0 0 30px rgba(0,0,0,0.8),
+                inset 0 0 20px rgba(0,0,0,1),
+                0 0 0 2px rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+            transition: transform 0.1s linear;
+            animation: spin 10s linear infinite;
+            animation-play-state: paused;
+        }
+
+        .playing .vinyl-record {
+            animation-play-state: running;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .vinyl-label {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-magenta), var(--neon-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .vinyl-hole {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: var(--bg-main);
+            border-radius: 50%;
+            border: 2px solid rgba(0,0,0,0.3);
+        }
+
+        /* Info Section */
+        .track-info {
+            text-align: center;
+            margin-top: 30px;
+            padding: 0 30px;
+            width: 100%;
+        }
+
+        .frequency-display {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-shadow: var(--glow-cyan);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .freq-unit {
+            font-size: 14px;
+            color: var(--neon-cyan);
+        }
+
+        .station-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            background: linear-gradient(to right, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .song-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .eq-mini {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 12px;
+        }
+
+        .eq-bar {
+            width: 3px;
+            background: var(--neon-magenta);
+            border-radius: 2px;
+            animation: eqAnim 0.5s ease-in-out infinite alternate;
+        }
+
+        .playing .eq-bar:nth-child(1) { animation-delay: 0.1s; }
+        .playing .eq-bar:nth-child(2) { animation-delay: 0.3s; }
+        .playing .eq-bar:nth-child(3) { animation-delay: 0.0s; }
+        .playing .eq-bar:nth-child(4) { animation-delay: 0.4s; }
+        .playing .eq-bar:nth-child(5) { animation-delay: 0.2s; }
+        
+        .eq-bar { height: 2px; animation: none; }
+        .playing .eq-bar { animation: eqAnim 0.5s ease-in-out infinite alternate; }
+
+        @keyframes eqAnim {
+            0% { height: 2px; }
+            100% { height: 12px; }
+        }
+
+        /* Tuner Ribbon */
+        .tuner-container {
+            height: 80px;
+            margin: 10px 0;
+            position: relative;
+            background: rgba(0,0,0,0.3);
+            border-top: 1px solid var(--glass-border);
+            border-bottom: 1px solid var(--glass-border);
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .tuner-pointer {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--neon-cyan);
+            box-shadow: var(--glow-cyan);
+            z-index: 5;
+            transform: translateX(-50%);
+        }
+
+        .tuner-pointer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid var(--neon-cyan);
+        }
+
+        .tuner-pointer::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 8px solid var(--neon-cyan);
+        }
+
+        .tuner-ribbon {
+            position: absolute;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            cursor: grab;
+            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 0 calc(50% - 15px); /* Center start/end */
+        }
+
+        .tuner-ribbon:active {
+            cursor: grabbing;
+        }
+
+        .tick-mark {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            height: 100%;
+            width: 30px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .tick-line {
+            width: 2px;
+            background: var(--text-secondary);
+            border-radius: 2px;
+            margin-bottom: 5px;
+        }
+
+        .tick-mark.major .tick-line {
+            height: 20px;
+            background: var(--text-primary);
+        }
+
+        .tick-mark.minor .tick-line {
+            height: 10px;
+            opacity: 0.5;
+        }
+
+        .tick-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            position: absolute;
+            top: 10px;
+            font-family: 'Syncopate', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Controls */
+        .main-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .ctrl-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .ctrl-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+            opacity: 0.7;
+            transition: 0.3s;
+        }
+
+        .ctrl-btn:hover svg {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .play-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            position: relative;
+            box-shadow: 0 10px 30px rgba(176, 38, 255, 0.3);
+        }
+
+        .play-btn::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            z-index: -1;
+            filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .play-btn:hover::before {
+            opacity: 1;
+        }
+
+        .play-btn svg {
+            width: 32px;
+            height: 32px;
+            opacity: 1;
+            fill: #fff;
+            margin-left: 4px; /* visually center play icon */
+        }
+
+        .playing .play-btn svg {
+            margin-left: 0;
+        }
+
+        /* Bottom Dock / Navigation */
+        .dock {
+            display: flex;
+            justify-content: space-around;
+            padding: 16px;
+            background: var(--surface-2);
+            border-top: 1px solid var(--glass-border);
+            border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+            z-index: 10;
+        }
+
+        .dock-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .dock-item svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .dock-label {
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .dock-item.active {
+            color: var(--neon-cyan);
+        }
+
+        .dock-item.active::after {
+            content: '';
+            position: absolute;
+            top: -16px;
+            width: 30px;
+            height: 3px;
+            background: var(--neon-cyan);
+            border-radius: 0 0 4px 4px;
+            box-shadow: var(--glow-cyan);
+        }
+
+        /* Overlays / Panels */
+        .panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 70px); /* Leave dock visible */
+            background: rgba(5, 5, 7, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 20;
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel.active {
+            transform: translateY(0);
+        }
+
+        .panel-header {
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .panel-title {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 14px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .close-panel {
+            background: var(--surface-2);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .panel-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .panel-content::-webkit-scrollbar-thumb {
+            background: var(--surface-2);
+            border-radius: 4px;
+        }
+
+        /* Stations Grid in Panel */
+        .station-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .station-card {
+            background: var(--surface-2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .station-card:hover {
+            border-color: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .station-card.active {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 243, 255, 0.05);
+        }
+
+        .station-card.active::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(0, 243, 255, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .station-card .icon {
+            font-size: 32px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+        }
+
+        .station-card .freq {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 12px;
+            color: var(--neon-cyan);
+            font-weight: 700;
+        }
+
+        .station-card .name {
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        /* Lyrics Panel */
+        .lyrics-container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .lyric-line {
+            font-size: 18px;
+            color: var(--text-secondary);
+            transition: 0.3s;
+            filter: blur(1px);
+        }
+
+        .lyric-line.active {
+            font-size: 24px;
+            color: #fff;
+            font-weight: 700;
+            filter: blur(0);
+            text-shadow: 0 0 20px rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        /* Volume Slider Horizontal */
+        .volume-wrapper {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .vol-slider {
+            -webkit-appearance: none;
+            width: 80px;
+            height: 4px;
+            background: var(--surface-2);
+            border-radius: 2px;
+            transform: rotate(-90deg);
+            outline: none;
+        }
+
+        .vol-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+            cursor: pointer;
+        }
+
+        .vol-icon {
+            margin-top: 40px;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive adjustments for iframe */
+        @media (max-width: 360px) {
+            .vinyl-container { width: 200px; height: 200px; }
+            .frequency-display { font-size: 26px; }
+            .play-btn { width: 60px; height: 60px; }
+        }
+        @media (max-height: 600px) {
+            .hero-section { min-height: 240px; }
+            .vinyl-container { width: 180px; height: 180px; }
+            .tuner-container { height: 60px; }
+            .track-info { margin-top: 10px; }
+        }
+    </style>
 </head>
 <body>
 
-  <!-- Background -->
-  <div class="bg-anim">
-    <div class="blob"></div>
-    <div class="blob"></div>
-    <div class="blob"></div>
-  </div>
+    <!-- Ambient WebGL-like Background -->
+    <canvas class="ambient-canvas" id="ambientCanvas"></canvas>
+    <div class="noise-overlay"></div>
 
-  <!-- ══════════ WIDGET ══════════ -->
-  <div class="widget" id="widget">
-
-    <!-- LIVE BAR -->
-    <div class="live-bar">
-      <div class="dot"></div>
-      CANLI YAYIN
-      <span class="listeners" id="liveCount">• 0 dinleyici</span>
-    </div>
-
-    <!-- SCROLLING TEXT (Kayan Yazı) -->
-    <div class="scroll-strip">
-      <div class="scroll-track" id="scrollTrack">
-        <!-- JS doldurur -->
-      </div>
-    </div>
-
-    <!-- COVER ART -->
-    <div class="cover-section">
-      <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 250'><rect fill='%23050510' width='400' height='250'/><text fill='%2300e0ff' x='50%25' y='50%25' text-anchor='middle' font-size='60' dy='.3em'>📡</text></svg>"
-           class="cover-bg" id="coverBg">
-      <div class="cover-overlay">
-        <div class="cover-glow" id="coverGlow"></div>
-        <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><rect fill='%23050520' width='200' height='200'/><text fill='%2300e0ff' x='50%25' y='50%25' text-anchor='middle' font-size='50' dy='.3em'>🎵</text></svg>"
-             class="cover-art" id="coverArt">
-      </div>
-      <div class="cover-bars paused" id="coverBars">
-        <span></span><span></span><span></span><span></span><span></span>
-      </div>
-      <div class="q-badge" id="qBadge">128kbps</div>
-    </div>
-
-    <!-- TRACK INFO -->
-    <div class="track-info">
-      <div class="track-label">🎵 Çalıyor</div>
-      <div class="track-title" id="trackTitle">Yükleniyor...</div>
-      <div class="track-artist" id="trackArtist">Galactic Wave Radio</div>
-    </div>
-
-    <!-- PROGRESS -->
-    <div class="progress-area">
-      <div class="prog-track" id="progTrack">
-        <div class="prog-fill" id="progFill">
-          <div class="prog-thumb"></div>
-        </div>
-      </div>
-      <div class="prog-times">
-        <span id="tElapsed">0:00</span>
-        <span id="tTotal">~4:00</span>
-      </div>
-    </div>
-
-    <!-- CONTROLS -->
-    <div class="controls">
-      <button class="c-btn" id="btnShuffle" title="Karıştır"><i class="fas fa-random"></i></button>
-      <button class="c-btn" id="btnPrev" title="Önceki"><i class="fas fa-step-backward"></i></button>
-      <button class="c-btn-play" id="btnPlay" title="Oynat / Duraklat">
-        <i class="fas fa-play" id="playIcon"></i>
-      </button>
-      <button class="c-btn" id="btnNext" title="Sonraki"><i class="fas fa-step-forward"></i></button>
-      <button class="c-btn" id="btnLike" title="Beğen"><i class="far fa-heart"></i></button>
-    </div>
-
-    <!-- VOLUME -->
-    <div class="vol-row">
-      <i class="fas fa-volume-up vol-icon" id="volIcon"></i>
-      <input type="range" class="vol-slider" id="volSlider" min="0" max="100" value="75">
-      <span class="vol-pct" id="volPct">75%</span>
-    </div>
-
-    <!-- VISUALIZER -->
-    <canvas class="vis-canvas" id="visCanvas"></canvas>
-
-    <!-- TABS -->
-    <div class="tabs">
-      <button class="tab active" data-tab="history">
-        <i class="fas fa-history"></i> Son Çalınan
-      </button>
-      <button class="tab" data-tab="request">
-        <i class="fas fa-magic"></i> İstek
-      </button>
-    </div>
-
-    <!-- TAB PANELS -->
-    <div class="tab-panels">
-
-      <!-- History -->
-      <div class="tab-panel active" id="panelHistory">
-        <div class="hist-list" id="histList">
-          <div style="text-align:center;padding:30px;color:rgba(255,255,255,0.15);font-size:0.8rem;">
-            <i class="fas fa-spinner fa-spin" style="margin-right:8px;"></i> Yükleniyor...
-          </div>
-        </div>
-      </div>
-
-      <!-- Request -->
-      <div class="tab-panel" id="panelRequest">
-        <div class="req-form">
-          <input type="text" class="req-input" id="reqSong"
-                 placeholder="🎵 Şarkı adı veya sanatçı..." maxlength="120">
-          <div class="req-row">
-            <input type="text" class="req-input" id="reqName"
-                   placeholder="👤 İsim (opsiyonel)" maxlength="40">
-            <input type="text" class="req-input" id="reqMsg"
-                   placeholder="💬 Mesaj" maxlength="150">
-          </div>
-          <button class="req-submit" id="reqSubmit">
-            <i class="fas fa-paper-plane"></i> İSTEK GÖNDER
-          </button>
-        </div>
-        <div class="req-msg-list" id="reqMsgList"></div>
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- Toast -->
-  <div class="toast" id="toast"><i class="fas fa-check-circle" style="margin-right:6px;"></i><span id="toastText"></span></div>
-
-  <!-- Audio -->
-  <audio id="audio" preload="none" crossorigin="anonymous">
-    <source src="https://radyocast.com/8028/Stream" type="audio/mpeg">
-  </audio>
-
-  <script>
-    // ═══════════════════════════════════════════════════════
-    // CONFIG
-    // ═══════════════════════════════════════════════════════
-    const CFG = {
-      API:      'https://radyocast.com/cp/get_info.php?p=8028',
-      STREAM:   'https://radyocast.com/8028/Stream',
-      REFRESH:  8000,
-      VIS_FPS:  25,
-      DURATION: 240,
-      EQ:       [128, 256, 512, 1024, 2048, 4096, 8192, 16384]
-    };
-
-    // ═══════════════════════════════════════════════════════
-    // STATE
-    // ═══════════════════════════════════════════════════════
-    const S = {
-      playing:    false,
-      volume:     75,
-      liked:      false,
-      shuffle:    false,
-      elapsed:    0,
-      timer:      null,
-      visT:       null,
-      scrollMsgs: [],
-      history:    [],
-      requests:   []
-    };
-
-    // ═══════════════════════════════════════════════════════
-    // DOM
-    // ═══════════════════════════════════════════════════════
-    const $ = s => document.querySelector(s);
-
-    const D = {
-      audio:       $('#audio'),
-      coverBg:     $('#coverBg'),
-      coverArt:    $('#coverArt'),
-      coverBars:   $('#coverBars'),
-      qBadge:      $('#qBadge'),
-      trackTitle:  $('#trackTitle'),
-      trackArtist: $('#trackArtist'),
-      progFill:    $('#progFill'),
-      tElapsed:    $('#tElapsed'),
-      tTotal:      $('#tTotal'),
-      btnPlay:     $('#btnPlay'),
-      playIcon:    $('#playIcon'),
-      btnShuffle:  $('#btnShuffle'),
-      btnPrev:     $('#btnPrev'),
-      btnNext:     $('#btnNext'),
-      btnLike:     $('#btnLike'),
-      volSlider:   $('#volSlider'),
-      volPct:      $('#volPct'),
-      volIcon:     $('#volIcon'),
-      visCanvas:   $('#visCanvas'),
-      visCtx:      null,
-      liveCount:   $('#liveCount'),
-      scrollTrack: $('#scrollTrack'),
-      histList:    $('#histList'),
-      reqSong:     $('#reqSong'),
-      reqName:     $('#reqName'),
-      reqMsg:      $('#reqMsg'),
-      reqSubmit:   $('#reqSubmit'),
-      reqMsgList:  $('#reqMsgList'),
-      toast:       $('#toast'),
-      toastText:   $('#toastText')
-    };
-
-    // ═══════════════════════════════════════════════════════
-    // TOAST
-    // ═══════════════════════════════════════════════════════
-    function toast(msg) {
-      D.toastText.textContent = msg;
-      D.toast.classList.add('show');
-      clearTimeout(D.toast._t);
-      D.toast._t = setTimeout(() => D.toast.classList.remove('show'), 2800);
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // ESCAPE
-    // ═══════════════════════════════════════════════════════
-    function esc(s) {
-      const d = document.createElement('div');
-      d.textContent = s || '';
-      return d.innerHTML;
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // API FETCH
-    // ═══════════════════════════════════════════════════════
-    async function fetchAPI() {
-      try {
-        const r = await fetch(CFG.API + '&t=' + Date.now());
-        if (!r.ok) return;
-        const data = await r.json();
-        updateUI(data);
-      } catch(e) { console.warn('API:', e.message); }
-    }
-
-    function updateUI(d) {
-      const title   = d.title || 'Bilinmiyor';
-      const art     = d.art || '';
-      const online  = parseInt(d.listeners || 0);
-      const bitrate = d.bitrate || '128';
-
-      // Albüm resmi
-      if (art) {
-        D.coverArt.src = art;
-        D.coverBg.src = art;
-      }
-
-      // Başlık
-      const parts = title.split(' - ');
-      if (parts.length >= 2) {
-        D.trackArtist.textContent = parts[0].trim();
-        D.trackTitle.textContent = parts.slice(1).join(' - ').trim();
-      } else {
-        D.trackTitle.textContent = title;
-        D.trackArtist.textContent = 'Galactic Wave Radio';
-      }
-
-      // Bitrate
-      D.qBadge.textContent = bitrate + 'kbps';
-
-      // Dinleyici
-      D.liveCount.textContent = '• ' + online + ' dinleyici';
-
-      // History
-      if (d.history && d.history.length) {
-        updateHistory(d.history);
-      }
-
-      // Scrolling text güncelle
-      if (d.history && d.history.length) {
-        buildScrollText(d.history);
-      }
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // HISTORY
-    // ═══════════════════════════════════════════════════════
-    function updateHistory(items) {
-      S.history = items;
-      D.histList.innerHTML = items.map((item, i) => {
-        const name = typeof item === 'string' ? item : (item.title || 'Bilinmiyor');
-        const time = typeof item === 'string' ? '' : (item.time || '');
-        return `
-          <div class="hist-item ${i===0 ? 'now' : ''}">
-            <span class="hist-num">${i===0 ? '▶' : i+1}</span>
-            <div class="hist-art"><i class="fas fa-music"></i></div>
-            <div class="hist-info">
-              <div class="hist-title">${esc(name)}</div>
+    <div class="app-container" id="app">
+        
+        <!-- Top Header -->
+        <header class="top-bar">
+            <div class="brand">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
+                    <path d="M12 12 2.1 7.1"></path>
+                    <path d="M12 12l9.9 4.9"></path>
+                </svg>
+                NEXUS FM
             </div>
-            ${time ? `<span class="hist-time">${esc(time)}</span>` : ''}
-          </div>
-        `;
-      }).join('');
-    }
+            <div class="status-pill" id="statusPill">
+                <div class="pulse-dot"></div>
+                <span id="statusText">CANLI</span>
+            </div>
+            <button class="menu-btn" onclick="toggleTheme()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+        </header>
 
-    // ═══════════════════════════════════════════════════════
-    // SCROLLING TEXT (Kayan Yazı Alanı)
-    // ═══════════════════════════════════════════════════════
-    function buildScrollText(items) {
-      const msgs = [
-        '🎧 Dinlediğiniz için teşekkürler',
-        '💜 Şarkı isteklerinizi bekliyoruz',
-        '📡 Canlı yayın 7/24',
-        '🌟 Galactic Wave Radio',
-        '🎵 Müzik evrenin ortak dili',
-      ];
+        <!-- Main Visual Area -->
+        <main class="hero-section">
+            <canvas class="circular-visualizer" id="circleViz"></canvas>
+            <div class="vinyl-container">
+                <div class="vinyl-record" id="vinyl">
+                    <div class="vinyl-label" id="vinylLabel">
+                        🎵
+                        <div class="vinyl-hole"></div>
+                    </div>
+                </div>
+            </div>
 
-      // History şarkılarını ekle
-      items.slice(0, 5).forEach(item => {
-        const name = typeof item === 'string' ? item : item.title;
-        if (name) msgs.push('🎵 ' + name);
-      });
+            <!-- Vertical Volume -->
+            <div class="volume-wrapper">
+                <input type="range" class="vol-slider" id="volSlider" min="0" max="100" value="80">
+                <svg class="vol-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+            </div>
 
-      // User mesajlarını ekle
-      S.requests.forEach(r => {
-        if (r.song) msgs.push('📨 ' + r.name + ': ' + r.song);
-      });
+            <div class="track-info">
+                <div class="frequency-display">
+                    <span id="displayFreq">102.5</span>
+                    <span class="freq-unit">FM</span>
+                </div>
+                <div class="station-name" id="displayStation">Cosmic Radio</div>
+                <div class="song-title">
+                    <div class="eq-mini">
+                        <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
+                    </div>
+                    <span id="displaySong">Daft Punk - Interstella 5555</span>
+                </div>
+            </div>
+        </main>
 
-      buildMarquee(msgs);
-    }
-
-    function buildMarquee(messages) {
-      let itemsHTML = messages.map(m =>
-        `<span class="scroll-item">${esc(m)}</span><span class="scroll-sep">✦</span>`
-      ).join('');
-
-      // Çift kez kopyala (sonsuz marquee için)
-      D.scrollTrack.innerHTML = itemsHTML + itemsHTML;
-      const dur = Math.max(15, messages.length * 5);
-      D.scrollTrack.style.setProperty('--speed', dur + 's');
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // PLAY / PAUSE
-    // ═══════════════════════════════════════════════════════
-    function togglePlay() {
-      S.playing = !S.playing;
-
-      if (S.playing) {
-        D.audio.src = CFG.STREAM;
-        D.audio.volume = S.volume / 100;
-        D.audio.play().catch(() => {});
-
-        D.playIcon.className = 'fas fa-pause';
-        D.btnPlay.classList.add('playing');
-        D.coverBars.classList.remove('paused');
-
-        startProgress();
-        startVis();
-        toast('▶ Yayına bağlanılıyor...');
-      } else {
-        D.audio.pause();
-        D.playIcon.className = 'fas fa-play';
-        D.btnPlay.classList.remove('playing');
-        D.coverBars.classList.add('paused');
-
-        stopProgress();
-        stopVis();
-        toast('⏸ Duraklatıldı');
-      }
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // PROGRESS
-    // ═══════════════════════════════════════════════════════
-    function startProgress() {
-      S.elapsed = 0;
-      clearInterval(S.timer);
-      S.timer = setInterval(() => {
-        if (!S.playing) return;
-        S.elapsed++;
-        const pct = (S.elapsed / CFG.DURATION) * 100;
-        D.progFill.style.width = pct + '%';
-        D.tElapsed.textContent = fmt(S.elapsed);
-        if (S.elapsed >= CFG.DURATION) S.elapsed = 0;
-      }, 1000);
-    }
-
-    function stopProgress() { clearInterval(S.timer); }
-
-    function fmt(s) {
-      return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // VISUALIZER
-    // ═══════════════════════════════════════════════════════
-    function initVis() {
-      D.visCtx = D.visCanvas.getContext('2d');
-      resizeVis();
-      window.addEventListener('resize', resizeVis);
-    }
-
-    function resizeVis() {
-      const c = D.visCanvas;
-      c.width = c.offsetWidth * 2;
-      c.height = c.offsetHeight * 2;
-      D.visCtx.scale(2, 2);
-    }
-
-    function startVis() {
-      if (S.visT) return;
-      S.visT = setInterval(drawVis, 1000 / CFG.VIS_FPS);
-    }
-
-    function stopVis() {
-      clearInterval(S.visT);
-      S.visT = null;
-      if (D.visCtx) {
-        const c = D.visCanvas;
-        D.visCtx.clearRect(0, 0, c.offsetWidth, c.offsetHeight);
-      }
-    }
-
-    function drawVis() {
-      if (!D.visCtx || !S.playing) return;
-      const ctx = D.visCtx;
-      const w = D.visCanvas.offsetWidth;
-      const h = D.visCanvas.offsetHeight;
-      ctx.clearRect(0, 0, w, h);
-
-      const bars = 36;
-      const bw = w / bars;
-
-      for (let i = 0; i < bars; i++) {
-        const bh = Math.random() * h * 0.85 + h * 0.05;
-        const x = i * bw + 1;
-        const y = h - bh;
-
-        const g = ctx.createLinearGradient(x, y, x, h);
-        g.addColorStop(0, '#00e0ff');
-        g.addColorStop(0.6, '#7b5fff');
-        g.addColorStop(1, 'rgba(123,95,255,0.2)');
-
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.roundRect(x, y, bw - 2, bh, 2);
-        ctx.fill();
-      }
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // VOLUME
-    // ═══════════════════════════════════════════════════════
-    function setVol(v) {
-      v = Math.max(0, Math.min(100, parseInt(v)));
-      S.volume = v;
-      D.volSlider.value = v;
-      D.volPct.textContent = v + '%';
-      D.audio.volume = v / 100;
-
-      if (v === 0) D.volIcon.className = 'fas fa-volume-mute vol-icon';
-      else if (v < 30) D.volIcon.className = 'fas fa-volume-off vol-icon';
-      else if (v < 70) D.volIcon.className = 'fas fa-volume-down vol-icon';
-      else D.volIcon.className = 'fas fa-volume-up vol-icon';
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // LIKE
-    // ═══════════════════════════════════════════════════════
-    function toggleLike() {
-      S.liked = !S.liked;
-      const icon = D.btnLike.querySelector('i');
-      if (S.liked) {
-        icon.className = 'fas fa-heart';
-        D.btnLike.classList.add('like-active');
-        toast('❤️ Beğenildi!');
-      } else {
-        icon.className = 'far fa-heart';
-        D.btnLike.classList.remove('like-active');
-        toast('💔 Beğeni kaldırıldı');
-      }
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // REQUEST
-    // ═══════════════════════════════════════════════════════
-    function sendRequest() {
-      const song = D.reqSong.value.trim();
-      if (!song) {
-        toast('⚠ Şarkı adı girin!');
-        D.reqSong.focus();
-        return;
-      }
-
-      const name = D.reqName.value.trim() || 'Misafir';
-      const msg  = D.reqMsg.value.trim();
-      const now  = new Date();
-      const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-
-      const req = { song, name, msg, time };
-      S.requests.unshift(req);
-
-      // Kayan metne ekle
-      buildScrollText(S.history.length ? S.history : []);
-
-      // Mesaj listesine ekle
-      const html = `
-        <div class="req-msg-item">
-          <div class="rm-header">
-            <span class="rm-name"><i class="fas fa-user" style="margin-right:5px;"></i>${esc(name)}</span>
-            <span class="rm-time">${esc(time)}</span>
-          </div>
-          <div class="rm-song"><i class="fas fa-music" style="margin-right:6px;color:#00e0ff;font-size:0.7rem;"></i>${esc(song)}</div>
-          ${msg ? `<div class="rm-note">"${esc(msg)}"</div>` : ''}
+        <!-- Interactive Tuner Ribbon -->
+        <div class="tuner-container" id="tunerContainer">
+            <div class="tuner-pointer"></div>
+            <div class="tuner-ribbon" id="tunerRibbon">
+                <!-- Ticks injected by JS -->
+            </div>
         </div>
-      `;
-      D.reqMsgList.insertAdjacentHTML('afterbegin', html);
 
-      D.reqSong.value = '';
-      D.reqName.value = '';
-      D.reqMsg.value = '';
+        <!-- Controls -->
+        <div class="main-controls">
+            <button class="ctrl-btn" id="btnPrev">
+                <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+            </button>
+            <button class="ctrl-btn play-btn" id="btnPlay">
+                <svg viewBox="0 0 24 24" id="playIcon">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </button>
+            <button class="ctrl-btn" id="btnNext">
+                <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+            </button>
+        </div>
 
-      toast('🎵 İsteğiniz gönderildi!');
-    }
+        <!-- Dock Navigation -->
+        <nav class="dock">
+            <div class="dock-item active" data-target="home">
+                <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                <span class="dock-label">Oynatıcı</span>
+            </div>
+            <div class="dock-item" data-target="stationsPanel">
+                <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                <span class="dock-label">İstasyonlar</span>
+            </div>
+            <div class="dock-item" data-target="lyricsPanel">
+                <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                <span class="dock-label">Sözler</span>
+            </div>
+        </nav>
 
-    // ═══════════════════════════════════════════════════════
-    // TABS
-    // ═══════════════════════════════════════════════════════
-    function initTabs() {
-      document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-          document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-          tab.classList.add('active');
-          $('#panel' + tab.dataset.tab.charAt(0).toUpperCase() + tab.dataset.tab.slice(1))
-            .classList.add('active');
+        <!-- PANELS -->
+        
+        <!-- Stations Panel -->
+        <div class="panel" id="stationsPanel">
+            <div class="panel-header">
+                <div class="panel-title">Tüm İstasyonlar</div>
+                <button class="close-panel" onclick="closePanels()">×</button>
+            </div>
+            <div class="panel-content">
+                <div class="station-grid" id="stationGrid">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Lyrics Panel -->
+        <div class="panel" id="lyricsPanel">
+            <div class="panel-header">
+                <div class="panel-title">Canlı Sözler</div>
+                <button class="close-panel" onclick="closePanels()">×</button>
+            </div>
+            <div class="panel-content">
+                <div class="lyrics-container" id="lyricsContainer">
+                    <div class="lyric-line">Uzayın derinliklerinde...</div>
+                    <div class="lyric-line">Sinyal aranıyor...</div>
+                    <div class="lyric-line active">Kozmik frekans bulundu</div>
+                    <div class="lyric-line">Yıldız tozları arasında uçuyoruz</div>
+                    <div class="lyric-line">Neon ışıklar yolumuzu aydınlatıyor</div>
+                    <div class="lyric-line">Bu frekans hiç bitmesin</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA ---
+        const stations = [
+            { id: 1, freq: 88.2, name: 'Synthwave FM', icon: '🌃', song: 'Kavinsky - Nightcall', color1: '#ff00ea', color2: '#00f3ff' },
+            { id: 2, freq: 92.4, name: 'Cyber Rock', icon: '🎸', song: 'Muse - Supermassive', color1: '#ff3366', color2: '#ff9933' },
+            { id: 3, freq: 96.0, name: 'Lo-Fi Chill', icon: '☕', song: 'ChilledCow - 1AM Study', color1: '#a8ff78', color2: '#78ffd6' },
+            { id: 4, freq: 100.5, name: 'Deep Space', icon: '🚀', song: 'Hans Zimmer - Time', color1: '#4facfe', color2: '#00f2fe' },
+            { id: 5, freq: 102.5, name: 'Cosmic Radio', icon: '🌌', song: 'Daft Punk - Contact', color1: '#b026ff', color2: '#00f3ff' },
+            { id: 6, freq: 106.8, name: 'Neon Pop', icon: '✨', song: 'The Weeknd - Blinding Lights', color1: '#f83600', color2: '#f9d423' },
+            { id: 7, freq: 108.0, name: 'Classic Static', icon: '📻', song: 'White Noise', color1: '#8e9eab', color2: '#eef2f3' }
+        ];
+
+        // --- STATE ---
+        let state = {
+            isPlaying: false,
+            currentFreq: 102.5,
+            currentStation: stations[4],
+            isDragging: false,
+            startX: 0,
+            scrollLeft: 0,
+            ribbonPos: 0,
+            pixelsPerFreq: 10 // 10px per 0.1 MHz
+        };
+
+        const minFreq = 87.5;
+        const maxFreq = 108.0;
+
+        // --- DOM ELEMENTS ---
+        const app = document.getElementById('app');
+        const btnPlay = document.getElementById('btnPlay');
+        const playIcon = document.getElementById('playIcon');
+        const displayFreq = document.getElementById('displayFreq');
+        const displayStation = document.getElementById('displayStation');
+        const displaySong = document.getElementById('displaySong');
+        const vinylLabel = document.getElementById('vinylLabel');
+        const tunerRibbon = document.getElementById('tunerRibbon');
+        const stationGrid = document.getElementById('stationGrid');
+
+        // --- INIT ---
+        function init() {
+            buildTuner();
+            buildStationGrid();
+            updateUI(state.currentStation);
+            centerTunerOnFreq(state.currentFreq);
+            setupCanvasViz();
+            setupAmbientBg();
+        }
+
+        // --- TUNER LOGIC ---
+        function buildTuner() {
+            let html = '';
+            for (let f = minFreq; f <= maxFreq; f += 0.1) {
+                let freqNum = parseFloat(f.toFixed(1));
+                let isMajor = freqNum % 1 === 0 || freqNum % 1 === 0.0;
+                html += `
+                    <div class="tick-mark ${isMajor ? 'major' : 'minor'}" data-freq="${freqNum}">
+                        ${isMajor ? `<div class="tick-label">${Math.floor(freqNum)}</div>` : ''}
+                        <div class="tick-line"></div>
+                    </div>
+                `;
+            }
+            tunerRibbon.innerHTML = html;
+        }
+
+        function centerTunerOnFreq(freq) {
+            // Calculate position
+            // Total ticks = (max - min) * 10
+            // Tick width = 30px
+            const totalTicks = (freq - minFreq) * 10;
+            const targetX = -(totalTicks * 30);
+            state.ribbonPos = targetX;
+            tunerRibbon.style.transform = `translateX(${targetX}px)`;
+        }
+
+        function getFreqFromPosition(pos) {
+            // Pos is negative
+            let ticks = Math.abs(pos) / 30;
+            let freq = minFreq + (ticks / 10);
+            return Math.max(minFreq, Math.min(maxFreq, freq));
+        }
+
+        function findNearestStation(freq) {
+            return stations.reduce((prev, curr) => 
+                Math.abs(curr.freq - freq) < Math.abs(prev.freq - freq) ? curr : prev
+            );
+        }
+
+        // Drag Logic for Tuner
+        tunerRibbon.addEventListener('mousedown', e => {
+            state.isDragging = true;
+            state.startX = e.pageX - state.ribbonPos;
+            tunerRibbon.style.transition = 'none';
         });
-      });
-    }
 
-    // ═══════════════════════════════════════════════════════
-    // PROGRESS BAR CLICK
-    // ═══════════════════════════════════════════════════════
-    function initProgressClick() {
-      $('#progTrack').addEventListener('click', e => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const pct = ((e.clientX - rect.left) / rect.width) * 100;
-        D.progFill.style.width = pct + '%';
-        S.elapsed = Math.round((pct / 100) * CFG.DURATION);
-        D.tElapsed.textContent = fmt(S.elapsed);
-      });
-    }
+        window.addEventListener('mouseup', () => {
+            if (!state.isDragging) return;
+            state.isDragging = false;
+            tunerRibbon.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            
+            // Snap to nearest station or tick
+            let currentF = getFreqFromPosition(state.ribbonPos);
+            let nearest = findNearestStation(currentF);
+            
+            // If close enough to a station, snap to it
+            if (Math.abs(nearest.freq - currentF) < 0.3) {
+                changeStation(nearest);
+            } else {
+                // Just snap to nearest 0.1
+                let snapFreq = parseFloat(currentF.toFixed(1));
+                centerTunerOnFreq(snapFreq);
+                updateStaticUI(snapFreq);
+            }
+        });
 
-    // ═══════════════════════════════════════════════════════
-    // KEYBOARD
-    // ═══════════════════════════════════════════════════════
-    function initKeys() {
-      document.addEventListener('keydown', e => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-        switch (e.key) {
-          case ' ':
+        window.addEventListener('mousemove', e => {
+            if (!state.isDragging) return;
             e.preventDefault();
-            togglePlay();
-            break;
-          case 'ArrowUp':
-            e.preventDefault();
-            setVol(S.volume + 5);
-            break;
-          case 'ArrowDown':
-            e.preventDefault();
-            setVol(S.volume - 5);
-            break;
-          case 'm': case 'M':
-            D.volIcon.click();
-            break;
-          case 'l': case 'L':
-            toggleLike();
-            break;
+            const x = e.pageX;
+            let newPos = x - state.startX;
+            
+            // Boundaries
+            const maxPos = 0;
+            const minPos = -(((maxFreq - minFreq) * 10) * 30);
+            
+            if (newPos > maxPos) newPos = maxPos;
+            if (newPos < minPos) newPos = minPos;
+            
+            state.ribbonPos = newPos;
+            tunerRibbon.style.transform = `translateX(${newPos}px)`;
+            
+            let currentF = getFreqFromPosition(newPos);
+            displayFreq.textContent = currentF.toFixed(1);
+            
+            // Add static effect if playing and not on station
+            if(state.isPlaying) {
+                 const near = findNearestStation(currentF);
+                 if(Math.abs(near.freq - currentF) > 0.1) {
+                     document.querySelector('.noise-overlay').style.opacity = 0.15;
+                     displayStation.textContent = "Sinyal Aranıyor...";
+                 } else {
+                     document.querySelector('.noise-overlay').style.opacity = 0.03;
+                     displayStation.textContent = near.name;
+                 }
+            }
+        });
+
+        // Touch support for tuner
+        tunerRibbon.addEventListener('touchstart', e => {
+            state.isDragging = true;
+            state.startX = e.touches[0].pageX - state.ribbonPos;
+            tunerRibbon.style.transition = 'none';
+        });
+        window.addEventListener('touchend', () => {
+            if (!state.isDragging) return;
+            window.dispatchEvent(new Event('mouseup'));
+        });
+        window.addEventListener('touchmove', e => {
+            if (!state.isDragging) return;
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent("mousemove", {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                pageX: touch.pageX,
+                pageY: touch.pageY
+            });
+            window.dispatchEvent(mouseEvent);
+        }, {passive: false});
+
+        // --- CONTROLS LOGIC ---
+        function changeStation(station) {
+            state.currentStation = station;
+            state.currentFreq = station.freq;
+            centerTunerOnFreq(station.freq);
+            updateUI(station);
+            highlightGrid(station.id);
+            document.querySelector('.noise-overlay').style.opacity = 0.03;
+            triggerGlitchEffect();
         }
-      });
-    }
 
-    // ═══════════════════════════════════════════════════════
-    // EVENTS
-    // ═══════════════════════════════════════════════════════
-    function bindEvents() {
-      D.btnPlay.addEventListener('click', togglePlay);
-
-      D.volSlider.addEventListener('input', e => setVol(e.target.value));
-      D.volIcon.addEventListener('click', () => setVol(S.volume > 0 ? 0 : 75));
-
-      D.btnLike.addEventListener('click', toggleLike);
-
-      D.btnShuffle.addEventListener('click', () => {
-        S.shuffle = !S.shuffle;
-        D.btnShuffle.classList.toggle('active', S.shuffle);
-        toast(S.shuffle ? '🔀 Karıştırma açık' : '🔀 Karıştırma kapalı');
-      });
-
-      D.btnPrev.addEventListener('click', () => { S.elapsed = 0; toast('⏮ Önceki'); });
-      D.btnNext.addEventListener('click', () => { S.elapsed = 0; toast('⏭ Sonraki'); });
-
-      D.reqSubmit.addEventListener('click', sendRequest);
-      D.reqSong.addEventListener('keydown', e => { if (e.key === 'Enter') sendRequest(); });
-
-      D.audio.addEventListener('playing', () => {
-        D.btnPlay.classList.add('playing');
-      });
-
-      D.audio.addEventListener('error', () => {
-        if (S.playing) {
-          toast('⚠ Bağlantı hatası, tekrar deneniyor...');
-          setTimeout(() => {
-            D.audio.src = CFG.STREAM + '?t=' + Date.now();
-            D.audio.play().catch(() => {});
-          }, 3000);
+        function updateUI(station) {
+            displayFreq.textContent = station.freq.toFixed(1);
+            displayStation.textContent = station.name;
+            displaySong.textContent = station.song;
+            vinylLabel.innerHTML = `${station.icon}<div class="vinyl-hole"></div>`;
+            vinylLabel.style.background = `linear-gradient(135deg, ${station.color1}, ${station.color2})`;
+            
+            // Update app glow colors based on station
+            document.documentElement.style.setProperty('--neon-cyan', station.color2);
+            document.documentElement.style.setProperty('--neon-magenta', station.color1);
+            document.documentElement.style.setProperty('--glow-cyan', `0 0 20px ${station.color2}66`);
         }
-      });
-    }
 
-    // ═══════════════════════════════════════════════════════
-    // INIT
-    // ═══════════════════════════════════════════════════════
-    function init() {
-      // Başlangıç kayan metni
-      buildMarquee([
-        '🎧 Dinlediğiniz için teşekkürler',
-        '💜 Şarkı isteklerinizi bekliyoruz',
-        '📡 Canlı yayın 7/24',
-        '🌟 Galactic Wave Radio',
-        '🎵 Müzik evrenin ortak dili'
-      ]);
+        function updateStaticUI(freq) {
+            displayStation.textContent = "Statik / Gürültü";
+            displaySong.textContent = "Sinyal Yok";
+            vinylLabel.innerHTML = `📻<div class="vinyl-hole"></div>`;
+            vinylLabel.style.background = `#333`;
+        }
 
-      initVis();
-      initTabs();
-      initProgressClick();
-      initKeys();
-      bindEvents();
-      setVol(75);
+        btnPlay.addEventListener('click', () => {
+            state.isPlaying = !state.isPlaying;
+            if (state.isPlaying) {
+                app.classList.add('playing');
+                playIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+                document.getElementById('statusText').textContent = "CANLI";
+            } else {
+                app.classList.remove('playing');
+                playIcon.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+                document.getElementById('statusText').textContent = "DURAKLATILDI";
+            }
+        });
 
-      // API
-      fetchAPI();
-      setInterval(fetchAPI, CFG.REFRESH);
-    }
+        document.getElementById('btnPrev').addEventListener('click', () => {
+            let idx = stations.findIndex(s => s.id === state.currentStation.id);
+            idx = idx - 1 < 0 ? stations.length - 1 : idx - 1;
+            changeStation(stations[idx]);
+        });
 
-    document.addEventListener('DOMContentLoaded', init);
-  </script>
+        document.getElementById('btnNext').addEventListener('click', () => {
+            let idx = stations.findIndex(s => s.id === state.currentStation.id);
+            idx = (idx + 1) % stations.length;
+            changeStation(stations[idx]);
+        });
+
+        function triggerGlitchEffect() {
+            app.style.transform = `translate(${Math.random()*4-2}px, ${Math.random()*4-2}px)`;
+            setTimeout(() => app.style.transform = 'none', 50);
+        }
+
+        // --- PANELS & DOCK ---
+        const panels = document.querySelectorAll('.panel');
+        const dockItems = document.querySelectorAll('.dock-item');
+
+        dockItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const target = item.dataset.target;
+                
+                dockItems.forEach(d => d.classList.remove('active'));
+                item.classList.add('active');
+
+                if (target === 'home') {
+                    closePanels();
+                } else {
+                    openPanel(target);
+                }
+            });
+        });
+
+        function openPanel(id) {
+            panels.forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function closePanels() {
+            panels.forEach(p => p.classList.remove('active'));
+            dockItems.forEach(d => d.classList.remove('active'));
+            dockItems[0].classList.add('active'); // Set Home active
+        }
+
+        function buildStationGrid() {
+            stationGrid.innerHTML = stations.map(s => `
+                <div class="station-card ${s.id === state.currentStation.id ? 'active' : ''}" data-id="${s.id}">
+                    <div class="icon">${s.icon}</div>
+                    <div class="freq">${s.freq.toFixed(1)} FM</div>
+                    <div class="name">${s.name}</div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.station-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const st = stations.find(s => s.id === parseInt(card.dataset.id));
+                    changeStation(st);
+                    closePanels();
+                });
+            });
+        }
+
+        function highlightGrid(id) {
+            document.querySelectorAll('.station-card').forEach(c => c.classList.remove('active'));
+            const activeCard = document.querySelector(`.station-card[data-id="${id}"]`);
+            if(activeCard) activeCard.classList.add('active');
+        }
+
+        // --- LYRICS ANIMATION ---
+        setInterval(() => {
+            if(!state.isPlaying) return;
+            const lines = document.querySelectorAll('.lyric-line');
+            let activeIdx = Array.from(lines).findIndex(l => l.classList.contains('active'));
+            lines[activeIdx].classList.remove('active');
+            
+            activeIdx = (activeIdx + 1) % lines.length;
+            lines[activeIdx].classList.add('active');
+        }, 3000);
+
+        // --- CANVAS VISUALIZER (CIRCULAR) ---
+        const cvCanvas = document.getElementById('circleViz');
+        const cvCtx = cvCanvas.getContext('2d');
+        
+        function setupCanvasViz() {
+            const size = 340;
+            cvCanvas.width = size;
+            cvCanvas.height = size;
+            cvCanvas.style.width = size + 'px';
+            cvCanvas.style.height = size + 'px';
+            requestAnimationFrame(drawCircleViz);
+        }
+
+        let angles = Array.from({length: 64}, (_, i) => (Math.PI * 2 * i) / 64);
+        let radii = Array(64).fill(130); // Base radius outside vinyl
+
+        function drawCircleViz() {
+            cvCtx.clearRect(0, 0, cvCanvas.width, cvCanvas.height);
+            const cx = cvCanvas.width / 2;
+            const cy = cvCanvas.height / 2;
+
+            cvCtx.beginPath();
+            for (let i = 0; i < angles.length; i++) {
+                // Animate radius if playing
+                let targetR = 135;
+                if (state.isPlaying) {
+                    targetR = 135 + Math.random() * 30; // Random bump
+                }
+                
+                // Smooth transition
+                radii[i] += (targetR - radii[i]) * 0.1;
+
+                let x = cx + Math.cos(angles[i]) * radii[i];
+                let y = cy + Math.sin(angles[i]) * radii[i];
+
+                if (i === 0) cvCtx.moveTo(x, y);
+                else cvCtx.lineTo(x, y);
+            }
+            cvCtx.closePath();
+
+            // Glow styling
+            cvCtx.lineWidth = 2;
+            const gradient = cvCtx.createLinearGradient(0, 0, cvCanvas.width, cvCanvas.height);
+            gradient.addColorStop(0, getComputedStyle(document.documentElement).getPropertyValue('--neon-cyan').trim());
+            gradient.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--neon-magenta').trim());
+            
+            cvCtx.strokeStyle = gradient;
+            cvCtx.shadowBlur = 15;
+            cvCtx.shadowColor = cvCtx.strokeStyle;
+            cvCtx.stroke();
+            
+            // Inner fill transparent
+            cvCtx.fillStyle = 'rgba(0,0,0,0)';
+            cvCtx.fill();
+
+            requestAnimationFrame(drawCircleViz);
+        }
+
+        // --- AMBIENT BACKGROUND CANVAS ---
+        const bgCanvas = document.getElementById('ambientCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let t = 0;
+
+        function setupAmbientBg() {
+            resizeBg();
+            window.addEventListener('resize', resizeBg);
+            requestAnimationFrame(drawAmbientBg);
+        }
+
+        function resizeBg() {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+        }
+
+        function drawAmbientBg() {
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            
+            let color1 = getComputedStyle(document.documentElement).getPropertyValue('--neon-cyan').trim();
+            let color2 = getComputedStyle(document.documentElement).getPropertyValue('--neon-magenta').trim();
+
+            const cx = bgCanvas.width / 2;
+            const cy = bgCanvas.height / 2;
+
+            // Draw large slowly moving blobs
+            let r1 = 300 + Math.sin(t * 0.01) * 100;
+            let x1 = cx + Math.cos(t * 0.005) * 200;
+            let y1 = cy + Math.sin(t * 0.007) * 200;
+
+            const grd1 = bgCtx.createRadialGradient(x1, y1, 0, x1, y1, r1);
+            grd1.addColorStop(0, color1 + '33'); // 20% opacity
+            grd1.addColorStop(1, 'transparent');
+            bgCtx.fillStyle = grd1;
+            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+            let r2 = 400 + Math.cos(t * 0.012) * 150;
+            let x2 = cx + Math.sin(t * 0.004) * 300;
+            let y2 = cy + Math.cos(t * 0.006) * 300;
+
+            const grd2 = bgCtx.createRadialGradient(x2, y2, 0, x2, y2, r2);
+            grd2.addColorStop(0, color2 + '22');
+            grd2.addColorStop(1, 'transparent');
+            bgCtx.fillStyle = grd2;
+            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+            t++;
+            requestAnimationFrame(drawAmbientBg);
+        }
+
+        // --- THEME TOGGLE (Easter Egg) ---
+        let isLight = false;
+        function toggleTheme() {
+            isLight = !isLight;
+            if(isLight) {
+                document.documentElement.style.setProperty('--bg-main', '#f0f0f5');
+                document.documentElement.style.setProperty('--surface-1', 'rgba(255, 255, 255, 0.7)');
+                document.documentElement.style.setProperty('--surface-2', 'rgba(240, 240, 245, 0.8)');
+                document.documentElement.style.setProperty('--text-primary', '#111');
+                document.documentElement.style.setProperty('--text-secondary', '#666');
+            } else {
+                document.documentElement.style.setProperty('--bg-main', '#050507');
+                document.documentElement.style.setProperty('--surface-1', 'rgba(20, 20, 25, 0.6)');
+                document.documentElement.style.setProperty('--surface-2', 'rgba(35, 35, 45, 0.4)');
+                document.documentElement.style.setProperty('--text-primary', '#ffffff');
+                document.documentElement.style.setProperty('--text-secondary', '#8b8b9f');
+            }
+        }
+
+        // Run
+        init();
+
+    </script>
 </body>
 </html>
 ```
-
----
-
-## ✅ Özellikler
-
-| Özellik | Detay |
-|---------|-------|
-| **📻 Stream** | `https://radyocast.com/8028/Stream` doğrudan entegre |
-| **📡 API** | Otomatik 8sn refresh ile şarkı bilgisi |
-| **⏭ Kayan Yazı** | İstek mesajları + son çalınanlar + varsayılan mesajlar |
-| **📨 İstek Formu** | Şarkı adı, isim, mesaj — anında kayan yazıya eklenir |
-| **📊 Visualizer** | Canvas tabanlı 36 bant animasyon |
-| **❤️ Beğen** | Tek dokunuşla şarkı beğenme |
-| **🔀 Karıştır** | Shuffle modu |
-| **📱 Mobil** | Tam responsive, max 460px widget |
-| **⌨️ Kısayollar** | Space, ↑↓, M, L |
-
-> **Tek dosya** — tüm CSS + JS + HTML dahil, harici bağımlılık yok (sadece Google Fonts + Font Awesome CDN).

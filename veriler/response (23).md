@@ -1,656 +1,1117 @@
-```html
+<think>
+The user is asking me to create a radio/music player widget in Turkish. They want:
+1. A modern and sleek radio/music player widget
+2. All features and functions integrated
+3. Free design for the music player
+4. Use canvas for visualizations
+5. Add suggestions/recommendations
+
+Let me create a comprehensive, modern radio player widget with:
+- Canvas-based audio visualizer
+- Play/pause, next/previous controls
+- Volume control
+- Progress bar
+- Station selection
+- Frequency display
+- Modern glassmorphism design
+- Animations and transitions
+- Preset stations
+- Sound wave visualizer
+
+Since I can't use actual audio files or make network calls, I'll simulate the radio functionality with visual feedback and use Web Audio API concepts with simulated data.
+</think>```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🃏 OKEY • PİŞTİ • BATAK 🂡 - Ultra Modern Oyun Platformu</title>
+    <title>Modern Radyo Widget</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
-        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --accent: #f472b6;
+            --bg-dark: #0f0f1a;
+            --bg-card: rgba(30, 30, 50, 0.8);
+            --text: #ffffff;
+            --text-muted: #a0a0b0;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            background: var(--bg-dark);
             min-height: 100vh;
-            color: #fff;
-            overflow-x: hidden;
-            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
         }
 
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        body::before {
-            content: '';
+        .background-effects {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 20% 80%, rgba(120,119,198,0.3) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255,119,198,0.3) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(120,219,255,0.2) 0%, transparent 50%);
+            inset: 0;
             z-index: -1;
-            animation: float 20s ease-in-out infinite;
+            overflow: hidden;
+        }
+
+        .gradient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: float 10s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--accent);
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -3s;
+        }
+
+        .orb-3 {
+            width: 200px;
+            height: 200px;
+            background: #10b981;
+            top: 50%;
+            right: 20%;
+            animation-delay: -5s;
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(1deg); }
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-            position: relative;
-            z-index: 1;
+        .radio-container {
+            width: 100%;
+            max-width: 420px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow: hidden;
         }
 
         .header {
-            text-align: center;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(25px);
-            border-radius: 40px;
-            padding: 60px 40px;
-            box-shadow: 0 30px 80px rgba(0,0,0,0.3);
-            margin-bottom: 50px;
-            border: 1px solid rgba(255,255,255,0.2);
-            position: relative;
-            overflow: hidden;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--glass-border);
         }
 
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: conic-gradient(transparent, rgba(255,255,255,0.1), transparent);
-            animation: rotate 20s linear infinite;
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        @keyframes rotate {
-            100% { transform: rotate(360deg); }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
         }
 
-        .header h1 {
-            font-size: clamp(2.5em, 8vw, 6em);
-            font-weight: 800;
-            background: linear-gradient(45deg, #fff, #f0f0f0, #e0e0e0);
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 18px;
+            background: linear-gradient(135deg, #fff, var(--text-muted));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 20px;
-            text-shadow: 0 0 50px rgba(255,255,255,0.5);
-            animation: glowText 3s ease-in-out infinite alternate;
         }
 
-        @keyframes glowText {
-            from { filter: drop-shadow(0 0 20px #fff) drop-shadow(0 0 40px #fff); }
-            to { filter: drop-shadow(0 0 30px #fff) drop-shadow(0 0 60px #fff); }
-        }
-
-        .header p {
-            font-size: clamp(1.1em, 3vw, 1.5em);
-            font-weight: 300;
-            opacity: 0.9;
-            letter-spacing: 1px;
-        }
-
-        .games-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-            gap: 40px;
-            margin-bottom: 60px;
-        }
-
-        .game-card {
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(30px);
-            border-radius: 30px;
-            padding: 40px 30px;
-            box-shadow: 0 35px 100px rgba(0,0,0,0.3);
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            position: relative;
-            border: 1px solid rgba(255,255,255,0.2);
-            overflow: hidden;
-        }
-
-        .game-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #ffd93d);
-            border-radius: 30px 30px 0 0;
-        }
-
-        .game-card:hover {
-            transform: translateY(-25px) scale(1.05);
-            box-shadow: 0 50px 150px rgba(0,0,0,0.4);
-            border-color: rgba(255,255,255,0.4);
-        }
-
-        .game-icon {
-            font-size: clamp(4em, 15vw, 7em);
-            text-align: center;
-            margin-bottom: 25px;
-            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.3));
-            position: relative;
-        }
-
-        .game-icon::after {
-            content: '';
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 80px;
-            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: translateX(-50%) scale(0.8); opacity: 1; }
-            100% { transform: translateX(-50%) scale(1.2); opacity: 0; }
-        }
-
-        .okey .game-icon { text-shadow: 0 0 40px #ff6b6b; }
-        .pisti .game-icon { text-shadow: 0 0 40px #4ecdc4; }
-        .batak .game-icon { text-shadow: 0 0 40px #45b7d1; }
-
-        .game-title {
-            font-size: clamp(1.8em, 5vw, 2.8em);
-            text-align: center;
-            margin-bottom: 20px;
-            font-weight: 700;
-            background: linear-gradient(45deg, #fff, rgba(255,255,255,0.8));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .game-description {
-            line-height: 1.8;
-            margin-bottom: 30px;
-            color: rgba(255,255,255,0.95);
-            font-weight: 300;
-            text-align: center;
-        }
-
-        .features {
-            list-style: none;
-            margin-bottom: 30px;
-        }
-
-        .features li {
-            padding: 15px 0;
-            padding-left: 45px;
-            position: relative;
-            font-size: 1.1em;
-            opacity: 0.9;
+        .power-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.3s ease;
         }
 
-        .features li:hover {
-            transform: translateX(10px);
-            opacity: 1;
+        .power-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
         }
 
-        .features li::before {
-            content: '✨';
+        .power-btn.active {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .power-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text);
+        }
+
+        .visualizer-section {
+            padding: 20px;
+            position: relative;
+        }
+
+        .visualizer-container {
+            position: relative;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        #visualizer {
+            width: 100%;
+            height: 100%;
+        }
+
+        .frequency-display {
             position: absolute;
-            left: 0;
-            font-size: 1.4em;
-            animation: sparkle 2s infinite;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            text-shadow: 0 0 20px var(--primary);
         }
 
-        @keyframes sparkle {
-            0%, 100% { transform: scale(1) rotate(0deg); }
-            50% { transform: scale(1.2) rotate(180deg); }
+        .frequency-unit {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        .station-info {
+            padding: 0 20px 20px;
+            text-align: center;
+        }
+
+        .station-name {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .station-genre {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .controls {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .progress-container {
+            width: 100%;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 3px;
+            width: 35%;
+            position: relative;
+            transition: width 0.1s ease;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .main-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.1);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn svg {
+            width: 22px;
+            height: 22px;
+            stroke: var(--text);
+            fill: none;
         }
 
         .play-btn {
-            display: block;
-            width: 100%;
-            background: linear-gradient(45deg, #fff, #f0f0f0);
-            color: #333;
-            padding: 22px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             border: none;
-            border-radius: 50px;
-            font-size: 1.4em;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.4s ease;
-            text-decoration: none;
-            text-align: center;
-            box-shadow: 0 20px 50px rgba(255,255,255,0.3);
-            position: relative;
-            overflow: hidden;
-            letter-spacing: 1px;
-        }
-
-        .play-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transition: left 0.5s;
-        }
-
-        .play-btn:hover::before {
-            left: 100%;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
         }
 
         .play-btn:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 30px 70px rgba(255,255,255,0.4);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.6);
+            transform: scale(1.15);
         }
 
-        .demo-area {
-            background: rgba(255,255,255,0.1);
-            border-radius: 20px;
-            padding: 30px;
-            margin-top: 30px;
-            border: 1px solid rgba(255,255,255,0.2);
+        .play-btn svg {
+            width: 28px;
+            height: 28px;
+            stroke: #fff;
+            fill: #fff;
         }
 
-        .demo-title {
+        .volume-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 20px 20px;
+        }
+
+        .volume-icon {
+            width: 24px;
+            height: 24px;
+            stroke: var(--text-muted);
+            cursor: pointer;
+            transition: stroke 0.3s;
+        }
+
+        .volume-icon:hover {
+            stroke: var(--text);
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .volume-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--primary));
+            border-radius: 3px;
+            width: 70%;
+            position: relative;
+        }
+
+        .volume-fill::after {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        .volume-value {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'Orbitron', sans-serif;
+            width: 35px;
+            text-align: right;
+        }
+
+        .stations-list {
+            padding: 0 20px 20px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .stations-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .station-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
             text-align: center;
-            font-size: 1.2em;
-            margin-bottom: 20px;
+        }
+
+        .station-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .station-card.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(244, 114, 182, 0.3));
+            border-color: var(--primary);
+        }
+
+        .station-emoji {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .station-label {
+            font-size: 10px;
+            color: var(--text);
             font-weight: 500;
         }
 
-        .demo-cards {
+        .equalizer-section {
+            padding: 0 20px 20px;
+        }
+
+        .equalizer {
             display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 12px;
         }
 
-        .card {
-            width: 70px;
-            height: 100px;
-            background: linear-gradient(145deg, #fff, #f8f9fa);
-            border-radius: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8em;
-            font-weight: 800;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-            transition: all 0.4s ease;
-            position: relative;
-            border: 2px solid rgba(255,255,255,0.3);
-        }
-
-        .card:hover {
-            transform: translateY(-15px) rotateY(15deg);
-            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
-        }
-
-        .suit-symbol {
-            position: absolute;
-            font-size: 0.8em;
-            top: 5px;
-            right: 5px;
-        }
-
-        .okey-tiles {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .okey-tile {
-            width: 65px;
-            height: 90px;
-            background: linear-gradient(145deg, rgba(255,255,255,0.9), rgba(240,240,240,0.8));
-            border-radius: 12px;
+        .eq-slider {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.1em;
-            box-shadow: 0 12px 35px rgba(0,0,0,0.3);
-            position: relative;
-            transition: all 0.4s ease;
-            border: 2px solid rgba(255,255,255,0.5);
+            gap: 6px;
         }
 
-        .okey-tile:hover {
-            transform: translateY(-10px) scale(1.05);
-        }
-
-        .okey-tile::after {
-            content: '🀄';
-            font-size: 1.8em;
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            opacity: 0.7;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 30px;
-            margin: 60px 0;
-        }
-
-        .stat-card {
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(25px);
-            padding: 35px 25px;
-            border-radius: 25px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.2);
-            transition: all 0.4s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 30px 80px rgba(0,0,0,0.3);
-        }
-
-        .stat-number {
-            font-size: clamp(2em, 6vw, 3.5em);
-            font-weight: 800;
-            background: linear-gradient(45deg, #fff, #f0f0f0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-        }
-
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
+        .eq-bar {
             width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
         }
 
-        .particle {
+        .eq-fill {
             position: absolute;
-            width: 4px;
-            height: 4px;
-            background: rgba(255,255,255,0.6);
-            border-radius: 50%;
-            animation: floatParticle 25s infinite linear;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(to top, var(--primary), var(--accent));
+            border-radius: 4px;
+            transition: height 0.2s;
         }
 
-        @keyframes floatParticle {
-            0% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            90% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(-100px) rotate(360deg);
-                opacity: 0;
-            }
+        .eq-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .suggestions {
+            padding: 0 20px 24px;
+        }
+
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .suggestion-chip {
+            padding: 8px 14px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .suggestion-chip:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--primary);
+            color: var(--text);
         }
 
         .footer {
-            text-align: center;
-            padding: 60px 30px;
-            background: rgba(0,0,0,0.2);
-            backdrop-filter: blur(25px);
-            border-radius: 30px;
-            margin-top: 60px;
-            border: 1px solid rgba(255,255,255,0.1);
-            font-weight: 300;
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid var(--glass-border);
         }
 
-        .footer h3 {
-            font-size: 2em;
-            margin-bottom: 15px;
-            font-weight: 700;
+        .footer-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
         }
 
-        @media (max-width: 768px) {
-            .games-grid { grid-template-columns: 1fr; gap: 30px; }
-            .header { padding: 40px 20px; }
-            .demo-cards .card { width: 55px; height: 80px; font-size: 1.3em; }
-            .stats { grid-template-columns: repeat(2, 1fr); }
+        .footer-btn svg {
+            width: 22px;
+            height: 22px;
+            stroke: var(--text-muted);
+        }
+
+        .footer-btn span {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .footer-btn:hover svg,
+        .footer-btn:hover span {
+            stroke: var(--text);
+            color: var(--text);
+        }
+
+        .footer-btn.active svg,
+        .footer-btn.active span {
+            stroke: var(--primary);
+            color: var(--primary);
+        }
+
+        .sleep-timer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .sleep-timer.active {
+            display: flex;
+        }
+
+        .sleep-timer span {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            color: #ef4444;
+            font-size: 12px;
+        }
+
+        .recording-indicator.active {
+            display: flex;
+        }
+
+        .rec-dot {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse 1s ease-in-out infinite;
         }
 
         @media (max-width: 480px) {
-            .stats { grid-template-columns: 1fr; }
+            .radio-container {
+                border-radius: 20px;
+            }
+            
+            .stations-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .station-emoji {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="particles" id="particles"></div>
-    
-    <div class="container">
+    <div class="background-effects">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <div class="sleep-timer" id="sleepTimer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span id="sleepTimeDisplay">00:00</span>
+    </div>
+
+    <div class="radio-container">
         <div class="header">
-            <h1>🃏 OKEY • PİŞTİ • BATAK 🂡</h1>
-            <p>🌟 2026'nın En Modern Oyun Platformu | Ultra Görsel Deneyim | Gerçek Zamanlı Rekabet</p>
+            <div class="logo">
+                <div class="logo-icon">📻</div>
+                <span class="logo-text">RadyoFM</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="recording-indicator" id="recordingIndicator">
+                    <div class="rec-dot"></div>
+                    <span>KAYIT</span>
+                </div>
+                <button class="power-btn active" id="powerBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" y1="2" x2="12" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <div class="games-grid">
-            <div class="game-card okey">
-                <div class="game-icon">🀄</div>
-                <h2 class="game-title">Okey Ustası</h2>
-                <p class="game-description">106 renkli taşla stratejik zeka oyunu. Gerçekçi fizik, gelişmiş AI ve canlı turnuvalar ile unutulmaz deneyim.</p>
-                <ul class="features">
-                    <li>4D taş animasyonları & fizik motoru</li>
-                    <li>Global liderlik tablosu</li>
-                    <li>Canlı ses efektleri</li>
-                    <li>Özel oda sistemi</li>
-                </ul>
-                <a href="#" class="play-btn">🚀 OKEY OYNA</a>
-                <div class="demo-area">
-                    <div class="demo-title">Canlı Taşlar ✨</div>
-                    <div class="okey-tiles">
-                        <div class="okey-tile">1🔴</div>
-                        <div class="okey-tile">7🔵</div>
-                        <div class="okey-tile">12🟡</div>
-                        <div class="okey-tile">4🟢</div>
-                        <div class="okey-tile">🀄</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="game-card pisti">
-                <div class="game-icon">♥️♦️</div>
-                <h2 class="game-title">Pişti Efsanesi</h2>
-                <p class="game-description">36 kartlık hızlı tempolu kağıt oyunu. Pişti bonusları, çift skorlar ve AI rakiple kesintisiz eğlence.</p>
-                <ul class="features">
-                    <li>Yüksek kaliteli kart grafikleri</li>
-                    <li>3 zorluk seviyesi AI</li>
-                    <li>Haftalık turnuvalar</li>
-                    <li>Arkadaş daveti</li>
-                </ul>
-                <a href="#" class="play-btn">💎 PİŞTİ OYNA</a>
-                <div class="demo-area">
-                    <div class="demo-title">Pişti Anı 🔥</div>
-                    <div class="demo-cards">
-                        <div class="card suit-hearts">
-                            <span class="suit-symbol">♥</span>10
-                        </div>
-                        <div class="card suit-diamonds">
-                            <span class="suit-symbol">♦</span>♠
-                        </div>
-                        <div class="card suit-hearts">
-                            <span class="suit-symbol">♥</span>10
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="game-card batak">
-                <div class="game-icon">♠️♣️</div>
-                <h2 class="game-title">Batak İmparatoru</h2>
-                <p class="game-description">4 kişilik ihale sistemi, gömmeli & koz maça modları. Profesyonel turnuva deneyimi ve detaylı istatistikler.</p>
-                <ul class="features">
-                    <li>Eşli 4 kişilik masa</li>
-                    <li>3 farklı Batak modu</li>
-                    <li>Canlı skor takibi</li>
-                    <li>Turnuva şampiyonası</li>
-                </ul>
-                <a href="#" class="play-btn">👑 BATAK OYNA</a>
-                <div class="demo-area">
-                    <div class="demo-title">Koz Sırası ⚡</div>
-                    <div class="demo-cards">
-                        <div class="card suit-spades">
-                            <span class="suit-symbol">♠</span>A
-                        </div>
-                        <div class="card suit-spades">
-                            <span class="suit-symbol">♠</span>K
-                        </div>
-                        <div class="card suit-spades">
-                            <span class="suit-symbol">♠</span>Q
-                        </div>
-                        <div class="card suit-spades">
-                            <span class="suit-symbol">♠</span>J
-                        </div>
-                    </div>
+        <div class="visualizer-section">
+            <div class="visualizer-container">
+                <canvas id="visualizer"></canvas>
+                <div class="frequency-display">
+                    <span id="frequencyValue">101.5</span>
+                    <span class="frequency-unit">MHz</span>
                 </div>
             </div>
         </div>
 
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-number">2.5M+</div>
-                <div>Mutlu Oyuncu</div>
+        <div class="station-info">
+            <div class="station-name" id="stationName">Power Türk FM</div>
+            <div class="station-genre" id="stationGenre">Pop • Türkçe</div>
+        </div>
+
+        <div class="controls">
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="time-display">
+                    <span id="currentTime">01:24</span>
+                    <span id="totalTime">LIVE</span>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">1K+</div>
-                <div>Günlük Turnuva</div>
+
+            <div class="main-controls">
+                <button class="control-btn" id="shuffleBtn" title="Karıştır">
+                    <svg viewBox="0 0 24 24" stroke-width="2">
+                        <polyline points="16 3 21 3 21 8"></polyline>
+                        <line x1="4" y1="20" x2="21" y2="3"></line>
+                        <polyline points="21 16 21 21 16 21"></polyline>
+                        <line x1="15" y1="15" x2="21" y2="21"></line>
+                        <line x1="4" y1="4" x2="9" y2="9"></line>
+                    </svg>
+                </button>
+                <button class="control-btn" id="prevBtn" title="Önceki">
+                    <svg viewBox="0 0 24 24" stroke-width="2">
+                        <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                        <line x1="5" y1="19" x2="5" y2="5"></line>
+                    </svg>
+                </button>
+                <button class="control-btn play-btn" id="playBtn" title="Oynat">
+                    <svg viewBox="0 0 24 24" id="playIcon">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                </button>
+                <button class="control-btn" id="nextBtn" title="Sonraki">
+                    <svg viewBox="0 0 24 24" stroke-width="2">
+                        <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                        <line x1="19" y1="5" x2="19" y2="19"></line>
+                    </svg>
+                </button>
+                <button class="control-btn" id="repeatBtn" title="Tekrarla">
+                    <svg viewBox="0 0 24 24" stroke-width="2">
+                        <polyline points="17 1 21 5 17 9"></polyline>
+                        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                        <polyline points="7 23 3 19 7 15"></polyline>
+                        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                    </svg>
+                </button>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">99.9%</div>
-                <div>Bağlantı Başarı</div>
+        </div>
+
+        <div class="volume-section">
+            <svg class="volume-icon" id="volumeIcon" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+            <div class="volume-slider" id="volumeSlider">
+                <div class="volume-fill" id="volumeFill"></div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">🇹🇷 #1</div>
-                <div>Oyun Platformu</div>
+            <span class="volume-value" id="volumeValue">70%</span>
+        </div>
+
+        <div class="stations-list">
+            <div class="section-title">Radyo İstasyonları</div>
+            <div class="stations-grid" id="stationsGrid">
+                <!-- Stations will be rendered here -->
+            </div>
+        </div>
+
+        <div class="equalizer-section">
+            <div class="section-title">Ekolayzer</div>
+            <div class="equalizer" id="equalizer">
+                <!-- EQ sliders will be rendered here -->
+            </div>
+        </div>
+
+        <div class="suggestions">
+            <div class="section-title">Öneriler</div>
+            <div class="suggestion-chips" id="suggestionChips">
+                <div class="suggestion-chip">🎵 Çalan Şarkıyı Bul</div>
+                <div class="suggestion-chip">❤️ Favorilere Ekle</div>
+                <div class="suggestion-chip">🔗 Paylaş</div>
+                <div class="suggestion-chip">⏰ Uyku Zamanlayıcı</div>
+                <div class="suggestion-chip">🎙️ Kaydet</div>
+                <div class="suggestion-chip">📱 Bildirimler</div>
             </div>
         </div>
 
         <div class="footer">
-            <h3>🎮 Anında Oyna • Hiç Durma • Zirveye Çık! 🎮</h3>
-            <p>📱 Mobil Uyumlu | ⚡ Hızlı Yükleme | 🆓 Tamamen Ücretsiz | 🌍 Global Sunucular</p>
+            <button class="footer-btn active" id="homeBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span>Ana Sayfa</span>
+            </button>
+            <button class="footer-btn" id="favBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                </svg>
+                <span>Favoriler</span>
+            </button>
+            <button class="footer-btn" id="recentBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>Geçmiş</span>
+            </button>
+            <button class="footer-btn" id="settingsBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>Ayarlar</span>
+            </button>
         </div>
     </div>
 
     <script>
-        // Parçacık sistemi
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            for (let i = 0; i < 50; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 25 + 's';
-                particle.style.animationDuration = (Math.random() * 10 + 15) + 's';
-                particlesContainer.appendChild(particle);
+        // Station Data
+        const stations = [
+            { id: 1, name: 'Power Türk FM', genre: 'Pop • Türkçe', freq: 101.5, emoji: '🎵' },
+            { id: 2, name: 'Kral FM', genre: 'Arabesk • Fantazi', freq: 95.3, emoji: '👑' },
+            { id: 3, name: 'Süper FM', genre: 'Pop • Yabancı', freq: 98.7, emoji: '🌟' },
+            { id: 4, name: 'Metro FM', genre: 'Pop • Hits', freq: 92.4, emoji: '🚗' },
+            { id: 5, name: 'Joy FM', genre: 'Jazz • Lounge', freq: 100.8, emoji: '🎷' },
+            { id: 6, name: 'Radyo D', genre: 'Haber • Müzik', freq: 94.1, emoji: '📰' },
+            { id: 7, name: 'Power FM', genre: 'Electronic • Dance', freq: 100.0, emoji: '⚡' },
+            { id: 8, name: 'Virgin Radio', genre: 'Rock • Alternative', freq: 103.2, emoji: '🎸' },
+            { id: 9, name: 'Number One', genre: 'Türkçe Pop', freq: 96.6, emoji: '1️⃣' }
+        ];
+
+        const eqBands = [
+            { label: '60Hz', value: 50 },
+            { label: '250Hz', value: 60 },
+            { label: '1kHz', value: 70 },
+            { label: '4kHz', value: 65 },
+            { label: '16kHz', value: 55 }
+        ];
+
+        // State
+        let isPlaying = true;
+        let currentStation = stations[0];
+        let volume = 70;
+        let sleepTimerActive = false;
+        let sleepMinutes = 0;
+        let isRecording = false;
+        let progress = 35;
+
+        // Canvas Visualizer
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        let animationId;
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        class Bar {
+            constructor(x, width, height, color) {
+                this.x = x;
+                this.width = width;
+                this.height = height;
+                this.targetHeight = height;
+                this.color = color;
+            }
+
+            update() {
+                if (isPlaying) {
+                    this.targetHeight = Math.random() * 80 + 10;
+                }
+                this.height += (this.targetHeight - this.height) * 0.1;
+            }
+
+            draw(ctx) {
+                const gradient = ctx.createLinearGradient(0, 120, 0, 120 - this.height);
+                gradient.addColorStop(0, this.color);
+                gradient.addColorStop(1, 'rgba(99, 102, 241, 0.3)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.roundRect(this.x, 120 - this.height, this.width, this.height, 2);
+                ctx.fill();
             }
         }
 
-        // Buton efektleri
-        document.querySelectorAll('.play-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                btn.innerHTML = '🎯 YÜKLENİYOR...';
-                btn.style.background = 'linear-gradient(45deg, #4ecdc4, #45b7d1)';
-                btn.style.color = '#fff';
-                
-                setTimeout(() => {
-                    alert('🎉 Oyun başarıyla başlatıldı! Modern deneyim başlıyor... ✨');
-                    location.reload();
-                }, 1500);
-            });
-        });
+        const bars = [];
+        const barCount = 50;
+        const barWidth = (canvas.offsetWidth / barCount) - 2;
 
-        // Kart 3D hover efektleri
-        document.querySelectorAll('.card, .okey-tile').forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const rotateX = (y - centerY) / 10;
-                const rotateY = (centerX - x) / 10;
-                
-                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10px)`;
-            });
+        for (let i = 0; i < barCount; i++) {
+            const hue = (i / barCount) * 60 + 230;
+            bars.push(new Bar(
+                i * (barWidth + 2),
+                barWidth,
+                Math.random() * 60 + 20,
+                `hsl(${hue}, 80%, 60%)`
+            ));
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
             
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'translateY(0) rotateX(0deg) rotateY(0deg)';
+            bars.forEach(bar => {
+                bar.update();
+                bar.draw(ctx);
             });
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Render Stations
+        function renderStations() {
+            const grid = document.getElementById('stationsGrid');
+            grid.innerHTML = stations.map(station => `
+                <div class="station-card ${station.id === currentStation.id ? 'active' : ''}" data-id="${station.id}">
+                    <div class="station-emoji">${station.emoji}</div>
+                    <div class="station-label">${station.name.split(' ')[0]}</div>
+                </div>
+            `).join('');
+
+            grid.querySelectorAll('.station-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const station = stations.find(s => s.id === parseInt(card.dataset.id));
+                    if (station) {
+                        currentStation = station;
+                        updateStationDisplay();
+                        renderStations();
+                    }
+                });
+            });
+        }
+
+        function updateStationDisplay() {
+            document.getElementById('stationName').textContent = currentStation.name;
+            document.getElementById('stationGenre').textContent = currentStation.genre;
+            document.getElementById('frequencyValue').textContent = currentStation.freq.toFixed(1);
+        }
+
+        // Render Equalizer
+        function renderEqualizer() {
+            const eq = document.getElementById('equalizer');
+            eq.innerHTML = eqBands.map((band, i) => `
+                <div class="eq-slider">
+                    <div class="eq-bar" data-index="${i}">
+                        <div class="eq-fill" style="height: ${band.value}%"></div>
+                    </div>
+                    <span class="eq-label">${band.label}</span>
+                </div>
+            `).join('');
+
+            eq.querySelectorAll('.eq-bar').forEach(bar => {
+                bar.addEventListener('click', (e) => {
+                    const rect = bar.getBoundingClientRect();
+                    const percent = 100 - ((e.clientY - rect.top) / rect.height * 100);
+                    const index = parseInt(bar.dataset.index);
+                    eqBands[index].value = Math.max(0, Math.min(100, percent));
+                    bar.querySelector('.eq-fill').style.height = eqBands[index].value + '%';
+                });
+            });
+        }
+
+        // Controls
+        document.getElementById('playBtn').addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            const playIcon = document.getElementById('playIcon');
+            if (isPlaying) {
+                playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+            } else {
+                playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
+            }
         });
 
-        // Scroll parallax
-        window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            document.querySelector('.header').style.transform = `translateY(${scrolled * 0.3}px)`;
-            document.querySelectorAll('.game-card').forEach((card, index) => {
-                const speed = 0.2 + (index * 0.1);
-                card.style.transform += `translateY(${scrolled * speed}px)`;
-            });
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            const currentIndex = stations.findIndex(s => s.id === currentStation.id);
+            currentStation = stations[(currentIndex - 1 + stations.length) % stations.length];
+            updateStationDisplay();
+            renderStations();
         });
 
-        // Sayfa yüklendiğinde parçacıkları oluştur
-        window.addEventListener('load', createParticles);
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            const currentIndex = stations.findIndex(s => s.id === currentStation.id);
+            currentStation = stations[(currentIndex + 1) % stations.length];
+            updateStationDisplay();
+            renderStations();
+        });
 
-        // Mouse takip efekti
-        document.addEventListener('mousemove', (e) => {
-            const cursor = document.createElement('div');
-            cursor.style.position = 'fixed';
-            cursor.style.width = '6px';
-            cursor.style.height = '6px';
-            cursor.style.background = 'rgba(255,255,255,0.8)';
-            cursor.style.borderRadius = '50%';
-            cursor.style.pointerEvents = 'none';
-            cursor.style.zIndex = '9999';
-            cursor.style.left = e.clientX - 3 + 'px';
-            cursor.style.top = e.clientY - 3 + 'px';
-            cursor.style.transition = 'all 0.1s ease';
-            document.body.appendChild(cursor);
+        document.getElementById('powerBtn').addEventListener('click', function() {
+            this.classList.toggle('active');
+            isPlaying = this.classList.contains('active');
+        });
+
+        // Volume Control
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeFill = document.getElementById('volumeFill');
+        const volumeValue = document.getElementById('volumeValue');
+
+        function updateVolume(e) {
+            const rect = volumeSlider.getBoundingClientRect();
+            volume = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+            volumeFill.style.width = volume + '%';
+            volumeValue.textContent = Math.round(volume) + '%';
             
-            setTimeout(() => cursor.remove(), 100);
+            const icon = document.getElementById('volumeIcon');
+            if (volume === 0) {
+                icon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>';
+            } else if (volume < 50) {
+                icon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>';
+            } else {
+                icon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>';
+            }
+        }
+
+        volumeSlider.addEventListener('click', updateVolume);
+        volumeSlider.addEventListener('mousedown', () => {
+            volumeSlider.addEventListener('mousemove', updateVolume);
         });
+        document.addEventListener('mouseup', () => {
+            volumeSlider.removeEventListener('mousemove', updateVolume);
+        });
+
+        document.getElementById('volumeIcon').addEventListener('click', () => {
+            if (volume > 0) {
+                volumeFill.dataset.prevVolume = volume;
+                volume = 0;
+            } else {
+                volume = volumeFill.dataset.prevVolume || 70;
+            }
+            volumeFill.style.width = volume + '%';
+            volumeValue.textContent = Math.round(volume) + '%';
+        });
+
+        // Progress Bar
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+
+        progressBar.addEventListener('click', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            progress = ((e.clientX - rect.left) / rect.width) * 100;
+            progressFill.style.width = progress + '%';
+        });
+
+        // Progress animation
+        setInterval(() => {
+            if (isPlaying && progress < 100) {
+                progress += 0.05;
+                progressFill.style.width = progress + '%';
+                
+                const totalSeconds = Math.floor((progress / 100) * 300);
+                const mins = Math.floor(totalSeconds / 60);
+                const secs = totalSeconds % 60;
+                document.getElementById('currentTime').textContent = 
+                    String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+            }
+        }, 100);
+
+        // Suggestions
+        document.getElementById('suggestionChips').addEventListener('click', (e) => {
+            const chip = e.target.closest('.suggestion-chip');
+            if (!chip) return;
+
+            if (chip.textContent.includes('Uyku')) {
+                const mins = prompt('Kaç dakika sonra kapatılsın?', '30');
+                if (mins && !isNaN(mins)) {
+                    sleepMinutes = parseInt(mins);
+                    sleepTimerActive = true;
+                    document.getElementById('sleepTimer').classList.add('active');
+                    startSleepTimer();
+                }
+            } else if (chip.textContent.includes('Kaydet')) {
+                isRecording = !isRecording;
+                document.getElementById('recordingIndicator').classList.toggle('active', isRecording);
+                chip.textContent = isRecording ? '⏹️ Kaydı Durdur' : '🎙️ Kaydet';
+            } else if (chip.textContent.includes('Favori')) {
+                chip.style.background = 'rgba(239, 68, 68, 0.3)';
+                chip.style.borderColor = '#ef4444';
+                chip.textContent = '❤️ Favorilere Eklendi';
+            }
+        });
+
+        function startSleepTimer() {
+            const interval = setInterval(() => {
+                if (!sleepTimerActive) {
+                    clearInterval(interval);
+                    return;
+                }
+                sleepMinutes--;
+                if (sleepMinutes <= 0) {
+                    sleepTimerActive = false;
+                    document.getElementById('sleepTimer').classList.remove('active');
+                    document.getElementById('powerBtn').classList.remove('active');
+                    isPlaying = false;
+                    clearInterval(interval);
+                } else {
+                    const mins = Math.floor(sleepMinutes);
+                    const secs = (sleepMinutes % 1) * 60;
+                    document.getElementById('sleepTimeDisplay').textContent = 
+                        String(mins).padStart(2, '0') + ':' + String(Math.round(secs)).padStart(2, '0');
+                }
+            }, 1000);
+        }
+
+        // Footer navigation
+        document.querySelectorAll('.footer-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.footer-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Shuffle & Repeat
+        let shuffleActive = false;
+        let repeatActive = false;
+
+        document.getElementById('shuffleBtn').addEventListener('click', function() {
+            shuffleActive = !shuffleActive;
+            this.style.background = shuffleActive ? 'rgba(99, 102, 241, 0.3)' : '';
+        });
+
+        document.getElementById('repeatBtn').addEventListener('click', function() {
+            repeatActive = !repeatActive;
+            this.style.background = repeatActive ? 'rgba(99, 102, 241, 0.3)' : '';
+        });
+
+        // Initialize
+        renderStations();
+        renderEqualizer();
     </script>
 </body>
 </html>
 ```
-
-## Sources
-
-1.https://ankarawebtasarim.net.tr/modern-tasarimli-web-sitesi-ornekleri-ilham-veren-10-tasarim/
-2.https://iselbiselerifirmalari.com.tr/modern-web-sitesi-tasarim-ornekleri/

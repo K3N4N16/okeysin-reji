@@ -1,732 +1,1117 @@
 <think>
+The user is asking me to create a radio/music player widget in Turkish. They want:
+1. A modern and sleek radio/music player widget
+2. All features and functions integrated
+3. Free design for the music player
+4. Use canvas for visualizations
+5. Add suggestions/recommendations
 
-Kullanıcı HTML kodunun yarım kaldığı yerden devam etmemi istiyor. "volume-input" sınıfından sonra kod kesilmiş. Tam kodu yazmaya devam etmeliyim.
+Let me create a comprehensive, modern radio player widget with:
+- Canvas-based audio visualizer
+- Play/pause, next/previous controls
+- Volume control
+- Progress bar
+- Station selection
+- Frequency display
+- Modern glassmorphism design
+- Animations and transitions
+- Preset stations
+- Sound wave visualizer
 
-Verdiğim kod devam edecek:
-```html
-<input type="range" class="volume-input" id="volInput" min="0" max="100" value="75">
-        </div>
-        <span class="volume-percent" id="volPercent">75%</span>
-      </div>
+Since I can't use actual audio files or make network calls, I'll simulate the radio functionality with visual feedback and use Web Audio API concepts with simulated data.
+</think>```html
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Radyo Widget</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --accent: #f472b6;
+            --bg-dark: #0f0f1a;
+            --bg-card: rgba(30, 30, 50, 0.8);
+            --text: #ffffff;
+            --text-muted: #a0a0b0;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .background-effects {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .gradient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: float 10s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--accent);
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -3s;
+        }
+
+        .orb-3 {
+            width: 200px;
+            height: 200px;
+            background: #10b981;
+            top: 50%;
+            right: 20%;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        .radio-container {
+            width: 100%;
+            max-width: 420px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 18px;
+            background: linear-gradient(135deg, #fff, var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .power-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .power-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+
+        .power-btn.active {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .power-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text);
+        }
+
+        .visualizer-section {
+            padding: 20px;
+            position: relative;
+        }
+
+        .visualizer-container {
+            position: relative;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        #visualizer {
+            width: 100%;
+            height: 100%;
+        }
+
+        .frequency-display {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            text-shadow: 0 0 20px var(--primary);
+        }
+
+        .frequency-unit {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        .station-info {
+            padding: 0 20px 20px;
+            text-align: center;
+        }
+
+        .station-name {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .station-genre {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .controls {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .progress-container {
+            width: 100%;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 3px;
+            width: 35%;
+            position: relative;
+            transition: width 0.1s ease;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .main-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.1);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn svg {
+            width: 22px;
+            height: 22px;
+            stroke: var(--text);
+            fill: none;
+        }
+
+        .play-btn {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .play-btn:hover {
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.6);
+            transform: scale(1.15);
+        }
+
+        .play-btn svg {
+            width: 28px;
+            height: 28px;
+            stroke: #fff;
+            fill: #fff;
+        }
+
+        .volume-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 20px 20px;
+        }
+
+        .volume-icon {
+            width: 24px;
+            height: 24px;
+            stroke: var(--text-muted);
+            cursor: pointer;
+            transition: stroke 0.3s;
+        }
+
+        .volume-icon:hover {
+            stroke: var(--text);
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .volume-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--primary));
+            border-radius: 3px;
+            width: 70%;
+            position: relative;
+        }
+
+        .volume-fill::after {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        .volume-value {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'Orbitron', sans-serif;
+            width: 35px;
+            text-align: right;
+        }
+
+        .stations-list {
+            padding: 0 20px 20px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .stations-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .station-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .station-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .station-card.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(244, 114, 182, 0.3));
+            border-color: var(--primary);
+        }
+
+        .station-emoji {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .station-label {
+            font-size: 10px;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .equalizer-section {
+            padding: 0 20px 20px;
+        }
+
+        .equalizer {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .eq-slider {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .eq-bar {
+            width: 100%;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .eq-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(to top, var(--primary), var(--accent));
+            border-radius: 4px;
+            transition: height 0.2s;
+        }
+
+        .eq-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .suggestions {
+            padding: 0 20px 24px;
+        }
+
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .suggestion-chip {
+            padding: 8px 14px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .suggestion-chip:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--primary);
+            color: var(--text);
+        }
+
+        .footer {
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .footer-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .footer-btn svg {
+            width: 22px;
+            height: 22px;
+            stroke: var(--text-muted);
+        }
+
+        .footer-btn span {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .footer-btn:hover svg,
+        .footer-btn:hover span {
+            stroke: var(--text);
+            color: var(--text);
+        }
+
+        .footer-btn.active svg,
+        .footer-btn.active span {
+            stroke: var(--primary);
+            color: var(--primary);
+        }
+
+        .sleep-timer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .sleep-timer.active {
+            display: flex;
+        }
+
+        .sleep-timer span {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            color: #ef4444;
+            font-size: 12px;
+        }
+
+        .recording-indicator.active {
+            display: flex;
+        }
+
+        .rec-dot {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @media (max-width: 480px) {
+            .radio-container {
+                border-radius: 20px;
+            }
+            
+            .stations-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .station-emoji {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-effects">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
     </div>
-  </div>
 
-  <!-- ALT PANEL -->
-  <div class="bottom-section">
-    
-    <!-- SİNYAL PANELİ -->
-    <div class="signal-container">
-      <div class="signal-card">
-        <div class="signal-header">
-          <i class="fas fa-wave-square signal-icon"></i>
-          <span class="signal-title">Frekans Sinyali</span>
-          <div class="signal-badge">AKTİF</div>
-        </div>
-        
-        <div class="freq-analyzer">
-          <div class="freq-label">
-            <span>FM</span>
-            GALAXY
-          </div>
-          <div class="freq-visualizer" id="freqBars"></div>
-          <div class="freq-ticker">
-            <div class="ticker-scroll" id="tickerScroll"></div>
-          </div>
-        </div>
-        
-        <iframe src="https://radyo.example/mesajlar" class="message-container" scrolling="no" title="Mesajlar"></iframe>
-      </div>
+    <div class="sleep-timer" id="sleepTimer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span id="sleepTimeDisplay">00:00</span>
     </div>
-    
-    <!-- ÇALMA LİSTESİ -->
-    <div class="playlist-container">
-      <div class="playlist-card">
-        <div class="playlist-header">
-          <i class="fas fa-list playlist-icon"></i>
-          <span class="playlist-title">Sıradaki</span>
-          <span class="playlist-count">5 parça</span>
+
+    <div class="radio-container">
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">📻</div>
+                <span class="logo-text">RadyoFM</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="recording-indicator" id="recordingIndicator">
+                    <div class="rec-dot"></div>
+                    <span>KAYIT</span>
+                </div>
+                <button class="power-btn active" id="powerBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" y1="2" x2="12" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
         </div>
-        
-        <div class="playlist-items" id="playlist"></div>
-      </div>
-    </div>
-    
-  </div>
-  
-</div>
-```
 
-Devam edecek bölümler var, özellikle JavaScript kısmı eksik. Çalma listesi öğelerini dinamik olarak oluşturmak ve frekans çubuklarını render etmek için betik eklemem gerekiyor.
-
-</think>
-
-```html
-        <input type="range" class="volume-input" id="volInput" min="0" max="100" value="75">
+        <div class="visualizer-section">
+            <div class="visualizer-container">
+                <canvas id="visualizer"></canvas>
+                <div class="frequency-display">
+                    <span id="frequencyValue">101.5</span>
+                    <span class="frequency-unit">MHz</span>
+                </div>
+            </div>
         </div>
-        <span class="volume-percent" id="volPercent">75%</span>
-      </div>
 
-    </div>
-  </div>
-
-  <!-- ALT PANEL -->
-  <div class="bottom-section">
-    
-    <!-- SİNYAL PANELİ -->
-    <div class="signal-container">
-      <div class="signal-card">
-        <div class="signal-header">
-          <i class="fas fa-wave-square signal-icon"></i>
-          <span class="signal-title">Frekans Sinyali & Mesajlar</span>
-          <div class="signal-badge">AKTİF</div>
+        <div class="station-info">
+            <div class="station-name" id="stationName">Power Türk FM</div>
+            <div class="station-genre" id="stationGenre">Pop • Türkçe</div>
         </div>
-        
-        <div class="freq-analyzer">
-          <div class="freq-label">
-            <span>FM</span>
-            GALAXY
-          </div>
-          <div class="freq-visualizer" id="freqBars"></div>
-          <div class="freq-ticker">
-            <div class="ticker-scroll" id="tickerScroll"></div>
-          </div>
+
+        <div class="controls">
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="time-display">
+                    <span id="currentTime">01:24</span>
+                    <span id="totalTime">LIVE</span>
+                </div>
+            </div>
+
+            <div class="main-controls">
+                <button class="control-btn" id="shuffleBtn" title="Karıştır">
+                    <svg viewBox="0 0 24 24" stroke-width="2">
+                        <polyline points="16 3 21 3 21 8"></polyline>
+                        <line x1="4" y1="20" x2="21" y2="3"></line>
+                        <polyline points="21 16 21 21 16 21"></polyline>
+                        <line x1="15" y1="15" x2="21" y2="21"></line>
+                        <line x1="4" y1="4" x2="9" y2="9"></line>
+                    </svg>
+                </button>
+                <button class="control-btn" id="prevBtn" title="Önceki">
+                    <svg viewBox="0 0 24 24" stroke-width="2">
+                        <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                        <line x1="5" y1="19" x2="5" y2="5"></line>
+                    </svg>
+                </button>
+                <button class="control-btn play-btn" id="playBtn" title="Oynat">
+                    <svg viewBox="0 0 24 24" id="playIcon">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                </button>
+                <button class="control-btn" id="nextBtn" title="Sonraki">
+                    <svg viewBox="0 0 24 24" stroke-width="2">
+                        <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                        <line x1="19" y1="5" x2="19" y2="19"></line>
+                    </svg>
+                </button>
+                <button class="control-btn" id="repeatBtn" title="Tekrarla">
+                    <svg viewBox="0 0 24 24" stroke-width="2">
+                        <polyline points="17 1 21 5 17 9"></polyline>
+                        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                        <polyline points="7 23 3 19 7 15"></polyline>
+                        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
-        
-        <iframe src="https://radyo.example/mesajlar" class="message-container" scrolling="no" title="Mesajlar"></iframe>
-      </div>
-    </div>
-    
-    <!-- ÇALMA LİSTESİ -->
-    <div class="playlist-container">
-      <div class="playlist-card">
-        <div class="playlist-header">
-          <i class="fas fa-list playlist-icon"></i>
-          <span class="playlist-title">Galaktik Sıra</span>
-          <span class="playlist-count" id="playlistCount">8 Parça</span>
+
+        <div class="volume-section">
+            <svg class="volume-icon" id="volumeIcon" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+            <div class="volume-slider" id="volumeSlider">
+                <div class="volume-fill" id="volumeFill"></div>
+            </div>
+            <span class="volume-value" id="volumeValue">70%</span>
         </div>
-        
-        <div class="playlist-items" id="playlistItems"></div>
-      </div>
+
+        <div class="stations-list">
+            <div class="section-title">Radyo İstasyonları</div>
+            <div class="stations-grid" id="stationsGrid">
+                <!-- Stations will be rendered here -->
+            </div>
+        </div>
+
+        <div class="equalizer-section">
+            <div class="section-title">Ekolayzer</div>
+            <div class="equalizer" id="equalizer">
+                <!-- EQ sliders will be rendered here -->
+            </div>
+        </div>
+
+        <div class="suggestions">
+            <div class="section-title">Öneriler</div>
+            <div class="suggestion-chips" id="suggestionChips">
+                <div class="suggestion-chip">🎵 Çalan Şarkıyı Bul</div>
+                <div class="suggestion-chip">❤️ Favorilere Ekle</div>
+                <div class="suggestion-chip">🔗 Paylaş</div>
+                <div class="suggestion-chip">⏰ Uyku Zamanlayıcı</div>
+                <div class="suggestion-chip">🎙️ Kaydet</div>
+                <div class="suggestion-chip">📱 Bildirimler</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <button class="footer-btn active" id="homeBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span>Ana Sayfa</span>
+            </button>
+            <button class="footer-btn" id="favBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                </svg>
+                <span>Favoriler</span>
+            </button>
+            <button class="footer-btn" id="recentBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>Geçmiş</span>
+            </button>
+            <button class="footer-btn" id="settingsBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>Ayarlar</span>
+            </button>
+        </div>
     </div>
-    
-  </div>
 
-  <!-- DÖKÜMAN BÖLÜMÜ -->
-  <div class="docs-section">
-    <div class="docs-card">
-      <div class="docs-tabs">
-        <button class="docs-tab active" data-tab="about">Hakkında</button>
-        <button class="docs-tab" data-tab="features">Özellikler</button>
-        <button class="docs-tab" data-tab="shortcuts">Kısayollar</button>
-        <button class="docs-tab" data-tab="contact">İletişim</button>
-      </div>
-      
-      <div class="docs-content active" id="tab-about">
-        <h4><i class="fas fa-rocket"></i> Galactic Wave Radio</h4>
-        <p>Galactic Wave Radio, uzay temalı premium bir radyo deneyimi sunar. Evrenin derinliklerinden gelen sinyallerle 7/24 kesintisiz müzik keyfi.</p>
-        <ul>
-          <li>320 kbps HD ses kalitesi</li>
-          <li>Gelişmiş eşizleyici sistemi</li>
-          <li>Gerçek zamanlı şarkı isteme</li>
-          <li>Animasyonlu galaktik arayüz</li>
-        </ul>
-      </div>
-      
-      <div class="docs-content" id="tab-features">
-        <h4><i class="fas fa-star"></i> Öne Çıkan Özellikler</h4>
-        <ul>
-          <li>3D Dönen Gezegen Animasyonu</li>
-          <li>Gerçek Zamanlı Frekans Analizörü</li>
-          <li>Çoklu EQ Modları (Rock, Jazz, Pop, Normal)</li>
-          <li>Kayan Şarkı Listesi</li>
-          <li>Ses Dalga Görselleştirme</li>
-          <li>Paylaş ve Beğen Sistemleri</li>
-        </ul>
-      </div>
-      
-      <div class="docs-content" id="tab-shortcuts">
-        <h4><i class="fas fa-keyboard"></i> Klavye Kısayolları</h4>
-        <ul>
-          <li><kbd>Space</kbd> — Oynat / Duraklat</li>
-          <li><kbd>↑↓</kbd> — Ses Artır / Azalt</li>
-          <li><kbd>←→</kbd> — Önceki / Sonraki Parça</li>
-          <li><kbd>M</kbd> — Sesi Kapat / Aç</li>
-          <li><kbd>L</kbd> — Beğen</li>
-          <li><kbd>Esc</kbd> — Modal'ı Kapat</li>
-        </ul>
-      </div>
-      
-      <div class="docs-content" id="tab-contact">
-        <h4><i class="fas fa-envelope"></i> İletişim</h4>
-        <p>Bize ulaşın, önerilerinizi ve isteklerinizi gönderin!</p>
-        <ul>
-          <li>E-posta: info@galacticwave.radio</li>
-          <li>Web: www.galacticwave.radio</li>
-          <li>Destek: 7/24 Online</li>
-        </ul>
-      </div>
-    </div>
-  </div>
+    <script>
+        // Station Data
+        const stations = [
+            { id: 1, name: 'Power Türk FM', genre: 'Pop • Türkçe', freq: 101.5, emoji: '🎵' },
+            { id: 2, name: 'Kral FM', genre: 'Arabesk • Fantazi', freq: 95.3, emoji: '👑' },
+            { id: 3, name: 'Süper FM', genre: 'Pop • Yabancı', freq: 98.7, emoji: '🌟' },
+            { id: 4, name: 'Metro FM', genre: 'Pop • Hits', freq: 92.4, emoji: '🚗' },
+            { id: 5, name: 'Joy FM', genre: 'Jazz • Lounge', freq: 100.8, emoji: '🎷' },
+            { id: 6, name: 'Radyo D', genre: 'Haber • Müzik', freq: 94.1, emoji: '📰' },
+            { id: 7, name: 'Power FM', genre: 'Electronic • Dance', freq: 100.0, emoji: '⚡' },
+            { id: 8, name: 'Virgin Radio', genre: 'Rock • Alternative', freq: 103.2, emoji: '🎸' },
+            { id: 9, name: 'Number One', genre: 'Türkçe Pop', freq: 96.6, emoji: '1️⃣' }
+        ];
 
-</div>
+        const eqBands = [
+            { label: '60Hz', value: 50 },
+            { label: '250Hz', value: 60 },
+            { label: '1kHz', value: 70 },
+            { label: '4kHz', value: 65 },
+            { label: '16kHz', value: 55 }
+        ];
 
-<script>
-// ═══════════════════════════════════════════════
-// GALACTIC WAVE RADIO - PREMIUM JAVASCRIPT
-// ═══════════════════════════════════════════════
+        // State
+        let isPlaying = true;
+        let currentStation = stations[0];
+        let volume = 70;
+        let sleepTimerActive = false;
+        let sleepMinutes = 0;
+        let isRecording = false;
+        let progress = 35;
 
-// Ses kaynağı
-const audio = new Audio('https://radyo.example/stream');
-audio.volume = 0.75;
-let isPlaying = false;
-let currentTrack = 0;
+        // Canvas Visualizer
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        let animationId;
 
-// Çalma listesi
-const playlist = [
-  { title: "Cosmic Journey", artist: "Stellar Dreams", duration: "4:32" },
-  { title: "Nebula Dreams", artist: "Galaxy Express", duration: "3:45" },
-  { title: "Stellar Winds", artist: "Space Harmony", duration: "5:18" },
-  { title: "Aurora Borealis", artist: "Cosmic Pulse", duration: "4:02" },
-  { title: "Black Hole Symphony", artist: "Dark Matter", duration: "6:34" },
-  { title: "Solar Flare", artist: "Plasma Wave", duration: "3:56" },
-  { title: "Interstellar", artist: "Void Travelers", duration: "5:41" },
-  { title: "Supernova", artist: "Star Forge", duration: "4:28" }
-];
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
 
-// Element seçicileri
-const playBtn = document.getElementById('playBtn');
-const playIcon = document.getElementById('playIcon');
-const planetBody = document.getElementById('planetBody');
-const waveDisplay = document.getElementById('waveDisplay');
-const eqDisplay = document.getElementById('eqDisplay');
-const freqBars = document.getElementById('freqBars');
-const tickerScroll = document.getElementById('tickerScroll');
-const songTitle = document.getElementById('songTitle');
-const djName = document.getElementById('djName');
-const volInput = document.getElementById('volInput');
-const volTrack = document.getElementById('volTrack');
-const volHandle = document.getElementById('volHandle');
-const volPercent = document.getElementById('volPercent');
-const volIcon = document.getElementById('volIcon');
-const toast = document.getElementById('toast');
-const toastText = document.getElementById('toastText');
-const modal = document.getElementById('modal');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-const shuffleBtn = document.getElementById('shuffleBtn');
-const repeatBtn = document.getElementById('repeatBtn');
-const progressFill = document.getElementById('progressFill');
-const currentTimeEl = document.getElementById('currentTime');
-const totalTimeEl = document.getElementById('totalTime');
-const playlistItems = document.getElementById('playlistItems');
-const particlesZone = document.getElementById('particlesZone');
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
-// ═══════════════════════════════════════════════
-// ARKA PLAN YILDIZLARI
-// ═══════════════════════════════════════════════
-const bgStars = document.getElementById('bgStars');
-for (let i = 0; i < 150; i++) {
-  const star = document.createElement('div');
-  star.className = 'star';
-  const size = Math.random() * 2 + 0.5;
-  star.style.cssText = `
-    width: ${size}px;
-    height: ${size}px;
-    top: ${Math.random() * 100}%;
-    left: ${Math.random() * 100}%;
-    --dur: ${Math.random() * 4 + 2}s;
-    --delay: ${Math.random() * 5}s;
-  `;
-  bgStars.appendChild(star);
-}
+        class Bar {
+            constructor(x, width, height, color) {
+                this.x = x;
+                this.width = width;
+                this.height = height;
+                this.targetHeight = height;
+                this.color = color;
+            }
 
-// ═══════════════════════════════════════════════
-// GEZEGEN PARÇACIKLARI
-// ═══════════════════════════════════════════════
-const particleColors = [
-  'var(--primary)',
-  'var(--secondary)',
-  'var(--energy)',
-  'var(--accent)',
-  'var(--plasma)'
-];
+            update() {
+                if (isPlaying) {
+                    this.targetHeight = Math.random() * 80 + 10;
+                }
+                this.height += (this.targetHeight - this.height) * 0.1;
+            }
 
-for (let i = 0; i < 50; i++) {
-  const particle = document.createElement('div');
-  particle.className = 'cosmic-particle';
-  
-  const size = Math.random() * 4 + 1;
-  const tx = (Math.random() - 0.5) * 200;
-  const ty = (Math.random() - 0.5) * 200;
-  const dur = Math.random() * 4 + 2;
-  const delay = Math.random() * 5;
-  
-  particle.style.cssText = `
-    width: ${size}px;
-    height: ${size}px;
-    top: ${Math.random() * 100}%;
-    left: ${Math.random() * 100}%;
-    background: ${particleColors[i % particleColors.length]};
-    --tx: ${tx}px;
-    --ty: ${ty}px;
-    --dur: ${dur}s;
-    --delay: ${delay}s;
-    box-shadow: 0 0 ${size * 2}px currentColor;
-  `;
-  
-  particlesZone.appendChild(particle);
-}
+            draw(ctx) {
+                const gradient = ctx.createLinearGradient(0, 120, 0, 120 - this.height);
+                gradient.addColorStop(0, this.color);
+                gradient.addColorStop(1, 'rgba(99, 102, 241, 0.3)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.roundRect(this.x, 120 - this.height, this.width, this.height, 2);
+                ctx.fill();
+            }
+        }
 
-// ═══════════════════════════════════════════════
-// SES DALGALARI
-// ═══════════════════════════════════════════════
-for (let i = 0; i < 35; i++) {
-  const wave = document.createElement('div');
-  wave.className = 'sound-wave';
-  const max = Math.random() * 30 + 20;
-  const dur = Math.random() * 0.8 + 0.5;
-  const delay = (i * 0.04) % dur;
-  
-  wave.style.cssText = `
-    --max: ${max}px;
-    --dur: ${dur}s;
-    animation-delay: ${delay}s;
-  `;
-  
-  waveDisplay.appendChild(wave);
-}
+        const bars = [];
+        const barCount = 50;
+        const barWidth = (canvas.offsetWidth / barCount) - 2;
 
-// ═══════════════════════════════════════════════
-// EŞİZLEYİCİ ÇUBUKLARI
-// ═══════════════════════════════════════════════
-for (let i = 0; i < 7; i++) {
-  const bar = document.createElement('div');
-  bar.className = 'eq-bar';
-  eqDisplay.appendChild(bar);
-}
+        for (let i = 0; i < barCount; i++) {
+            const hue = (i / barCount) * 60 + 230;
+            bars.push(new Bar(
+                i * (barWidth + 2),
+                barWidth,
+                Math.random() * 60 + 20,
+                `hsl(${hue}, 80%, 60%)`
+            ));
+        }
 
-// ═══════════════════════════════════════════════
-// FREKANS ÇUBUKLARI
-// ═══════════════════════════════════════════════
-for (let i = 0; i < 50; i++) {
-  const bar = document.createElement('div');
-  bar.className = 'freq-bar';
-  const max = Math.random() * 30 + 15;
-  const dur = Math.random() * 0.6 + 0.3;
-  const delay = (i * 0.03) % dur;
-  
-  bar.style.cssText = `
-    --max: ${max}px;
-    --dur: ${dur}s;
-    animation-delay: ${delay}s;
-  `;
-  
-  freqBars.appendChild(bar);
-}
+        function animate() {
+            ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+            
+            bars.forEach(bar => {
+                bar.update();
+                bar.draw(ctx);
+            });
 
-// ═══════════════════════════════════════════════
-// FREKANS KAYAN MESAJLAR
-// ═══════════════════════════════════════════════
-const tickerMessages = [
-  '🌌 "Galaktik dalgalar evrenin müziğidir"',
-  '💫 Şu an 1,247 dinleyici bağlı!',
-  '📡 Sinyal gücü: Mükemmel seviyede',
-  '🚀 Uzay istasyonundan yayın yapılıyor',
-  '🌠 Gezegenlerin ritmine kendinizi bırakın',
-  '✨ Canlı DJ performansı devam ediyor',
-  '🎵 320 kbps HD ses kalitesi aktif',
-  '🌙 Yıldız tozlarından oluşan melodiler',
-  '🔮 Galaktik Wave Radio - Evrenin Sesi',
-  '⚡ Frekanslar yükleniyor...'
-];
+            animationId = requestAnimationFrame(animate);
+        }
 
-function buildTicker() {
-  const doubled = [...tickerMessages, ...tickerMessages];
-  tickerScroll.innerHTML = doubled.map(msg => 
-    `<span class="ticker-item"><i class="fas fa-star"></i>${msg}</span>`
-  ).join('');
-}
-buildTicker();
+        animate();
 
-// ═══════════════════════════════════════════════
-// ÇALMA LİSTESİ
-// ═══════════════════════════════════════════════
-function buildPlaylist() {
-  playlistItems.innerHTML = playlist.map((track, index) => `
-    <div class="playlist-item ${index === currentTrack ? 'active' : ''}" data-index="${index}">
-      <div class="playlist-item-thumb">
-        <i class="fas fa-music"></i>
-      </div>
-      <div class="playlist-item-info">
-        <div class="playlist-item-title">${track.title}</div>
-        <div class="playlist-item-artist">${track.artist}</div>
-      </div>
-      <span class="playlist-item-duration">${track.duration}</span>
-      <div class="playlist-item-play">
-        <i class="fas fa-play"></i>
-      </div>
-    </div>
-  `).join('');
-  
-  document.getElementById('playlistCount').textContent = `${playlist.length} Parça`;
-}
-buildPlaylist();
+        // Render Stations
+        function renderStations() {
+            const grid = document.getElementById('stationsGrid');
+            grid.innerHTML = stations.map(station => `
+                <div class="station-card ${station.id === currentStation.id ? 'active' : ''}" data-id="${station.id}">
+                    <div class="station-emoji">${station.emoji}</div>
+                    <div class="station-label">${station.name.split(' ')[0]}</div>
+                </div>
+            `).join('');
 
-// Playlist tıklama
-playlistItems.addEventListener('click', (e) => {
-  const item = e.target.closest('.playlist-item');
-  if (item) {
-    currentTrack = parseInt(item.dataset.index);
-    updateTrack();
-    showToast(`▶ ${playlist[currentTrack].title}`, 'fa-play');
-  }
-});
+            grid.querySelectorAll('.station-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const station = stations.find(s => s.id === parseInt(card.dataset.id));
+                    if (station) {
+                        currentStation = station;
+                        updateStationDisplay();
+                        renderStations();
+                    }
+                });
+            });
+        }
 
-// ═══════════════════════════════════════════════
-// OYNATMA DURUMU
-// ═══════════════════════════════════════════════
-function setPlayState(active) {
-  if (active) {
-    planetBody.classList.add('playing');
-    document.querySelectorAll('.energy-beam').forEach(beam => beam.classList.add('playing'));
-    document.querySelectorAll('.cosmic-particle').forEach(p => p.classList.add('playing'));
-    document.querySelectorAll('.sound-wave').forEach(w => w.classList.add('playing'));
-    document.querySelectorAll('.eq-bar').forEach(b => b.classList.add('playing'));
-    document.querySelectorAll('.freq-bar').forEach(b => b.classList.add('playing'));
-    playIcon.className = 'fas fa-pause';
-    songTitle.classList.add('playing');
-  } else {
-    planetBody.classList.remove('playing');
-    document.querySelectorAll('.energy-beam').forEach(beam => beam.classList.remove('playing'));
-    document.querySelectorAll('.cosmic-particle').forEach(p => p.classList.remove('playing'));
-    document.querySelectorAll('.sound-wave').forEach(w => w.classList.remove('playing'));
-    document.querySelectorAll('.eq-bar').forEach(b => b.classList.remove('playing'));
-    document.querySelectorAll('.freq-bar').forEach(b => b.classList.remove('playing'));
-    playIcon.className = 'fas fa-play';
-    songTitle.classList.remove('playing');
-  }
-}
+        function updateStationDisplay() {
+            document.getElementById('stationName').textContent = currentStation.name;
+            document.getElementById('stationGenre').textContent = currentStation.genre;
+            document.getElementById('frequencyValue').textContent = currentStation.freq.toFixed(1);
+        }
 
-// ═══════════════════════════════════════════════
-// OYNATMA BUTONU
-// ═══════════════════════════════════════════════
-playBtn.addEventListener('click', () => {
-  if (isPlaying) {
-    audio.pause();
-    isPlaying = false;
-    setPlayState(false);
-    showToast('⏸ Radyo duraklatıldı', 'fa-pause');
-  } else {
-    audio.play().catch(() => {
-      showToast('⚠ Yayın başlatılamadı', 'fa-exclamation');
-    });
-    isPlaying = true;
-    setPlayState(true);
-    showToast('▶ Radyo başlatıldı!', 'fa-play');
-  }
-});
+        // Render Equalizer
+        function renderEqualizer() {
+            const eq = document.getElementById('equalizer');
+            eq.innerHTML = eqBands.map((band, i) => `
+                <div class="eq-slider">
+                    <div class="eq-bar" data-index="${i}">
+                        <div class="eq-fill" style="height: ${band.value}%"></div>
+                    </div>
+                    <span class="eq-label">${band.label}</span>
+                </div>
+            `).join('');
 
-// ═══════════════════════════════════════════════
-// SES KONTROLÜ
-// ═══════════════════════════════════════════════
-function setVolume(value) {
-  value = Math.max(0, Math.min(100, value));
-  audio.volume = value / 100;
-  volTrack.style.height = `${value}%`;
-  volHandle.style.bottom = `calc(${value}% - 16px)`;
-  volPercent.textContent = `${value}%`;
-  volInput.value = value;
-  
-  if (value === 0) {
-    volIcon.className = 'fas fa-volume-mute volume-icon';
-  } else if (value < 30) {
-    volIcon.className = 'fas fa-volume-down volume-icon';
-  } else if (value < 70) {
-    volIcon.className = 'fas fa-volume-up volume-icon';
-  } else {
-    volIcon.className = 'fas fa-volume-up volume-icon';
-  }
-}
+            eq.querySelectorAll('.eq-bar').forEach(bar => {
+                bar.addEventListener('click', (e) => {
+                    const rect = bar.getBoundingClientRect();
+                    const percent = 100 - ((e.clientY - rect.top) / rect.height * 100);
+                    const index = parseInt(bar.dataset.index);
+                    eqBands[index].value = Math.max(0, Math.min(100, percent));
+                    bar.querySelector('.eq-fill').style.height = eqBands[index].value + '%';
+                });
+            });
+        }
 
-setVolume(75);
-volInput.addEventListener('input', (e) => setVolume(+e.target.value));
-volIcon.addEventListener('click', () => setVolume(audio.volume > 0 ? 0 : 75));
+        // Controls
+        document.getElementById('playBtn').addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            const playIcon = document.getElementById('playIcon');
+            if (isPlaying) {
+                playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+            } else {
+                playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
+            }
+        });
 
-// ═══════════════════════════════════════════════
-// PARÇACIK KONTROLÜ
-// ═══════════════════════════════════════════════
-let particlesActive = true;
-function toggleParticles() {
-  particlesActive = !particlesActive;
-  document.querySelectorAll('.cosmic-particle').forEach(p => {
-    p.style.animationPlayState = particlesActive ? 'running' : 'paused';
-  });
-}
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            const currentIndex = stations.findIndex(s => s.id === currentStation.id);
+            currentStation = stations[(currentIndex - 1 + stations.length) % stations.length];
+            updateStationDisplay();
+            renderStations();
+        });
 
-// ═══════════════════════════════════════════════
-// İLERLEME ÇUBUĞU (Simüle)
-// ═══════════════════════════════════════════════
-let progress = 0;
-setInterval(() => {
-  if (isPlaying) {
-    progress += 0.5;
-    if (progress > 100) progress = 0;
-    progressFill.style.width = `${progress}%`;
-    currentTimeEl.textContent = formatTime(progress * 2.5);
-  }
-}, 1000);
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            const currentIndex = stations.findIndex(s => s.id === currentStation.id);
+            currentStation = stations[(currentIndex + 1) % stations.length];
+            updateStationDisplay();
+            renderStations();
+        });
 
-function formatTime(seconds) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
+        document.getElementById('powerBtn').addEventListener('click', function() {
+            this.classList.toggle('active');
+            isPlaying = this.classList.contains('active');
+        });
 
-// ═══════════════════════════════════════════════
-// ÇALMA LİSTESİ KONTROLÜ
-// ═══════════════════════════════════════════════
-function updateTrack() {
-  const track = playlist[currentTrack];
-  songTitle.innerHTML = `<span>${track.title} — ${track.artist}</span>`;
-  buildPlaylist();
-  totalTimeEl.textContent = track.duration;
-  
-  // Simüle: 15 saniyede bir şarkı değişimi
-  progress = 0;
-}
+        // Volume Control
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeFill = document.getElementById('volumeFill');
+        const volumeValue = document.getElementById('volumeValue');
 
-prevBtn.addEventListener('click', () => {
-  currentTrack = (currentTrack - 1 + playlist.length) % playlist.length;
-  updateTrack();
-  showToast(`⏮ ${playlist[currentTrack].title}`, 'fa-backward');
-});
+        function updateVolume(e) {
+            const rect = volumeSlider.getBoundingClientRect();
+            volume = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+            volumeFill.style.width = volume + '%';
+            volumeValue.textContent = Math.round(volume) + '%';
+            
+            const icon = document.getElementById('volumeIcon');
+            if (volume === 0) {
+                icon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>';
+            } else if (volume < 50) {
+                icon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>';
+            } else {
+                icon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>';
+            }
+        }
 
-nextBtn.addEventListener('click', () => {
-  currentTrack = (currentTrack + 1) % playlist.length;
-  updateTrack();
-  showToast(`⏭ ${playlist[currentTrack].title}`, 'fa-forward');
-});
+        volumeSlider.addEventListener('click', updateVolume);
+        volumeSlider.addEventListener('mousedown', () => {
+            volumeSlider.addEventListener('mousemove', updateVolume);
+        });
+        document.addEventListener('mouseup', () => {
+            volumeSlider.removeEventListener('mousemove', updateVolume);
+        });
 
-// ═══════════════════════════════════════════════
-// SHUFFLE & REPEAT
-// ═══════════════════════════════════════════════
-let shuffleOn = false;
-let repeatOn = false;
+        document.getElementById('volumeIcon').addEventListener('click', () => {
+            if (volume > 0) {
+                volumeFill.dataset.prevVolume = volume;
+                volume = 0;
+            } else {
+                volume = volumeFill.dataset.prevVolume || 70;
+            }
+            volumeFill.style.width = volume + '%';
+            volumeValue.textContent = Math.round(volume) + '%';
+        });
 
-shuffleBtn.addEventListener('click', () => {
-  shuffleOn = !shuffleOn;
-  shuffleBtn.classList.toggle('active', shuffleOn);
-  showToast(shuffleOn ? '🔀 Karıştırma açık' : '🔀 Karıştırma kapalı', 'fa-random');
-});
+        // Progress Bar
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
 
-repeatBtn.addEventListener('click', () => {
-  repeatOn = !repeatOn;
-  repeatBtn.classList.toggle('active', repeatOn);
-  showToast(repeatOn ? '🔁 Tekrar açık' : '🔁 Tekrar kapalı', 'fa-redo');
-});
+        progressBar.addEventListener('click', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            progress = ((e.clientX - rect.left) / rect.width) * 100;
+            progressFill.style.width = progress + '%';
+        });
 
-// ═══════════════════════════════════════════════
-// EŞİZLEYİCİ MODLARI
-// ═══════════════════════════════════════════════
-document.querySelectorAll('.eq-mode').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.eq-mode').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    showToast(`🎛 EQ: ${btn.textContent}`, 'fa-sliders-h');
-  });
-});
+        // Progress animation
+        setInterval(() => {
+            if (isPlaying && progress < 100) {
+                progress += 0.05;
+                progressFill.style.width = progress + '%';
+                
+                const totalSeconds = Math.floor((progress / 100) * 300);
+                const mins = Math.floor(totalSeconds / 60);
+                const secs = totalSeconds % 60;
+                document.getElementById('currentTime').textContent = 
+                    String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+            }
+        }, 100);
 
-// ═══════════════════════════════════════════════
-// DÖKÜMAN TABLARI
-// ═══════════════════════════════════════════════
-document.querySelectorAll('.docs-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.docs-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.docs-content').forEach(c => c.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
-  });
-});
+        // Suggestions
+        document.getElementById('suggestionChips').addEventListener('click', (e) => {
+            const chip = e.target.closest('.suggestion-chip');
+            if (!chip) return;
 
-// ═══════════════════════════════════════════════
-// MODAL
-// ═══════════════════════════════════════════════
-document.getElementById('toolPlaylist')?.addEventListener('click', () => {
-  modal.classList.add('open');
-});
-document.getElementById('modalClose').addEventListener('click', () => {
-  modal.classList.remove('open');
-});
-modal.addEventListener('click', (e) => {
-  if (e.target === modal) modal.classList.remove('open');
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') modal.classList.remove('open');
-});
+            if (chip.textContent.includes('Uyku')) {
+                const mins = prompt('Kaç dakika sonra kapatılsın?', '30');
+                if (mins && !isNaN(mins)) {
+                    sleepMinutes = parseInt(mins);
+                    sleepTimerActive = true;
+                    document.getElementById('sleepTimer').classList.add('active');
+                    startSleepTimer();
+                }
+            } else if (chip.textContent.includes('Kaydet')) {
+                isRecording = !isRecording;
+                document.getElementById('recordingIndicator').classList.toggle('active', isRecording);
+                chip.textContent = isRecording ? '⏹️ Kaydı Durdur' : '🎙️ Kaydet';
+            } else if (chip.textContent.includes('Favori')) {
+                chip.style.background = 'rgba(239, 68, 68, 0.3)';
+                chip.style.borderColor = '#ef4444';
+                chip.textContent = '❤️ Favorilere Eklendi';
+            }
+        });
 
-// ═══════════════════════════════════════════════
-// ARAÇ ÇUBUĞU
-// ═══════════════════════════════════════════════
-document.getElementById('toolHome')?.addEventListener('click', () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  showToast('🏠 Ana sayfaya dönüldü', 'fa-home');
-});
+        function startSleepTimer() {
+            const interval = setInterval(() => {
+                if (!sleepTimerActive) {
+                    clearInterval(interval);
+                    return;
+                }
+                sleepMinutes--;
+                if (sleepMinutes <= 0) {
+                    sleepTimerActive = false;
+                    document.getElementById('sleepTimer').classList.remove('active');
+                    document.getElementById('powerBtn').classList.remove('active');
+                    isPlaying = false;
+                    clearInterval(interval);
+                } else {
+                    const mins = Math.floor(sleepMinutes);
+                    const secs = (sleepMinutes % 1) * 60;
+                    document.getElementById('sleepTimeDisplay').textContent = 
+                        String(mins).padStart(2, '0') + ':' + String(Math.round(secs)).padStart(2, '0');
+                }
+            }, 1000);
+        }
 
-document.getElementById('toolSearch')?.addEventListener('click', () => {
-  showToast('🔍 Arama özelliği yakında!', 'fa-search');
-});
+        // Footer navigation
+        document.querySelectorAll('.footer-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.footer-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
 
-document.getElementById('toolSettings')?.addEventListener('click', () => {
-  showToast('⚙ Ayarlar menüsü açıldı', 'fa-cog');
-});
+        // Shuffle & Repeat
+        let shuffleActive = false;
+        let repeatActive = false;
 
-// ═══════════════════════════════════════════════
-// TOAST BİLDİRİM
-// ═══════════════════════════════════════════════
-function showToast(message, icon = 'fa-check-circle') {
-  toastText.textContent = message;
-  toast.querySelector('i').className = `fas ${icon}`;
-  toast.classList.add('show');
-  
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => {
-    toast.classList.remove('show');
-  }, 3500);
-}
+        document.getElementById('shuffleBtn').addEventListener('click', function() {
+            shuffleActive = !shuffleActive;
+            this.style.background = shuffleActive ? 'rgba(99, 102, 241, 0.3)' : '';
+        });
 
-// ═══════════════════════════════════════════════
-// KLAVYE KISAYOLLARI
-// ═══════════════════════════════════════════════
-document.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT') return;
-  
-  switch(e.key.toLowerCase()) {
-    case ' ':
-      e.preventDefault();
-      playBtn.click();
-      break;
-    case 'arrowup':
-      e.preventDefault();
-      setVolume(audio.volume * 100 + 5);
-      break;
-    case 'arrowdown':
-      e.preventDefault();
-      setVolume(audio.volume * 100 - 5);
-      break;
-    case 'arrowleft':
-      e.preventDefault();
-      prevBtn.click();
-      break;
-    case 'arrowright':
-      e.preventDefault();
-      nextBtn.click();
-      break;
-    case 'm':
-      volIcon.click();
-      break;
-    case 'l':
-      document.getElementById('likeButton')?.click();
-      break;
-  }
-});
+        document.getElementById('repeatBtn').addEventListener('click', function() {
+            repeatActive = !repeatActive;
+            this.style.background = repeatActive ? 'rgba(99, 102, 241, 0.3)' : '';
+        });
 
-// ═══════════════════════════════════════════════
-// DİNLeyıcı SAYACI (Simüle)
-// ═══════════════════════════════════════════════
-function updateListenerCount() {
-  const base = 1247;
-  const variance = Math.floor(Math.random() * 50) - 25;
-  const count = base + variance;
-  document.getElementById('listenerCount').textContent = count.toLocaleString('tr-TR');
-}
-
-setInterval(updateListenerCount, 8000);
-
-// ═══════════════════════════════════════════════
-// ŞARKI BİLGİSİ (Simüle)
-// ═══════════════════════════════════════════════
-function fetchTrackInfo() {
-  const titles = [
-    "Interstellar Dreams",
-    "Galactic Harmony",
-    "Cosmic Voyage",
-    "Nebula Nights",
-    "Stellar Journey",
-    "Void Walker"
-  ];
-  const artists = [
-    "DJ Cosmos",
-    "Space Phantom",
-    "Stellar Beats",
-    "Void Harmony",
-    "Galaxy Sound"
-  ];
-  
-  const title = titles[Math.floor(Math.random() * titles.length)];
-  const artist = artists[Math.floor(Math.random() * artists.length)];
-  
-  songTitle.innerHTML = `<span>${title} — ${artist}</span>`;
-  djName.textContent = artist;
-}
-
-// ═══════════════════════════════════════════════
-// BAŞLANGIÇ
-// ═══════════════════════════════════════════════
-updateTrack();
-showToast('🌌 Galactic Wave Radio\'a hoş geldiniz!', 'fa-rocket');
-
-// ═══════════════════════════════════════════════
-// KONUM BAZLI ANİMASYONLAR
-// ═══════════════════════════════════════════════
-document.addEventListener('mousemove', (e) => {
-  const beams = document.querySelectorAll('.energy-beam');
-  beams.forEach((beam, i) => {
-    const baseAngle = i * 45;
-    const offset = (e.clientX / window.innerWidth - 0.5) * 10;
-    beam.style.setProperty('--angle', `${baseAngle + offset}deg`);
-  });
-});
-
-// ═══════════════════════════════════════════════
-// GEZEGEN TIKLAMA
-// ═══════════════════════════════════════════════
-planetBody.addEventListener('click', () => {
-  playBtn.click();
-});
-
-// ═══════════════════════════════════════════════
-// SES GÖRSELLEŞTİRME OPTİMİZASYONU
-// ═══════════════════════════════════════════════
-if ('mediaSession' in navigator) {
-  navigator.mediaSession.setActionHandler('play', () => playBtn.click());
-  navigator.mediaSession.setActionHandler('pause', () => playBtn.click());
-  navigator.mediaSession.setActionHandler('previoustrack', () => prevBtn.click());
-  navigator.mediaSession.setActionHandler('nexttrack', () => nextBtn.click());
-}
-
-console.log('%c🌌 Galactic Wave Radio - Premium Edition', 
-  'color: #00e0ff; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px #00e0ff;');
-console.log('%cEvrenin ritmine hazır olun!', 'color: #c760ff; font-size: 14px;');
-</script>
-
+        // Initialize
+        renderStations();
+        renderEqualizer();
+    </script>
 </body>
 </html>
 ```
-
-## 🎮 Eklenen Yeni Özellikler
-
-| Özellik | Açıklama |
-|---------|----------|
-| **Animasyonlu Nebula Arka Planı** | Süpernova efekti ve parallax yıldızlar |
-| **3D Dönen Gezegen** | Krater detayları ve atmosferik halkalar |
-| **8 Işın Demeti** | Mouse takip eden enerji ışınları |
-| **Eşizleyici (EQ)** | 7 bant görsel, 4 mod (Rock, Jazz, Pop, Normal) |
-| **Çalma Listesi** | 8 şarkılık gerçek zamanlı liste |
-| **İlerleme Çubuğu** | Simüle edilmiş zaman göstergesi |
-| **Dinleyici Sayacı** | Canlı sayaç animasyonu |
-| **Klavye Kısayolları** | Space, ↑↓, ←→, M, L |
-| **Döküman Bölümü** | 4 sekmeli bilgi paneli |
-| **Alt Araç Çubuğu** | Sabit navigasyon butonları |
-| **Kayan Frekans Mesajları** | 10 farklı galaktik mesaj |
-| **Media Session API** | Bildirim merkezi desteği |
