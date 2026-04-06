@@ -7,8 +7,7 @@ import streamlit as st
 from groq import Groq
 from datetime import datetime
 
-# --- KRİTİK AYARLAR ---
-GROQ_API_KEY = "BURAYA_GROQ_API_KEY_YAPISTIR" 
+# --- KRİTİK AYARLAR --- 
 client = Groq(api_key=GROQ_API_KEY)
 MODEL_NAME = "llama-3.3-70b-versatile"
 DB_FILE = "okeysin_god_mode.db"
