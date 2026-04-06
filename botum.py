@@ -2,9 +2,7 @@ import streamlit as st
 from groq import Groq
 import edge_tts
 import asyncio
-import io
 from datetime import datetime
-from pydub import AudioSegment   # Tek ses için
 
 # ====================== SAYFA AYARLARI ======================
 st.set_page_config(page_title="OKEYSIN GLOBAL V20", layout="wide", page_icon="📻")
@@ -50,8 +48,7 @@ async def generate_audio(text: str, speaker: str):
             if chunk["type"] == "audio":
                 audio_bytes += chunk["data"]
         return audio_bytes
-    except Exception as e:
-        st.warning(f"{speaker} ses üretilemedi: {e}")
+    except:
         return None
 
 # ====================== SESSION STATE ======================
@@ -64,12 +61,12 @@ if "auto_play" not in st.session_state:
 st.markdown(f"""
     <div style="text-align:center; margin-bottom:30px;">
         <h1 style="color:#00f2ff;">🎙️ OKEYSIN GLOBAL V20</h1>
-        <p style="color:#ffaa00; font-size:1.4rem;"><span class="on-air">● CANLI</span> BURSA GLOBAL RADIO HUB</p>
+        <p style="color:#ffaa00; font-size:1.4rem;"><span class="on-air">● CANLI YAYIN</span> BURSA GLOBAL RADIO HUB</p>
         <p class="live-time">{datetime.now().strftime('%d %B %Y • %H:%M:%S')} | Bursa, Türkiye</p>
     </div>
 """, unsafe_allow_html=True)
 
-# ====================== ARŞİV ======================
+# ====================== ARŞİV GÖSTERİMİ ======================
 for i, entry in enumerate(st.session_state.broadcast_archive):
     if entry.get("role") == "user":
         st.markdown(f"🎬 **Yönetmen:** `{entry['content']}`")
@@ -88,22 +85,25 @@ for i, entry in enumerate(st.session_state.broadcast_archive):
 
         col1, col2, col3 = st.columns([3, 2, 2])
         with col1:
-            if entry.get("full_audio"):
+            if entry.get("o_audio"):
                 autoplay = (i == len(st.session_state.broadcast_archive)-1 and st.session_state.auto_play)
-                st.audio(entry["full_audio"], format="audio/mp3", autoplay=autoplay)
+                st.audio(entry["o_audio"], format="audio/mp3", autoplay=autoplay)
+            if entry.get("k_audio"):
+                st.audio(entry["k_audio"], format="audio/mp3")
+            if entry.get("d_audio"):
+                st.audio(entry["d_audio"], format="audio/mp3")
 
         with col2:
-            if entry.get("full_audio"):
-                st.download_button(
-                    "📥 Tek MP3 İndir",
-                    entry["full_audio"],
-                    file_name=f"okeysin_global_{i}.mp3",
-                    mime="audio/mp3"
-                )
+            if entry.get("o_audio"):
+                st.download_button("📥 Okeysin Sesini İndir", entry["o_audio"], file_name=f"okeysin_{i}.mp3", mime="audio/mp3")
+            if entry.get("k_audio"):
+                st.download_button("📥 Kerem Sesini İndir", entry["k_audio"], file_name=f"kerem_{i}.mp3", mime="audio/mp3")
+            if entry.get("d_audio"):
+                st.download_button("📥 Dilay Sesini İndir", entry["d_audio"], file_name=f"dilay_{i}.mp3", mime="audio/mp3")
 
         with col3:
             txt = f"OKEYSİN:\n{entry.get('o_text','')}\n\nKEREM:\n{entry.get('k_text','')}\n\nDİLAY:\n{entry.get('d_text','')}\n\nPLAYLIST: {entry.get('playlist','')}"
-            st.text_area("📋 Kopyala", txt, height=110, key=f"txt_{i}")
+            st.text_area("📋 Tam Metni Kopyala", txt, height=140, key=f"txt_{i}")
 
 # ====================== YENİ YAYIN ======================
 if prompt := st.chat_input("Yönetmenim, yayını başlat... Konuyu söyle..."):
@@ -111,8 +111,8 @@ if prompt := st.chat_input("Yönetmenim, yayını başlat... Konuyu söyle..."):
     st.session_state.auto_play = True
 
     system_prompt = """
-Sen profesyonel radyo ekibisin. 
-Karakter sırası mutlaka şöyle olsun:
+Sen profesyonel radyo yayın ekibisin. Bursa'dan dünyaya yayın yapıyoruz.
+Sıra mutlaka şöyle olsun:
 [OKEYSIN_START] ... [KEREM_REPLY] ... [DILAY_REPLY] ... [OKEYSIN_END] [PLAYLIST]
 Doğal, sıcak, samimi radyo dili kullan. Şiir, nükte ve Bursa dokunuşu ekle.
 """
@@ -124,7 +124,7 @@ Doğal, sıcak, samimi radyo dili kullan. Şiir, nükte ve Bursa dokunuşu ekle.
         else:
             messages.append({"role": "assistant", "content": f"OKEYSIN: {e.get('o_text','')}\nKEREM: {e.get('k_text','')}\nDILAY: {e.get('d_text','')}"})
 
-    with st.spinner("🎙️ Mikrofonlar açılıyor... Sesler birleştiriliyor..."):
+    with st.spinner("🎙️ Mikrofonlar açılıyor... Sesler üretiliyor..."):
         try:
             res = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
@@ -133,7 +133,6 @@ Doğal, sıcak, samimi radyo dili kullan. Şiir, nükte ve Bursa dokunuşu ekle.
                 max_tokens=1400
             ).choices[0].message.content
 
-            # Etiket parçalama
             o_text = res.split("[OKEYSIN_START]")[1].split("[KEREM_REPLY]")[0].strip()
             k_text = res.split("[KEREM_REPLY]")[1].split("[DILAY_REPLY]")[0].strip()
             d_text = res.split("[DILAY_REPLY]")[1].split("[OKEYSIN_END]")[0].strip()
@@ -141,25 +140,9 @@ Doğal, sıcak, samimi radyo dili kullan. Şiir, nükte ve Bursa dokunuşu ekle.
             playlist = res.split("[PLAYLIST]")[1].strip()
             o_full = f"{o_text}\n\n{o_end}"
 
-            # Sesleri üret
-            o_bytes = asyncio.run(generate_audio(o_full, "Okeysin"))
-            k_bytes = asyncio.run(generate_audio(k_text, "Kerem"))
-            d_bytes = asyncio.run(generate_audio(d_text, "Dilay"))
-
-            # TEK SES DOSYASI OLUŞTUR
-            full_audio = None
-            if o_bytes and k_bytes and d_bytes:
-                try:
-                    o_seg = AudioSegment.from_file(io.BytesIO(o_bytes), format="mp3")
-                    k_seg = AudioSegment.from_file(io.BytesIO(k_bytes), format="mp3")
-                    d_seg = AudioSegment.from_file(io.BytesIO(d_bytes), format="mp3")
-                    combined = o_seg + k_seg + d_seg
-                    buffer = io.BytesIO()
-                    combined.export(buffer, format="mp3", bitrate="192k")
-                    full_audio = buffer.getvalue()
-                except Exception as merge_err:
-                    st.warning(f"Birleştirme hatası: {merge_err}. Sadece Okeysin sesi oynatılacak.")
-                    full_audio = o_bytes
+            o_audio = asyncio.run(generate_audio(o_full, "Okeysin"))
+            k_audio = asyncio.run(generate_audio(k_text, "Kerem"))
+            d_audio = asyncio.run(generate_audio(d_text, "Dilay"))
 
             st.session_state.broadcast_archive.append({
                 "role": "assistant",
@@ -167,7 +150,9 @@ Doğal, sıcak, samimi radyo dili kullan. Şiir, nükte ve Bursa dokunuşu ekle.
                 "k_text": k_text,
                 "d_text": d_text,
                 "playlist": playlist,
-                "full_audio": full_audio
+                "o_audio": o_audio,
+                "k_audio": k_audio,
+                "d_audio": d_audio
             })
 
             st.rerun()
@@ -183,5 +168,5 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.info("📍 imaj fm’dan Dünyaya\nTek Sesli Podcast Yayın\nOkeysin → Kerem → Dilay\nOtomatik Sıralı Oynatma")
+    st.info("📍 Bursa’dan Dünyaya\nSırayla Ses Oynatma\nOkeysin → Kerem → Dilay\nTek Ses Birleştirme Geçici Olarak Kapalı")
     st.caption("Dilay & Kenan • OKEYSIN GLOBAL V20")
