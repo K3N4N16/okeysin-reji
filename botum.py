@@ -10,116 +10,123 @@ from datetime import datetime
 # --- GÜVENLİ API SİSTEMİ ---
 try:
     GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
-except:
-    st.error("⚠️ GROQ_API_KEY bulunamadı! Secrets kısmına ekleyin.")
+    client = Groq(api_key=GROQ_API_KEY)
+except Exception as e:
+    st.error("⚠️ API Anahtarı Hatası: Lütfen Streamlit Secrets ayarlarını kontrol edin.")
     st.stop()
 
-client = Groq(api_key=GROQ_API_KEY)
 MODEL_NAME = "llama-3.3-70b-versatile"
-DB_FILE = "okeysin_v7.db"
+DB_FILE = "okeysin_v8.db"
 
-# --- VERİTABANI İŞLEMLERİ ---
+# --- VERİTABANI ---
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY AUTOINCREMENT, char TEXT, msg TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY AUTOINCREMENT, char TEXT, msg TEXT, ts TEXT)''')
     conn.commit()
     conn.close()
 
 def save_msg(char, msg):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("INSERT INTO chat (char, msg) VALUES (?, ?)", (char, msg))
+    ts = datetime.now().strftime("%H:%M:%S")
+    c.execute("INSERT INTO chat (char, msg, ts) VALUES (?, ?, ?)", (char, msg, ts))
     conn.commit()
     conn.close()
 
-# --- SES ÜRETİMİ VE OYNATMA ---
-async def make_audio(text, char):
+# --- SES ÜRETİMİ (GELİŞMİŞ) ---
+async def get_voice_b64(text, char):
     voice = "tr-TR-EmelNeural" if char == "Okeysin" else "tr-TR-AhmetNeural"
-    comm = edge_tts.Communicate(text, voice)
-    b_data = b""
-    async for chunk in comm.stream():
+    communicate = edge_tts.Communicate(text, voice)
+    audio_data = b""
+    async for chunk in communicate.stream():
         if chunk["type"] == "audio":
-            b_data += chunk["data"]
-    return base64.b64encode(b_data).decode()
+            audio_data += chunk["data"]
+    return base64.b64encode(audio_data).decode()
 
-def play_audio_js(b64_1, b64_2):
-    # JavaScript ile sesleri sırayla çaldırma (Kesilme olmaz)
-    js = f"""
-        <script>
-        var a1 = new Audio("data:audio/mp3;base64,{b64_1}");
-        var a2 = new Audio("data:audio/mp3;base64,{b64_2}");
-        a1.play();
-        a1.onended = function() {{ setTimeout(() => {{ a2.play(); }}, 500); }};
-        </script>
-    """
-    st.components.v1.html(js, height=0)
-
-# --- TASARIM VE SAYFA YAPISI ---
-st.set_page_config(page_title="OKEYSIN GLOBAL V7", layout="wide")
+# --- TASARIM ---
+st.set_page_config(page_title="OKEYSIN GLOBAL V8", layout="wide")
 init_db()
 
 st.markdown("""
     <style>
-    .stApp { background: #050505; color: #00f2ff; }
-    [data-testid="stChatMessage"] { background: rgba(0,242,255,0.05); border: 1px solid #00f2ff33; border-radius: 15px; }
-    .stButton button { border-radius: 10px; border: 1px solid #00f2ff; background: transparent; color: #00f2ff; }
+    .stApp { background-color: #020205; color: #e0e0e0; }
+    .chat-box { padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; }
+    .okeysin-style { border-left: 5px solid #00f2ff; background: rgba(0,242,255,0.05); }
+    .kerem-style { border-left: 5px solid #ffaa00; background: rgba(255,170,0,0.05); }
+    .user-style { border-left: 5px solid #ffffff; background: rgba(255,255,255,0.05); }
     </style>
     """, unsafe_allow_html=True)
 
 # --- SİDEBAR ---
 with st.sidebar:
-    st.title("🎙️ GLOBAL V7")
-    st.success("🟢 ON AIR")
-    if st.button("🗑️ Sohbeti Sıfırla"):
+    st.title("🎙️ GLOBAL REJİ V8")
+    st.info("📍 Bursa'dan Dünyaya")
+    if st.button("🗑️ Arşivi Temizle"):
         conn = sqlite3.connect(DB_FILE); conn.cursor().execute("DELETE FROM chat"); conn.commit()
         st.session_state.messages = []
         st.rerun()
 
-# --- MESAJLAŞMA SİSTEMİ ---
+# --- MESAJLARI YÜKLE ---
 if "messages" not in st.session_state:
     conn = sqlite3.connect(DB_FILE); c = conn.cursor()
     c.execute("SELECT char, msg FROM chat")
     st.session_state.messages = [{"role": r, "content": m} for r, m in c.fetchall()]
     conn.close()
 
-# Geçmiş Mesajları Ekrana Bas (Anlık Gözükmesi İçin)
+# --- EKRANA BASMA DÖNGÜSÜ ---
 for i, m in enumerate(st.session_state.messages):
-    with st.chat_message(m["role"]):
-        st.write(m["content"])
-        if m["role"] != "user":
-            col1, col2 = st.columns([1, 4])
-            col1.download_button("📥 İndir", m["content"], file_name=f"yayin_{i}.txt", key=f"dl_{i}")
-            with col2:
+    style = "okeysin-style" if m["role"] == "Okeysin" else "kerem-style" if m["role"] == "Kerem" else "user-style"
+    with st.container():
+        st.markdown(f'<div class="chat-box {style}"><b>{m["role"]}:</b><br>{m["content"]}</div>', unsafe_allow_html=True)
+        if m["role"] in ["Okeysin", "Kerem"]:
+            c1, c2 = st.columns([1, 4])
+            c1.download_button("📥 İndir", m["content"], file_name=f"anons_{i}.txt", key=f"dl_{i}")
+            with c2:
                 st.text_area("📋 Kopyala:", value=m["content"], height=70, key=f"cp_{i}", label_visibility="collapsed")
 
-# --- GİRİŞ VE CEVAP DÖNGÜSÜ ---
-if prompt := st.chat_input("Yönetmenim, konu nedir?"):
-    # 1. Kullanıcı mesajını anında göster ve kaydet
-    st.chat_message("user").write(prompt)
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    save_msg("user", prompt)
-
-    # 2. Groq'tan cevap al (Okeysin ve Kerem Ortak)
-    sys = "OKEYSİN (zarif bayan sunucu) ve KEREM (esprili reji) olarak podcast formatında, [OKEYSIN] ... [KEREM] ... şeklinde yanıtla. Bursa'dan dünyaya açılan global bir vizyon kullan."
+# --- KOMUT GİRİŞİ ---
+if prompt := st.chat_input("Yönetmenim, yayındayız..."):
+    # Kullanıcı mesajını kaydet
+    save_msg("Yönetmen", prompt)
+    st.session_state.messages.append({"role": "Yönetmen", "content": prompt})
     
-    res = client.chat.completions.create(
-        model=MODEL_NAME, 
-        messages=[{"role": "system", "content": sys}] + st.session_state.messages
+    # Podcast Formatında Yanıt Üret
+    sys_msg = """Sen Okeysin.com reji ekibisin. İki karakterin var:
+    1. OKEYSİN: Zarif, entelektüel, global vizyonlu bayan sunucu.
+    2. KEREM: Esprili, teknik reji adamı.
+    Yönetmenin her komutuna [OKEYSIN] ... [KEREM] ... şeklinde karşılıklı diyalogla cevap ver. 
+    Konuyu Bursa'dan alıp dünya gündemine, sanata veya okey masalarına taşı."""
+
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[{"role": "system", "content": sys_msg}] + st.session_state.messages
     ).choices[0].message.content
 
-    if "[OKEYSIN]" in res and "[KEREM]" in res:
-        o_txt = res.split("[OKEYSIN]")[1].split("[KEREM]")[0].strip()
-        k_txt = res.split("[KEREM]")[1].strip()
+    if "[OKEYSIN]" in response and "[KEREM]" in response:
+        o_txt = response.split("[OKEYSIN]")[1].split("[KEREM]")[0].strip()
+        k_txt = response.split("[KEREM]")[1].strip()
 
-        # Kaydet ve Ekrana Bas
-        for char, txt in [("Okeysin", o_txt), ("Kerem", k_txt)]:
-            st.session_state.messages.append({"role": char, "content": txt})
-            save_msg(char, txt)
+        # Sesleri Hazırla
+        b64_o = asyncio.run(get_voice_b64(o_txt, "Okeysin"))
+        b64_k = asyncio.run(get_voice_b64(k_txt, "Kerem"))
+
+        # Kaydet
+        save_msg("Okeysin", o_txt)
+        save_msg("Kerem", k_txt)
         
-        # Sesleri Üret ve Oynat
-        b64_o = asyncio.run(make_audio(o_txt, "Okeysin"))
-        b64_k = asyncio.run(make_audio(k_txt, "Kerem"))
-        play_audio_js(b64_o, b64_k)
+        # SES OYNATICI (JavaScript Playlist)
+        js_code = f"""
+            <script>
+            var audioO = new Audio("data:audio/mp3;base64,{b64_o}");
+            var audioK = new Audio("data:audio/mp3;base64,{b64_k}");
+            audioO.play();
+            audioO.onended = function() {{
+                setTimeout(function() {{ audioK.play(); }}, 600);
+            }};
+            </script>
+        """
+        st.components.v1.html(js_code, height=0)
         
-        st.rerun() # Yeni mesajların butonlarla birlikte yüklenmesi için
+        # Sayfayı Yenile (Mesajlar ekrana düşsün)
+        st.rerun()
