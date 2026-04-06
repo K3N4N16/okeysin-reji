@@ -5,133 +5,120 @@ import asyncio
 import base64
 from datetime import datetime
 
-# --- 1. GLOBAL KONFİGÜRASYON & API ---
-st.set_page_config(page_title="OKEYSIN GLOBAL HUB V16", layout="wide", page_icon="🎙️")
+# --- 1. SİSTEM & API KONFİGÜRASYONU ---
+st.set_page_config(page_title="OKEYSIN GLOBAL HUB V17", layout="wide", page_icon="🎙️")
 
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ API KEY eksik! Streamlit Secrets alanına ekleyin.")
+    st.error("⚠️ GROQ_API_KEY bulunamadı! Lütfen Secrets alanına ekleyin.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. PROFESYONEL QUANTUM UI (GÖRSEL TEMA) ---
+# --- 2. PROFESYONEL "QUANTUM" TASARIM ---
 st.markdown("""
     <style>
-    /* Ana Tema */
-    .stApp { 
-        background: radial-gradient(circle at top right, #0a0a2e, #050505); 
-        color: #e0e0e0; font-family: 'Inter', sans-serif;
-    }
-    /* Yayın Kartları */
+    .stApp { background: linear-gradient(135deg, #050505 0%, #0a0a25 100%); color: #e0e0e0; }
     .broadcast-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(0, 242, 255, 0.2);
-        border-radius: 20px;
-        padding: 25px;
-        margin-bottom: 20px;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(0, 242, 255, 0.1);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
-    .okeysin-label { color: #00f2ff; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; font-size: 0.9rem; }
-    .kerem-label { color: #ffaa00; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; font-size: 0.9rem; }
-    /* Araçlar Bölümü */
-    .tool-section { background: rgba(0,0,0,0.4); border-radius: 10px; padding: 15px; margin-top: 15px; border: 1px solid #333; }
-    .stButton button { width: 100%; border-radius: 8px; border: 1px solid #00f2ff44; transition: 0.3s; }
-    .stButton button:hover { background: #00f2ff22; border-color: #00f2ff; }
+    .okeysin-tag { color: #00f2ff; font-weight: bold; font-size: 0.85rem; letter-spacing: 1.5px; }
+    .kerem-tag { color: #ffaa00; font-weight: bold; font-size: 0.85rem; letter-spacing: 1.5px; }
+    .stChatInputContainer { border-top: 1px solid #333 !important; }
+    .stTextArea textarea { background: #000 !important; color: #00f2ff !important; border: 1px solid #222 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SES MOTORU (PROFESYONEL) ---
-async def generate_broadcast_audio(text, char):
+# --- 3. SES MOTORU (KESİNTİSİZ) ---
+async def generate_voice(text, char):
     voice = "tr-TR-EmelNeural" if char == "Okeysin" else "tr-TR-AhmetNeural"
     try:
-        communicate = edge_tts.Communicate(text, voice)
-        audio_data = b""
-        async for chunk in communicate.stream():
+        comm = edge_tts.Communicate(text, voice)
+        data = b""
+        async for chunk in comm.stream():
             if chunk["type"] == "audio":
-                audio_data += chunk["data"]
-        return audio_data
+                data += chunk["data"]
+        return data
     except:
         return None
 
-# --- 4. AKILLI HAFIZA SİSTEMİ ---
-if "global_history" not in st.session_state:
-    st.session_state.global_history = []
+# --- 4. KRİTİK HAFIZA YÖNETİMİ ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# --- 5. ANA PANEL (DASHBOARD) ---
-st.title("🎙️ OKEYSIN GLOBAL CONTENT HUB")
-st.markdown("#### *Bursa'dan Havalanan, Dünyayı Kucaklayan Dijital Frekans*")
+# --- 5. ANA PANEL ---
+st.title("🎙️ GLOBAL CONTENT & RADIO HUB")
+st.caption("📍 Bursa'dan Dünyaya | Edebiyat, Müzik, Sanat ve Global Haberler")
 
-# Yayın Akışını Göster
-for i, entry in enumerate(st.session_state.global_history):
-    char_class = "okeysin-label" if "Okeysin" in entry["char"] else "kerem-label"
-    
+# Geçmişi Ekrana Bas (Her zaman görünür kalması için)
+for i, msg in enumerate(st.session_state.messages):
     with st.container():
-        st.markdown(f"""
-            <div class="broadcast-card">
-                <div class="{char_class}">{entry['char']}</div>
-                <div style="margin-top:10px; line-height:1.6; font-size:1.1rem;">{entry['content']}</div>
-            </div>
-        """, unsafe_allow_html=True)
+        tag_class = "okeysin-tag" if "Okeysin" in msg["name"] else "kerem-tag" if "Kerem" in msg["name"] else ""
+        st.markdown(f'<div class="broadcast-card"><span class="{tag_class}">{msg["name"]}</span><br>{msg["content"]}</div>', unsafe_allow_html=True)
         
-        # ARAÇLAR PANELI (Her anonsun altında)
-        with st.expander("🛠️ YAYIN ARAÇLARI (Kopyala / İndir / Dinle)"):
-            c1, c2, c3 = st.columns([2, 2, 4])
+        # Araçlar: Ses, Kopyala, İndir
+        if msg["role"] == "assistant":
+            exp = st.expander("🛠️ Yayın Araçları")
+            c1, c2, c3 = exp.columns([2, 2, 4])
             with c1:
-                if "audio" in entry:
-                    st.audio(entry["audio"], format="audio/mp3")
+                if "audio" in msg and msg["audio"]:
+                    st.audio(msg["audio"], format="audio/mp3")
             with c2:
-                st.download_button("📥 Kaydı İndir (.txt)", entry["content"], file_name=f"broadcast_{i}.txt", key=f"dl_{i}")
+                st.download_button("📥 Kayıt İndir", msg["content"], file_name=f"yayin_{i}.txt", key=f"dl_{i}")
             with c3:
-                st.text_area("📋 Kopyalama Alanı", value=entry["content"], height=80, key=f"cp_{i}", label_visibility="collapsed")
+                st.text_area("📋 Kopyala:", value=msg["content"], height=70, key=f"cp_{i}", label_visibility="collapsed")
 
-# --- 6. YAYIN KOMUT MERKEZİ ---
-if prompt := st.chat_input("Yönetmenim, küresel gündemi veya konuyu buraya yazın..."):
-    # Yönetmen mesajını kaydet
-    st.session_state.global_history.append({"char": "YÖNETMEN", "content": prompt, "role": "user"})
+# --- 6. KOMUT MERKEZİ (KLAVYE HATASI ÇÖZÜMÜ) ---
+if prompt := st.chat_input("Yönetmenim, bir konu veya komut girin..."):
+    # 1. Kullanıcı mesajını anında kaydet ve göster
+    st.session_state.messages.append({"role": "user", "name": "YÖNETMEN", "content": prompt})
     
-    # DEVASA GENEL KÜLTÜR TALİMATI (SYSTEM PROMPT)
-    sys_prompt = """
-    Sen dünyanın en bilgili radyo profesyonelisin. Karakterlerin:
-    1. OKEYSİN: Bursa'dan dünyaya seslenen; edebiyat, tarih, sanat, dünya şairleri ve global müzik konusunda derin bilgiye sahip, zarif ve entelektüel bir kadın programcı.
-    2. KEREM: Sosyal medya trendleri, dünya gazeteleri, teknoloji ve global sohbetleri takip eden, Okeysin ile felsefi tartışmalara girebilen esprili reji uzmanı.
+    # 2. Üst Düzey Entelektüel Talimatlar
+    sys_instruction = """
+    Sen dünyanın tüm bilgi birikimine sahip bir radyo dehasısın.
+    [OKEYSIN]: Bursa'dan dünyaya yayın yapan; dünya edebiyatı, şairler (Nazım Hikmet'ten Rilke'ye), klasik ve modern müzik, sanat tarihi uzmanı, zarif kadın sunucu.
+    [KEREM]: Küresel gazete manşetleri, sosyal medya trendleri, teknoloji ve global gündemi takip eden, Okeysin ile entelektüel tartışmalara giren esprili reji.
     
-    İki karakter birbirleriyle konuşmalı, birbirlerine atıfta bulunmalı ve yönetmenin konusunu dünya genel kültürü süzgecinden geçirerek profesyonel bir podcast akışı oluşturmalı.
-    FORMAT: [OKEYSIN] ... [KEREM] ... şeklinde yanıtla.
+    KURALLAR: 
+    - Birbirinize pas atın, birbirinizin bilgisini tamamlayın.
+    - Sadece bilgi vermeyin, bir radyo programı atmosferi (podcast) yaratın.
+    - Yönetmenin her komutunu bu iki karakterin diyaloguyla [OKEYSIN] ... [KEREM] ... şeklinde yanıtla.
     """
 
-    with st.spinner("Küresel veriler taranıyor ve yayın hazırlanıyor..."):
+    with st.spinner("Küresel kütüphaneler taranıyor..."):
         try:
-            # Groq üzerinden hafızayı kullanarak cevap al
-            response = client.chat.completions.create(
+            # Groq API Çağrısı
+            res = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": sys_prompt}] + 
-                         [{"role": m["role"], "content": m["content"]} for m in st.session_state.global_history]
+                messages=[{"role": "system", "content": sys_instruction}] + 
+                         [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
             ).choices[0].message.content
 
-            if "[OKEYSIN]" in response and "[KEREM]" in response:
-                o_text = response.split("[OKEYSIN]")[1].split("[KEREM]")[0].strip()
-                k_text = response.split("[KEREM]")[1].strip()
+            if "[OKEYSIN]" in res and "[KEREM]" in res:
+                o_text = res.split("[OKEYSIN]")[1].split("[KEREM]")[0].strip()
+                k_text = res.split("[KEREM]")[1].strip()
 
                 # Sesleri Üret
-                audio_o = asyncio.run(generate_broadcast_audio(o_text, "Okeysin"))
-                audio_k = asyncio.run(generate_broadcast_audio(k_text, "Kerem"))
+                audio_o = asyncio.run(generate_voice(o_text, "Okeysin"))
+                audio_k = asyncio.run(generate_voice(k_text, "Kerem"))
 
-                # Hafızaya Kaydet (Karakter bazlı)
-                st.session_state.global_history.append({"char": "🎙️ OKEYSİN (Global Host)", "content": o_text, "role": "assistant", "audio": audio_o})
-                st.session_state.global_history.append({"char": "🎧 KEREM (Reji & Tech)", "content": k_text, "role": "assistant", "audio": audio_k})
+                # Hafızaya Ekle
+                st.session_state.messages.append({"role": "assistant", "name": "🎙️ OKEYSİN (Global Host)", "content": o_text, "audio": audio_o})
+                st.session_state.messages.append({"role": "assistant", "name": "🎧 KEREM (Reji & Tech)", "content": k_text, "audio": audio_k})
                 
+                # Sayfayı güvenli bir şekilde yenile
                 st.rerun()
         except Exception as e:
-            st.error(f"📡 Yayın Kesintisi: {str(e)}")
+            st.error(f"📡 Bağlantı Hatası: {e}")
 
-# --- 7. SIDEBAR (İSTATİSTİK & ARŞİV) ---
+# Sidebar
 with st.sidebar:
-    st.markdown("### 🌐 GLOBAL İSTASYON")
-    st.write(f"📅 **Yayın Tarihi:** {datetime.now().strftime('%d.%m.%Y')}")
-    st.write("🌍 **Kapsam:** Dünya Geneli / Global Culture")
-    st.divider()
-    if st.button("🗑️ Tüm Arşivi Temizle"):
-        st.session_state.global_history = []
+    st.markdown("### 🌍 İSTASYON KONTROL")
+    st.write(f"📅 {datetime.now().strftime('%d %B %Y')}")
+    if st.button("🗑️ Arşivi Sıfırla"):
+        st.session_state.messages = []
         st.rerun()
-    st.info("💡 Not: Her yeni konuşmada geçmişiniz hatırlanır ve üzerine inşa edilir.")
