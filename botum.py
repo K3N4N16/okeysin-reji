@@ -1,135 +1,87 @@
-import os
-import sqlite3
-import base64
-import asyncio
-import edge_tts
 import streamlit as st
 from groq import Groq
-from datetime import datetime
+import edge_tts
+import base64
+import asyncio
 
-# --- GÜVENLİ API SİSTEMİ ---
+# --- REJİ AYARLARI ---
+st.set_page_config(page_title="OKEYSIN GLOBAL V11", layout="wide")
+
 try:
-    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
-    client = Groq(api_key=GROQ_API_KEY)
-except Exception:
-    st.error("⚠️ API Anahtarı Hatası! Lütfen Secrets ayarlarını kontrol edin.")
+    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+except:
+    st.error("⚠️ API Anahtarı Bulunamadı!")
     st.stop()
 
-MODEL_NAME = "llama-3.3-70b-versatile"
-DB_FILE = "okeysin_v10.db"
-
-# --- VERİTABANI YÖNETİMİ ---
-def init_db():
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY AUTOINCREMENT, role TEXT, content TEXT)''')
-    conn.commit()
-    conn.close()
-
-def save_msg(role, content):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("INSERT INTO chat (role, content) VALUES (?, ?)", (role, content))
-    conn.commit()
-    conn.close()
-
-# --- SES ÜRETİMİ (DOĞRUDAN BYTES) ---
-async def get_voice_bytes(text, char):
-    voice = "tr-TR-EmelNeural" if char == "Okeysin" else "tr-TR-AhmetNeural"
-    try:
-        communicate = edge_tts.Communicate(text, voice)
-        audio_data = b""
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                audio_data += chunk["data"]
-        return audio_data
-    except Exception as e:
-        return None
-
-# --- TASARIM VE UI ---
-st.set_page_config(page_title="OKEYSIN GLOBAL V10", layout="wide")
-init_db()
-
+# --- STİL (QUANTUM DARK) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #020205; color: #e0e0e0; }
-    .chat-card { padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; }
-    .okeysin-style { border-left: 5px solid #00f2ff; background: rgba(0,242,255,0.05); }
-    .kerem-style { border-left: 5px solid #ffaa00; background: rgba(255,170,0,0.05); }
-    .user-style { border-left: 5px solid #ffffff; background: rgba(255,255,255,0.05); }
-    audio { width: 100%; height: 30px; margin-top: 10px; }
+    .stApp { background-color: #050505; color: #00f2ff; }
+    .stChatMessage { border-radius: 15px; border: 1px solid #00f2ff33; margin-bottom: 10px; }
+    .stChatInputContainer { padding-bottom: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SOHBET GEÇMİŞİ YÜKLEME ---
+# --- SOHBET HAFIZASI ---
 if "messages" not in st.session_state:
-    conn = sqlite3.connect(DB_FILE); c = conn.cursor()
-    c.execute("SELECT role, content FROM chat")
-    st.session_state.messages = [{"role": r, "content": m} for r, m in c.fetchall()]
-    conn.close()
+    st.session_state.messages = []
 
-# --- SIDEBAR ---
-with st.sidebar:
-    st.title("🎙️ GLOBAL REJİ V10")
-    st.info("📍 Bursa'dan Tüm Dünyaya")
-    st.warning("💡 Ses gelmiyorsa, tarayıcıda sayfa için 'Ses' izni verin.")
-    if st.button("🗑️ Arşivi Sıfırla"):
-        conn = sqlite3.connect(DB_FILE); conn.cursor().execute("DELETE FROM chat"); conn.commit()
-        st.session_state.messages = []
-        st.rerun()
+# --- SES ÜRETİCİ ---
+async def text_to_speech(text, voice_type):
+    voice = "tr-TR-EmelNeural" if voice_type == "Okeysin" else "tr-TR-AhmetNeural"
+    communicate = edge_tts.Communicate(text, voice)
+    audio_data = b""
+    async for chunk in communicate.stream():
+        if chunk["type"] == "audio":
+            audio_data += chunk["data"]
+    return audio_data
 
 # --- EKRAN AKIŞI ---
-for i, m in enumerate(st.session_state.messages):
-    style = "user-style" if m["role"] == "user" else "okeysin-style"
-    is_asst = m["role"] == "assistant"
-    display_name = "Yönetmen" if m["role"] == "user" else ("Okeysin" if "Okeysin:" in m["content"] else "Kerem")
-    
-    with st.container():
-        st.markdown(f'<div class="chat-card {style}"><b>{display_name}:</b><br>{m["content"]}</div>', unsafe_allow_html=True)
-        if is_asst:
-            # Ses Dosyasını Her Seferinde Üretmek Yerine Sadece Buraya Bir Buton Koyuyoruz (Opsiyonel)
-            c1, c2, c3 = st.columns([1, 2, 2])
-            c1.download_button("📥 İndir", m["content"], file_name=f"yayin_{i}.txt", key=f"dl_{i}")
-            with c2:
-                st.text_area("📋 Kopyala:", value=m["content"], height=70, key=f"cp_{i}", label_visibility="collapsed")
+st.title("🎙️ OKEYSIN GLOBAL REJİ")
+st.caption("Bursa'dan Dünyaya Kesintisiz Yayın")
+
+# Geçmiş mesajları göster
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+        if "audio" in msg:
+            st.audio(msg["audio"], format="audio/mp3")
 
 # --- KOMUT GİRİŞİ ---
-if prompt := st.chat_input("Yönetmenim, bir konu verin..."):
-    save_msg("user", prompt)
+if prompt := st.chat_input("Yönetmenim, yayına komut verin..."):
+    # 1. Yönetmen mesajını göster
+    with st.chat_message("user"):
+        st.write(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
-    
-    sys_msg = "Sen Okeysin.com reji ekibisin. [OKEYSIN] (zarif) ve [KEREM] (esprili) olarak podcast yap. Bursa'dan dünyaya global vizyonla konuş."
 
-    try:
+    # 2. Karakterlerin Cevabını Hazırla
+    sys_prompt = "Sen Okeysin.com reji ekibisin. [OKEYSIN] (zarif kadın sunucu) ve [KEREM] (esprili erkek reji) olarak podcast formatında konuşun. Global ve bilgece bir dil kullanın."
+    
+    with st.spinner("Okeysin ve Kerem yayına hazırlanıyor..."):
         response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "system", "content": sys_msg}] + st.session_state.messages
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": sys_prompt}] + 
+                     [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
         ).choices[0].message.content
 
-        if "[OKEYSIN]" in response and "[KEREM]" in response:
-            o_txt = response.split("[OKEYSIN]")[1].split("[KEREM]")[0].strip()
-            k_txt = response.split("[KEREM]")[1].strip()
+    # 3. Cevabı Parçala ve Seslendir
+    if "[OKEYSIN]" in response and "[KEREM]" in response:
+        o_txt = response.split("[OKEYSIN]")[1].split("[KEREM]")[0].strip()
+        k_txt = response.split("[KEREM]")[1].strip()
 
-            # Sesleri Üret
-            audio_o = asyncio.run(get_voice_bytes(o_txt, "Okeysin"))
-            audio_k = asyncio.run(get_voice_bytes(k_txt, "Kerem"))
+        # Okeysin Yayını
+        audio_o = asyncio.run(text_to_speech(o_txt, "Okeysin"))
+        with st.chat_message("assistant", avatar="🎙️"):
+            st.markdown(f"**Okeysin:** {o_txt}")
+            st.audio(audio_o, format="audio/mp3", autoplay=True)
+        st.session_state.messages.append({"role": "assistant", "content": f"Okeysin: {o_txt}", "audio": audio_o})
 
-            # Kaydet
-            save_msg("assistant", f"Okeysin: {o_txt}")
-            save_msg("assistant", f"Kerem: {k_txt}")
-            st.session_state.messages.append({"role": "assistant", "content": f"Okeysin: {o_txt}"})
-            st.session_state.messages.append({"role": "assistant", "content": f"Kerem: {k_txt}"})
-            
-            # SESLERİ EKRANA BAS (KESİN ÇÖZÜM)
-            if audio_o:
-                st.audio(audio_o, format="audio/mp3", autoplay=True)
-                st.write("🎵 Okeysin konuşuyor...")
-            
-            if audio_k:
-                # Kerem'in sesini biraz bekletmek için (Simülasyon)
-                st.audio(audio_k, format="audio/mp3")
-                st.write("🎵 Kerem hazır (Oynat'a basabilir veya bekleyebilirsiniz)")
-            
-            st.rerun()
-    except Exception as e:
-        st.error(f"⚠️ Hata: {str(e)}")
+        # Kerem Yayını
+        audio_k = asyncio.run(text_to_speech(k_txt, "Kerem"))
+        with st.chat_message("assistant", avatar="🎧"):
+            st.markdown(f"**Kerem:** {k_txt}")
+            st.audio(audio_k, format="audio/mp3")
+        st.session_state.messages.append({"role": "assistant", "content": f"Kerem: {k_txt}", "audio": audio_k})
+        
+        # İndirme/Kopyalama için metin alanı (Opsiyonel)
+        st.info("💡 Not: Mesajları kopyalamak için üzerlerine basılı tutabilir veya sağ tık yapabilirsiniz.")
