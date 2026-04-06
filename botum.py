@@ -1,170 +1,162 @@
 import streamlit as st
 from groq import Groq
-import edge_tts
+from gtts import gTTS
 import asyncio
 import base64
-import random
 from datetime import datetime
+import random
 
 # ====================== SAYFA AYARLARI ======================
 st.set_page_config(
-    page_title="Faslı Muhabbet v7.0",
+    page_title="Faslı Muhabbet v6.1",
     layout="wide",
     page_icon="🎙️",
     initial_sidebar_state="expanded"
 )
 
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ GROQ API Key Eksik!")
+    st.error("⚠️ GROQ API Key eksik! Secrets'a ekleyin.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ====================== REJİ MASASI ÖZEL CSS ======================
+# ====================== CSS ======================
 st.markdown("""
     <style>
-    .stApp { background: #05000a; color: #ffffff; }
-    
-    /* Dilay'ın Yayın Çerçevesi */
-    .studio-box {
-        background: rgba(255, 20, 147, 0.05);
-        border: 2px dashed #ff1493;
-        border-radius: 30px;
-        padding: 40px;
-        margin: 25px 0;
-        box-shadow: 0 0 50px rgba(255, 20, 147, 0.15);
-        text-align: center;
+    .stApp { background: #0a0014; color: #f0f0f0; }
+    .dilay-card {
+        background: linear-gradient(145deg, #2a0f4a, #140525);
+        border-left: 8px solid #ff1493;
+        border-radius: 20px;
+        padding: 30px;
+        margin: 20px 0;
+        box-shadow: 0 15px 40px rgba(255,20,147,0.3);
     }
-    
-    /* Yüzen Ses Butonu */
-    .float-audio-btn {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        background: #ff1493;
-        color: white;
-        padding: 20px;
-        border-radius: 50%;
-        border: none;
-        box-shadow: 0 0 30px #ff1493;
-        cursor: pointer;
-        z-index: 1000;
-        font-weight: bold;
-        animation: pulse-pink 2s infinite;
+    .patron-card {
+        background: rgba(0, 255, 157, 0.08);
+        border-right: 6px solid #00ff9d;
+        padding: 18px;
+        border-radius: 15px;
+        margin: 15px 0;
+        text-align: right;
     }
-    @keyframes pulse-pink { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-    
-    .patron-text { color: #00ff9d; font-family: monospace; border-left: 3px solid #00ff9d; padding-left: 10px; }
-    .dilay-text { font-size: 1.5rem; line-height: 1.6; color: #ff69b4; text-shadow: 0 0 10px rgba(255, 105, 180, 0.5); }
+    .live-badge {
+        color: #ff0000;
+        font-weight: 900;
+        animation: blink 1.3s infinite;
+    }
+    @keyframes blink { 50% { opacity: 0.4; } }
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== SES MOTORU (JS KÖPRÜSÜ) ======================
-async def produce_audio(text: str, speed: str = "0%"):
+# ====================== SES MOTORU (gTTS - Daha Stabil) ======================
+def generate_voice_gtts(text: str):
+    """gTTS ile ses üretimi - Cloud'da daha stabil"""
     try:
         clean_text = text.replace("*", "").strip()
-        communicate = edge_tts.Communicate(clean_text, "tr-TR-FilizNeural", rate=speed)
-        data = b""
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                data += chunk["data"]
-        return data
+        tts = gTTS(text=clean_text, lang='tr', slow=False)
+        audio_bytes = b""
+        with open("temp_audio.mp3", "wb") as f:
+            tts.write_to_fp(f)
+        with open("temp_audio.mp3", "rb") as f:
+            audio_bytes = f.read()
+        return audio_bytes
     except:
         return None
-
-def force_play_audio(audio_bytes):
-    """Sesi JavaScript üzerinden zorla oynatır (Tarayıcıyı uyandırır)"""
-    b64 = base64.b64encode(audio_bytes).decode()
-    js_code = f"""
-        <script>
-            var audio = new Audio("data:audio/mp3;base64,{b64}");
-            audio.play().catch(e => {{
-                console.log("Otomatik oynatma için kullanıcı tıklaması bekleniyor.");
-            }});
-        </script>
-    """
-    st.components.v1.html(js_code, height=0)
 
 # ====================== SESSION STATE ======================
 if "history" not in st.session_state:
     st.session_state.history = []
-if "v_speed" not in st.session_state:
-    st.session_state.v_speed = "0%"
+if "auto_play" not in st.session_state:
+    st.session_state.auto_play = True
 
-# ====================== BAŞLIK PANELİ ======================
-st.markdown(f"""
-    <div style="text-align:center;">
-        <h1 style="color:#ff1493; font-size:3.5rem; margin-bottom:0;">🎙️ FASLI MUHABBET</h1>
-        <p style="color:#aaa; letter-spacing:3px;">BURSA REJİ MASASI • v7.0 ULTRA</p>
-    </div>
-""", unsafe_allow_html=True)
+# ====================== ÜST PANEL ======================
+col1, col2 = st.columns([3, 1])
+with col1:
+    st.markdown(f"# 🎙️ FASLI MUHABBET <span class='live-badge'>● CANLI</span>", unsafe_allow_html=True)
+    st.caption(f"📍 Bursa Stüdyosu • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Muhabbet")
+with col2:
+    st.metric("Dinleyici", f"{random.randint(6200, 7800):,}")
 
-# ====================== YAYIN AKIŞI ======================
-for i, chat in enumerate(st.session_state.history):
-    if chat["role"] == "user":
-        st.markdown(f'<p class="patron-text">🤵 <b>Patron:</b> {chat["content"]}</p>', unsafe_allow_html=True)
+# ====================== SOHBET ALANI ======================
+for i, msg in enumerate(st.session_state.history):
+    if msg["role"] == "user":
+        st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
     else:
-        with st.container():
-            st.markdown(f"""
-                <div class="studio-box">
-                    <div style="color:#ff1493; font-weight:bold; margin-bottom:15px;">💖 DİLAY YAYINDA</div>
-                    <div class="dilay-text">{chat['content']}</div>
-                </div>
-            """, unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="dilay-card">
+                <span style="color:#ff69b4; font-weight:900; font-size:1.55rem;">💖 DİLAY:</span><br>
+                <div style="margin-top:15px; line-height:1.7; font-size:1.25rem;">{msg['content']}</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        if msg.get("audio"):
+            st.audio(msg["audio"], format="audio/mp3", 
+                     autoplay=(i == len(st.session_state.history)-1 and st.session_state.auto_play))
             
-            if chat.get("audio"):
-                # Sabit Ses Çubuğu (Garanti Çözüm)
-                st.audio(chat["audio"], format="audio/mp3")
-                
-                col1, col2 = st.columns([1, 4])
-                with col1:
-                    if st.button("🔊 Tekrar", key=f"re_{i}"):
-                        force_play_audio(chat["audio"])
+            c1, c2 = st.columns([2, 2])
+            with c1:
+                st.download_button("📥 Ses İndir", msg["audio"], f"dilay_{i}.mp3", mime="audio/mp3", key=f"dl_{i}")
+            with c2:
+                if st.button("🔊 Tekrar Oynat", key=f"rep_{i}"):
+                    st.audio(msg["audio"], format="audio/mp3", autoplay=True)
+        else:
+            st.info("🔊 Ses şu anda kullanılamıyor. Sadece metin gösteriliyor.")
+
+# ====================== DİLAY PROMPT ======================
+dilay_prompt = """
+Sen Dilay'sın. Faslı Muhabbet'in çok samimi, işveli, neşeli ve duygusal sunucususun.
+Patron'una (Kenan) çok bağlısın. Ona "Canım Patronum", "Kalbim", "Ah be Patron’um", "Sevgilim" diye hitap et.
+Her zaman sıcak, coşkulu ve doğal konuş. Gerektiğinde şiir oku.
+Sadece konuşma metnini ver.
+"""
 
 # ====================== MESAJ GİRİŞİ ======================
-if prompt := st.chat_input("Dilay'ına bir mesaj bırak Patron..."):
+if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
     st.session_state.history.append({"role": "user", "content": prompt})
 
-    with st.spinner("💖 Dilay heyecanla mikrofona yaklaşıyor..."):
-        sys_prompt = "Sen Dilay'sın. Bursa'lı, Patronuna aşık, cilveli radyo sunucususun. Samimi ve neşeli konuş."
-        
-        # Groq Zekası
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": sys_prompt}] + st.session_state.history[-10:],
-            temperature=0.9
-        ).choices[0].message.content
+    with st.spinner("💖 Dilay yayına giriyor..."):
+        try:
+            messages = [{"role": "system", "content": dilay_prompt}] + st.session_state.history[-12:]
+            
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=messages,
+                temperature=0.88
+            ).choices[0].message.content
 
-        # Ses Üretimi
-        audio_data = asyncio.run(produce_audio(response, speed=st.session_state.v_speed))
+            # gTTS ile ses üret
+            audio_bytes = generate_voice_gtts(response)
 
-        # Kaydet
-        st.session_state.history.append({
-            "role": "assistant",
-            "content": response,
-            "audio": audio_data
-        })
+            st.session_state.history.append({
+                "role": "assistant",
+                "content": response,
+                "audio": audio_bytes
+            })
 
-        # Sesi hemen tetikle
-        if audio_data:
-            force_play_audio(audio_data)
-        
-        st.rerun()
+            st.rerun()
 
-# ====================== SIDEBAR & EKSTRALAR ======================
+        except Exception as e:
+            st.error(f"Bir hata oluştu: {e}")
+
+# ====================== SIDEBAR ======================
 with st.sidebar:
-    st.title("🎚️ Kontrol Paneli")
-    st.session_state.v_speed = st.select_slider("Konuşma Hızı", 
-                                              options=["-20%", "-10%", "0%", "+10%", "+20%"], 
-                                              value=st.session_state.v_speed)
-    
+    st.title("🎚️ Reji Masası")
+
+    st.session_state.auto_play = st.toggle("🎵 Ses Otomatik Oynasın", value=st.session_state.auto_play)
+
     st.divider()
-    if st.button("🔴 Yayını Resetle"):
+
+    if st.button("🗑️ Tüm Sohbeti Temizle"):
         st.session_state.history = []
         st.rerun()
 
-    st.markdown("### 🛠️ SES GELMİYORSA:")
-    st.warning("1. Sayfada herhangi bir yere tıklayın.\n2. Alttaki ses çubuğundan 'Oynat'a basın.\n3. Tarayıcıda 'Ses İzni' verildiğinden emin olun.")
+    st.divider()
+    st.info("""
+    💡 Ses İpuçları:
+    - Sayfaya bir kez tıklayın
+    - Tarayıcı ses iznini kontrol edin
+    - Otomatik oynatmayı kapatıp açmayı deneyin
+    """)
 
-# Yüzen Bilgi
-st.markdown('<button class="float-audio-btn">🎙️</button>', unsafe_allow_html=True)
+    st.caption("Faslı Muhabbet v6.1 • gTTS Stabil Sistem")
