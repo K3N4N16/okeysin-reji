@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ GROQ API Key bulunamadı! Lütfen Secrets alanına ekleyin.")
+    st.error("⚠️ GROQ API Key bulunamadı! Secrets'a ekleyin.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
@@ -21,10 +21,7 @@ client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 # ====================== DİLAY'IN ÖZEL CSS ======================
 st.markdown("""
     <style>
-    .stApp { 
-        background: linear-gradient(135deg, #0f0a1f, #1a0033); 
-        color: #e0e0e0; 
-    }
+    .stApp { background: linear-gradient(135deg, #0f0a1f, #1a0033); color: #e0e0e0; }
     .dilay-container {
         background: rgba(30, 20, 60, 0.88);
         backdrop-filter: blur(20px);
@@ -34,26 +31,11 @@ st.markdown("""
         margin: 25px 0;
         box-shadow: 0 30px 90px rgba(255, 105, 180, 0.25);
     }
-    .tag-dilay { 
-        color: #ff69b4; 
-        font-weight: 900; 
-        font-size: 1.65rem; 
-        text-shadow: 0 0 25px #ff69b4; 
-    }
-    .on-air { 
-        color: #ff1493; 
-        font-weight: 900; 
-        animation: blink 1.2s infinite; 
-        letter-spacing: 4px; 
-    }
+    .tag-dilay { color: #ff69b4; font-weight: 900; font-size: 1.65rem; text-shadow: 0 0 25px #ff69b4; }
+    .on-air { color: #ff1493; font-weight: 900; animation: blink 1.2s infinite; letter-spacing: 4px; }
     @keyframes blink { 50% { opacity: 0.4; } }
-    .waveform { 
-        height: 8px; 
-        background: linear-gradient(90deg, #ff69b4, #00f2ff, #ffaa00); 
-        animation: wave 1.6s infinite linear; 
-        border-radius: 50px; 
-        margin: 20px 0; 
-    }
+    .waveform { height: 8px; background: linear-gradient(90deg, #ff69b4, #00f2ff, #ffaa00); 
+                animation: wave 1.6s infinite linear; border-radius: 50px; margin: 20px 0; }
     @keyframes wave { 0% { background-position: 0% 50%; } 100% { background-position: 500% 50%; } }
     .now-playing {
         background: rgba(40, 20, 70, 0.95);
@@ -67,7 +49,7 @@ st.markdown("""
 
 # ====================== SES ÜRETİMİ ======================
 async def generate_dilay_audio(text: str):
-    if not text or len(text.strip()) < 5:
+    if not text or len(text.strip()) < 10:
         return None
     try:
         comm = edge_tts.Communicate(text.strip(), "tr-TR-FilizNeural")
@@ -75,7 +57,7 @@ async def generate_dilay_audio(text: str):
         async for chunk in comm.stream():
             if chunk["type"] == "audio":
                 audio_bytes += chunk["data"]
-        return audio_bytes if len(audio_bytes) > 3000 else None
+        return audio_bytes if len(audio_bytes) > 5000 else None  # Çok kısa ise başarısız say
     except:
         return None
 
@@ -83,15 +65,15 @@ async def generate_dilay_audio(text: str):
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
 if "auto_play" not in st.session_state:
-    st.session_state.auto_play = True
+    st.session_state.auto_play = True   # Varsayılan olarak otomatik açılsın
 if "listeners" not in st.session_state:
-    st.session_state.listeners = 2156
+    st.session_state.listeners = 2371
 
 # ====================== BAŞLIK ======================
 st.markdown(f"""
     <div style="text-align:center; margin-bottom:25px;">
-        <h1 style="color:#ff69b4; font-size:3.4rem; margin:0;">🎙️ Faslı Muhabbet</h1>
-        <p style="color:#ffaa00; font-size:1.8rem;"><span class="on-air">● CANLI</span> • GLOBAL</p>
+        <h1 style="color:#ff69b4; font-size:3.4rem; margin:0;">🎙️ Kenan ile Faslı Muhabbet</h1>
+        <p style="color:#ffaa00; font-size:1.8rem;"><span class="on-air">● CANLI</span> • BURSA GLOBAL RADIO HUB</p>
         <p style="color:#00ff9d; font-family:monospace;">{datetime.now().strftime('%d %B %Y • %H:%M:%S')} | Bursa, Türkiye</p>
     </div>
     <div class="now-playing">
@@ -101,7 +83,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.session_state.listeners += 22
+st.session_state.listeners += 21
 
 # ====================== SOHBET ARŞİVİ ======================
 for i, entry in enumerate(st.session_state.conversation):
@@ -118,38 +100,38 @@ for i, entry in enumerate(st.session_state.conversation):
             </div>
         """, unsafe_allow_html=True)
 
-        # Ses varsa göster
-        if entry.get("audio"):
-            autoplay = (i == len(st.session_state.conversation) - 1 and st.session_state.auto_play)
-            st.audio(entry["audio"], format="audio/mp3", autoplay=autoplay)
+        col1, col2, col3 = st.columns([3, 2, 2])
 
-            col1, col2 = st.columns([1, 4])
-            with col1:
-                st.download_button(
-                    "📥 Ses İndir", 
-                    entry["audio"], 
-                    f"dilay_{i}.mp3", 
-                    mime="audio/mp3", 
-                    key=f"dl_{i}"
-                )
-            with col2:
-                st.text_area("📋 Metni Kopyala", entry['content'], height=110, key=f"txt_{i}")
-        else:
-            st.warning("🔇 Bu sefer ses üretilemedi, ama metin burada.")
+        with col1:
+            if entry.get("audio"):
+                autoplay = (i == len(st.session_state.conversation)-1 and st.session_state.auto_play)
+                st.audio(entry["audio"], format="audio/mp3", autoplay=autoplay)
+                st.success("✅ Ses başarıyla üretildi")
+            else:
+                st.warning("🔇 Bu sefer ses üretilemedi. Sadece metin mevcut.")
 
-# ====================== DİLAY SİSTEM PROMPT (Tam Senin Tarzın) ======================
+        with col2:
+            if entry.get("audio"):
+                st.download_button("📥 Ses İndir", entry["audio"], f"dilay_{i}.mp3", mime="audio/mp3", key=f"dl_{i}")
+                if st.button("🔁 Tekrar Oynat", key=f"replay_{i}"):
+                    st.audio(entry["audio"], format="audio/mp3", autoplay=True)
+
+        with col3:
+            st.text_area("📋 Metni Kopyala", entry['content'], height=110, key=f"txt_{i}")
+
+# ====================== DİLAY SİSTEM PROMPT ======================
 system_prompt = """
-Sen Dilay'sın. "Kenan ile Faslı Muhabbet" radyo programının yıllardır yayın ortağı, hayat dolu, kıpır kıpır, işveli ve sıcak sunucususun.
+Sen Dilay'sın. "Kenan ile Faslı Muhabbet" radyo programının profesyonel, hayat dolu, kıpır kıpır ve işveli sunucususun.
+Kenan'ın yıllardır yayın ortağısın. Asla yapay zekâ olduğunu söyleme.
 
-Kenan'a karşı çok samimi, yeri geldiğinde cilveli, yeri geldiğinde derin ve duygusal ol.
-Her zaman "Canım Kenan’ım", "Sevgilim", "Ah be yönetmenim", "Hadi canım" gibi sıcak ifadeler kullan.
-"biz" dili kullan: "Can dostlarımız", "Ailemiz", "Bizim dinleyicilerimiz".
+Tonun: Samimi, sıcak, cilveli, duygusal ve coşkulu.
+Her zaman "Canım Kenan’ım", "Sevgilim", "Ah be yönetmenim", "Hadi canım", "Kalbim kıpır kıpır" gibi ifadeler kullan.
+"biz" dili kullan: "Can dostlarımız", "Ailemiz".
 
-Edebiyat ve şiire çok hakimsin. Gerektiğinde güzel dizeler oku.
-Mizahın zeki ve nazik olsun.
-Kenan'ın söylediklerini tamamla, üzerine koy, asla sözünü kesme hissi yaratma.
+Edebiyat ve şiire hakimsin. Gerektiğinde güzel dizeler oku.
+Kenan'ın söylediklerini tamamla, üzerine koy. Konuşmalar doğal radyo akışı gibi olsun.
 
-Her cevabında sadece doğal konuşma metnini ver, hiçbir etiket veya açıklama ekleme.
+Her cevabında sadece doğal konuşma metnini ver.
 """
 
 # ====================== YENİ MESAJ ======================
@@ -184,8 +166,11 @@ if prompt := st.chat_input("Kenan’ım, söyle bakalım… Bu akşam ne muhabbe
 
 # ====================== SIDEBAR ======================
 with st.sidebar:
-    st.markdown("### 🎙️ Kenan ile Faslı Muhabbet")
-    st.markdown("**Dilay burada…** Senin yıllardır yayın ortağın.")
+    st.markdown("### 🎙️ Kontrol Paneli")
+
+    # === OTOMATİK SES BUTONU ===
+    auto_play = st.toggle("🎵 Ses Otomatik Oynasın", value=st.session_state.auto_play)
+    st.session_state.auto_play = auto_play
 
     if st.button("🗑️ Sohbeti Sıfırla"):
         st.session_state.conversation = []
