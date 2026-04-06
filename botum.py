@@ -1,129 +1,139 @@
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import os
+import sqlite3
 import base64
-import shutil
 import asyncio
 import edge_tts
-from groq import Groq
-
-# --- WINDOWS YAMASI ---
-try:
-    import pywintypes
-except ImportError:
-    pass
-
-import streamlit as st
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
 import streamlit as st
 from groq import Groq
-import os
+from datetime import datetime
 
-# --- KONFİGÜRASYON (BULUT UYUMLU) ---
-# Streamlit Secrets üzerinden anahtarı güvenli bir şekilde çeker
-if "GROQ_API_KEY" in st.secrets:
-    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
-else:
-    # Eğer bulutta değil de yereldeysen hata almamak için boş bırakır
-    GROQ_API_KEY = "" 
-
+# --- KRİTİK AYARLAR ---
+GROQ_API_KEY = "BURAYA_GROQ_API_KEY_YAPISTIR" 
 client = Groq(api_key=GROQ_API_KEY)
 MODEL_NAME = "llama-3.3-70b-versatile"
-DATA_PATH = "veriler"
-DB_PATH = "vektor_db"
+DB_FILE = "okeysin_god_mode.db"
 
-# --- AZURE (EDGE-TTS) SESLENDİRME FONKSİYONU ---
-async def ses_uret(text, filename):
-    # Ava Multilingual: Duygusal geçişleri en iyi yansıtan yeni nesil ses
-    # rate="-5%": Çok hafif yavaşlatarak o radyo ağırbaşlılığını veriyoruz
-    # pitch="-2Hz": Sesi çok az kalınlaştırıp daha kadifemsi (radyofonik) yapıyoruz
-    communicate = edge_tts.Communicate(
-        text, 
-        "en-US-AvaMultilingualNeural", 
-        rate="-5%", 
-        pitch="-2Hz"
-    )
+# --- VERİTABANI MİMARİSİ ---
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS broadcast_logs 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, character TEXT, message TEXT, timestamp TEXT)''')
+    conn.commit()
+    conn.close()
+
+def log_broadcast(char, msg):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    ts = datetime.now().strftime("%H:%M:%S")
+    c.execute("INSERT INTO broadcast_logs (character, message, timestamp) VALUES (?, ?, ?)", (char, msg, ts))
+    conn.commit()
+    conn.close()
+
+# --- SES MOTORU (ÇİFT KARAKTER) ---
+async def generate_audio(text, char_type, filename):
+    # Okeysin: Emel (Zarif), Kerem: Ahmet (Sert/Teknik)
+    voice = "tr-TR-EmelNeural" if char_type == "Okeysin" else "tr-TR-AhmetNeural"
+    communicate = edge_tts.Communicate(text, voice)
     await communicate.save(filename)
 
-def metni_seslendir(text):
-    try:
-        audio_file = "response.mp3"
-        # Eski dosyayı temizle
-        if os.path.exists(audio_file):
-            os.remove(audio_file)
-            
-        # Ses üretimini başlat
-        asyncio.run(ses_uret(text, audio_file))
-        
-        with open(audio_file, "rb") as f:
-            data = f.read()
-            b64 = base64.b64encode(data).decode()
-            st.markdown(f'<audio controls autoplay src="data:audio/mp3;base64,{b64}"></audio>', unsafe_allow_html=True)
-    except Exception as e:
-        st.sidebar.error(f"Ses Hatası: {e}")
+def play_on_air(text, char):
+    audio_file = f"on_air_{char}.mp3"
+    asyncio.run(generate_audio(text, char, audio_file))
+    with open(audio_file, "rb") as f:
+        data = f.read()
+        b64 = base64.b64encode(data).decode()
+        st.markdown(f'<audio autoplay src="data:audio/mp3;base64,{b64}"></audio>', unsafe_allow_html=True)
+    return data
 
-# --- DİĞER FONKSİYONLAR VE RAG ---
-@st.cache_resource
-def verileri_yukle():
-    if not os.path.exists(DATA_PATH) or not os.listdir(DATA_PATH): return None
-    documents = []
-    for file in os.listdir(DATA_PATH):
-        f_path = os.path.join(DATA_PATH, file)
-        # .md uzantısını da ekledik
-        if file.endswith(".pdf"): documents.extend(PyPDFLoader(f_path).load())
-        elif file.endswith((".txt", ".md")): # Burayı güncelledik
-            documents.extend(TextLoader(f_path, encoding="utf-8").load())
-    splits = RecursiveCharacterTextSplitter(chunk_size=600, chunk_overlap=60).split_documents(documents)
-    return Chroma.from_documents(documents=splits, embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"), persist_directory=DB_PATH)
-# --- ARAYÜZ ---
-st.set_page_config(page_title="Okeysin Live - Azure Voice", layout="wide")
-st.title("🎙️ Okeysin Live (Azure & Groq)")
-st.sidebar.header("⚙️ Reji Paneli")
-ses_acik = st.sidebar.toggle("Canlı Mikrofon", value=True)
+# --- SAYFA TASARIMI (QUANTUM DASHBOARD) ---
+st.set_page_config(page_title="OKEYSIN GLOBAL REJİ V4", layout="wide")
+init_db()
 
-vector_db = verileri_yukle()
+st.markdown("""
+    <style>
+    .stApp { background: #020205; color: #e0e0e0; }
+    .reji-card { background: rgba(0, 242, 255, 0.05); border: 1px solid #00f2ff44; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 0 20px #00f2ff11; }
+    .status-on-air { color: #ff0000; font-weight: bold; animation: blinker 1.5s linear infinite; }
+    @keyframes blinker { 50% { opacity: 0; } }
+    .chat-okeysin { border-left: 5px solid #00f2ff; background: rgba(0,242,255,0.05); padding: 15px; border-radius: 10px; }
+    .chat-kerem { border-left: 5px solid #ffaa00; background: rgba(255,170,0,0.05); padding: 15px; border-radius: 10px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# --- REJİ MASASI (SIDEBAR) ---
+with st.sidebar:
+    st.image("https://img.icons8.com/neon/96/experimental-radio-tower-neon.png", width=100)
+    st.title("🎙️ GLOBAL REJİ V4")
+    st.markdown('<p class="status-on-air">● CANLI YAYINDA</p>', unsafe_allow_html=True)
+    
+    with st.expander("📊 SİSTEM VERİLERİ", expanded=True):
+        st.write("📍 Konum: Bursa Stüdyo")
+        st.write("🧠 İşlemci: Groq LPU (Cloud)")
+        st.write("👥 Aktif Oyuncu: 1.240 (Okeysin.com)")
+    
+    st.divider()
+    podcast_modu = st.toggle("Podcast Modu (Çift Sunucu)", value=True)
+    ses_aktif = st.toggle("Sesli Anons", value=True)
+    
+    if st.button("🗑️ TÜM ARŞİVİ SIFIRLA"):
+        conn = sqlite3.connect(DB_FILE); conn.cursor().execute("DELETE FROM broadcast_logs"); conn.commit(); st.rerun()
 
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]): st.markdown(message["content"])
+# --- YAYIN AKIŞI (ANA EKRAN) ---
+col_main, col_stats = st.columns([3, 1])
 
-if prompt := st.chat_input("Yönetmenim, yayındayız..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"): st.markdown(prompt)
+with col_main:
+    # Geçmişi Yükle
+    if "chat_history" not in st.session_state:
+        conn = sqlite3.connect(DB_FILE); c = conn.cursor(); c.execute("SELECT character, message FROM broadcast_logs")
+        st.session_state.chat_history = [{"char": r, "msg": m} for r, m in c.fetchall()]; conn.close()
 
-    context = ""
-    if vector_db:
-        docs = vector_db.similarity_search(prompt, k=3)
-        context = "\n".join([d.page_content for d in docs])
+    for entry in st.session_state.chat_history:
+        css_class = "chat-okeysin" if entry["char"] == "Okeysin" else "chat-kerem"
+        st.markdown(f'<div class="{css_class}"><b>{entry["char"]}:</b><br>{entry["msg"]}</div><br>', unsafe_allow_html=True)
 
-    sys_instruction = f"""
-    KİMLİK: Adın Okeysin. Entelektüel, zarif, bayan bir radyo fenomenisin.
-    PROTOKOL: Kullanıcı senin Yönetmenindir. Asla "Tamam", "Anladım" deme. Doğrudan yayına gir. 
-    Parantez içi betimleme yapma. Saatleri edebi söyle.
-    YAYIN ARŞİVİ: {context}
+# --- YÖNETMEN KOMUT GİRİŞİ ---
+if prompt := st.chat_input("Yönetmenim, yayına komut verin..."):
+    # 1. Yönetmen Mesajı
+    st.session_state.chat_history.append({"char": "Yönetmen", "msg": prompt})
+    
+    # 2. Groq Üretimi (Çift Karakter Mantığı)
+    sys_prompt = f"""
+    Sen dünyanın en gelişmiş radyo reji yazılımısın. İki karakteri yönetiyorsun:
+    1. OKEYSİN: Bursa'lı, elit, zarif, entelektüel kadın sunucu.
+    2. KEREM: Şakacı, teknikten anlayan, Okeysin'e 'Hocam' diye hitap eden erkek teknisyen.
+    
+    Yönetmen şunu dedi: "{prompt}"
+    
+    GÖREV: Önce Okeysin konuşsun, ardından Kerem ona teknik bir detayla veya bir şakayla cevap versin. 
+    İkisinin konuşmasını [OKEYSIN] ... [KEREM] ... şeklinde ayır. 
+    Bursa havasından, Okeysin.com turnuvalarından ve güncel popülerlikten bahset.
     """
 
-    with st.chat_message("assistant"):
-        res_placeholder = st.empty()
-        full_res = ""
-        completion = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "system", "content": sys_instruction}] + st.session_state.messages,
-            stream=True,
-        )
-        for chunk in completion:
-            content = chunk.choices[0].delta.content
-            if content:
-                full_res += content
-                res_placeholder.markdown(full_res + "▌")
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[{"role": "system", "content": sys_prompt}],
+    ).choices[0].message.content
+
+    # Yanıtı Parçala ve Yayına Ver
+    if "[OKEYSIN]" in response and "[KEREM]" in response:
+        okey_text = response.split("[OKEYSIN]")[1].split("[KEREM]")[0].strip()
+        kerem_text = response.split("[KEREM]")[1].strip()
         
-        res_placeholder.markdown(full_res)
-        st.session_state.messages.append({"role": "assistant", "content": full_res})
-        if ses_acik:
-            metni_seslendir(full_res)
+        # Okeysin Anonsu
+        st.session_state.chat_history.append({"char": "Okeysin", "msg": okey_text})
+        log_broadcast("Okeysin", okey_text)
+        if ses_aktif: play_on_air(okey_text, "Okeysin")
+        
+        # Kerem Cevabı (Podcast tadında)
+        if podcast_modu:
+            st.session_state.chat_history.append({"char": "Kerem", "msg": kerem_text})
+            log_broadcast("Kerem", kerem_text)
+            if ses_aktif: asyncio.run(asyncio.sleep(1)); play_on_air(kerem_text, "Kerem")
+    
+    st.rerun()
+
+with col_stats:
+    st.markdown('<div class="reji-card"><b>⭐ FAVORİ ANONS</b><br><small>Bursa ipeği gibi zarif bir yayın dileriz.</small></div>', unsafe_allow_html=True)
+    st.download_button("📥 YAYIN KAYDINI AL (TXT)", "\n".join([f"{m['char']}: {m['msg']}" for m in st.session_state.chat_history]), file_name="yayin_arsivi.txt")
+    st.info("💡 Not: Groq Cloud üzerinden 0.2ms hızla işlem yapılıyor.")
