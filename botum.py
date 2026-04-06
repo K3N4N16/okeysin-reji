@@ -4,9 +4,9 @@ import edge_tts
 import asyncio
 import io
 from datetime import datetime
-from pydub import AudioSegment   # ← Tek ses dosyası için
+from pydub import AudioSegment   # Tek ses için
 
-# ====================== KURULUM UYARISI ======================
+# ====================== SAYFA AYARLARI ======================
 st.set_page_config(page_title="OKEYSIN GLOBAL V20", layout="wide", page_icon="📻")
 
 if "GROQ_API_KEY" not in st.secrets:
@@ -15,7 +15,7 @@ if "GROQ_API_KEY" not in st.secrets:
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ====================== CSS - NEON & RADYO ATMOSFERİ ======================
+# ====================== CSS ======================
 st.markdown("""
     <style>
     .stApp { background: #0a0a12; color: #e0e0e0; }
@@ -38,7 +38,11 @@ st.markdown("""
 
 # ====================== SES ÜRETİMİ ======================
 async def generate_audio(text: str, speaker: str):
-    voices = {"Okeysin": "tr-TR-EmelNeural", "Kerem": "tr-TR-AhmetNeural", "Dilay": "tr-TR-FilizNeural"}
+    voices = {
+        "Okeysin": "tr-TR-EmelNeural",
+        "Kerem": "tr-TR-AhmetNeural",
+        "Dilay": "tr-TR-FilizNeural"
+    }
     try:
         comm = edge_tts.Communicate(text, voices.get(speaker, "tr-TR-EmelNeural"))
         audio_bytes = b""
@@ -46,30 +50,28 @@ async def generate_audio(text: str, speaker: str):
             if chunk["type"] == "audio":
                 audio_bytes += chunk["data"]
         return audio_bytes
-    except:
+    except Exception as e:
+        st.warning(f"{speaker} ses üretilemedi: {e}")
         return None
 
 # ====================== SESSION STATE ======================
 if "broadcast_archive" not in st.session_state:
     st.session_state.broadcast_archive = []
-
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = False
 
 # ====================== BAŞLIK ======================
 st.markdown(f"""
     <div style="text-align:center; margin-bottom:30px;">
-        <h1 style="color:#00f2ff; margin:0;">🎙️ OKEYSIN GLOBAL V20</h1>
-        <p style="color:#ffaa00; font-size:1.4rem; margin:8px 0;">
-            <span class="on-air">● CANLI YAYIN</span> • BURSA GLOBAL RADIO HUB
-        </p>
+        <h1 style="color:#00f2ff;">🎙️ OKEYSIN GLOBAL V20</h1>
+        <p style="color:#ffaa00; font-size:1.4rem;"><span class="on-air">● CANLI</span> BURSA GLOBAL RADIO HUB</p>
         <p class="live-time">{datetime.now().strftime('%d %B %Y • %H:%M:%S')} | Bursa, Türkiye</p>
     </div>
 """, unsafe_allow_html=True)
 
-# ====================== ARŞİV GÖSTERİMİ ======================
+# ====================== ARŞİV ======================
 for i, entry in enumerate(st.session_state.broadcast_archive):
-    if entry["role"] == "user":
+    if entry.get("role") == "user":
         st.markdown(f"🎬 **Yönetmen:** `{entry['content']}`")
         continue
 
@@ -80,63 +82,58 @@ for i, entry in enumerate(st.session_state.broadcast_archive):
                 <p><span class="tag-k">🎧 KEREM:</span><br>{entry.get('k_text', '')}</p>
                 <p><span class="tag-d">💖 DİLAY:</span><br>{entry.get('d_text', '')}</p>
                 <hr style="border-color:#333">
-                <p style="color:#00f2ff; font-style:italic;">🎵 {entry.get('playlist', 'Radyo Klasikleri')}</p>
+                <p style="color:#00f2ff; font-style:italic;">🎵 {entry.get('playlist', 'Bu akşamın ruhuna uygun parçalar')}</p>
             </div>
         """, unsafe_allow_html=True)
 
-        # TEK SES DOSYASI + OTOMATİK OYNATMA
         col1, col2, col3 = st.columns([3, 2, 2])
         with col1:
             if entry.get("full_audio"):
-                autoplay = (i == len(st.session_state.broadcast_archive) - 1 and st.session_state.auto_play)
+                autoplay = (i == len(st.session_state.broadcast_archive)-1 and st.session_state.auto_play)
                 st.audio(entry["full_audio"], format="audio/mp3", autoplay=autoplay)
 
         with col2:
-            st.download_button(
-                "📥 Tek Dosya İndir (MP3)",
-                entry["full_audio"],
-                file_name=f"okeysin_global_{datetime.now().strftime('%Y%m%d_%H%M')}_{i}.mp3",
-                mime="audio/mp3",
-                key=f"dl_{i}"
-            )
+            if entry.get("full_audio"):
+                st.download_button(
+                    "📥 Tek MP3 İndir",
+                    entry["full_audio"],
+                    file_name=f"okeysin_global_{i}.mp3",
+                    mime="audio/mp3"
+                )
 
         with col3:
-            full_text = f"OKEYSİN: {entry.get('o_text','')}\n\nKEREM: {entry.get('k_text','')}\n\nDİLAY: {entry.get('d_text','')}\n\nPLAYLIST: {entry.get('playlist','')}"
-            st.text_area("📋 Kopyala", value=full_text, height=100, key=f"copy_{i}")
+            txt = f"OKEYSİN:\n{entry.get('o_text','')}\n\nKEREM:\n{entry.get('k_text','')}\n\nDİLAY:\n{entry.get('d_text','')}\n\nPLAYLIST: {entry.get('playlist','')}"
+            st.text_area("📋 Kopyala", txt, height=110, key=f"txt_{i}")
 
-# ====================== YAYIN KOMUT MERKEZİ ======================
-prompt = st.chat_input("Yönetmenim, yayını başlat… Konuyu söyle…")
-
-if prompt:
+# ====================== YENİ YAYIN ======================
+if prompt := st.chat_input("Yönetmenim, yayını başlat... Konuyu söyle..."):
     st.session_state.broadcast_archive.append({"role": "user", "content": prompt})
-    st.session_state.auto_play = True  # Yeni yayın otomatik oynasın
+    st.session_state.auto_play = True
 
     system_prompt = """
-Sen profesyonel radyo yayın ekibisin. Bursa'dan dünyaya yayın yapıyoruz.
-Karakterler:
-- [OKEYSIN_START] ... [KEREM_REPLY] ... [DILAY_REPLY] ... [OKEYSIN_END] [PLAYLIST]
-Okeysin açar, Kerem katkı yapar, Dilay duyguyu derinleştirir, Okeysin güzel bir soruyla kapatır.
-Her zaman doğal, sıcak, samimi radyo dili kullan. Şiir, nükte, Bursa dokunuşu olsun.
+Sen profesyonel radyo ekibisin. 
+Karakter sırası mutlaka şöyle olsun:
+[OKEYSIN_START] ... [KEREM_REPLY] ... [DILAY_REPLY] ... [OKEYSIN_END] [PLAYLIST]
+Doğal, sıcak, samimi radyo dili kullan. Şiir, nükte ve Bursa dokunuşu ekle.
 """
 
     messages = [{"role": "system", "content": system_prompt}]
-    for entry in st.session_state.broadcast_archive:
-        if entry["role"] == "user":
-            messages.append({"role": "user", "content": entry["content"]})
+    for e in st.session_state.broadcast_archive:
+        if e["role"] == "user":
+            messages.append({"role": "user", "content": e["content"]})
         else:
-            content = f"OKEYSIN: {entry.get('o_text','')}\nKEREM: {entry.get('k_text','')}\nDILAY: {entry.get('d_text','')}"
-            messages.append({"role": "assistant", "content": content})
+            messages.append({"role": "assistant", "content": f"OKEYSIN: {e.get('o_text','')}\nKEREM: {e.get('k_text','')}\nDILAY: {e.get('d_text','')}"})
 
-    with st.spinner("📡 Mikrofonlar açılıyor... Sesler birleşiyor..."):
+    with st.spinner("🎙️ Mikrofonlar açılıyor... Sesler birleştiriliyor..."):
         try:
             res = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=messages,
                 temperature=0.85,
-                max_tokens=1300
+                max_tokens=1400
             ).choices[0].message.content
 
-            # Etiketleri parçala
+            # Etiket parçalama
             o_text = res.split("[OKEYSIN_START]")[1].split("[KEREM_REPLY]")[0].strip()
             k_text = res.split("[KEREM_REPLY]")[1].split("[DILAY_REPLY]")[0].strip()
             d_text = res.split("[DILAY_REPLY]")[1].split("[OKEYSIN_END]")[0].strip()
@@ -145,23 +142,24 @@ Her zaman doğal, sıcak, samimi radyo dili kullan. Şiir, nükte, Bursa dokunu�
             o_full = f"{o_text}\n\n{o_end}"
 
             # Sesleri üret
-            o_audio = asyncio.run(generate_audio(o_full, "Okeysin"))
-            k_audio = asyncio.run(generate_audio(k_text, "Kerem"))
-            d_audio = asyncio.run(generate_audio(d_text, "Dilay"))
+            o_bytes = asyncio.run(generate_audio(o_full, "Okeysin"))
+            k_bytes = asyncio.run(generate_audio(k_text, "Kerem"))
+            d_bytes = asyncio.run(generate_audio(d_text, "Dilay"))
 
-            # TEK SES DOSYASI OLUŞTUR (sırayla birleştir)
+            # TEK SES DOSYASI OLUŞTUR
             full_audio = None
-            if o_audio and k_audio and d_audio:
+            if o_bytes and k_bytes and d_bytes:
                 try:
-                    o_seg = AudioSegment.from_file(io.BytesIO(o_audio), format="mp3")
-                    k_seg = AudioSegment.from_file(io.BytesIO(k_audio), format="mp3")
-                    d_seg = AudioSegment.from_file(io.BytesIO(d_audio), format="mp3")
+                    o_seg = AudioSegment.from_file(io.BytesIO(o_bytes), format="mp3")
+                    k_seg = AudioSegment.from_file(io.BytesIO(k_bytes), format="mp3")
+                    d_seg = AudioSegment.from_file(io.BytesIO(d_bytes), format="mp3")
                     combined = o_seg + k_seg + d_seg
                     buffer = io.BytesIO()
-                    combined.export(buffer, format="mp3")
+                    combined.export(buffer, format="mp3", bitrate="192k")
                     full_audio = buffer.getvalue()
-                except:
-                    full_audio = o_audio  # yedek
+                except Exception as merge_err:
+                    st.warning(f"Birleştirme hatası: {merge_err}. Sadece Okeysin sesi oynatılacak.")
+                    full_audio = o_bytes
 
             st.session_state.broadcast_archive.append({
                 "role": "assistant",
@@ -177,29 +175,13 @@ Her zaman doğal, sıcak, samimi radyo dili kullan. Şiir, nükte, Bursa dokunu�
         except Exception as e:
             st.error(f"Reji hatası: {e}")
 
-# ====================== SIDEBAR - DÖNER ARAÇLAR ======================
+# ====================== SIDEBAR ======================
 with st.sidebar:
-    st.markdown("### 🎚️ ANA KONTROL PANELİ")
-    
-    if st.button("🗑️ Arşivi Sıfırla", type="secondary"):
+    st.markdown("### 🎚️ KONTROL PANELİ")
+    if st.button("🗑️ Arşivi Sıfırla"):
         st.session_state.broadcast_archive = []
         st.rerun()
 
     st.divider()
-    
-    # Tema seçici
-    theme = st.selectbox(
-        "🎭 Bu Akşamın Teması",
-        ["Genel Kültür & Muhabbet", "Aşk ve Şiir", "Bursa'dan Anılar", "Nostalji", 
-         "Dünya Halleri", "Müzik ve Edebiyat", "Hayatın Kısa Halleri"],
-        index=0
-    )
-
-    # Devam ettir butonu (sarmal yayın)
-    if st.button("🔄 Yayını Devam Ettir (Sarmal Mod)"):
-        st.session_state.broadcast_archive.append({"role": "user", "content": "Devam et, muhabbeti derinleştir"})
-        st.rerun()
-
-    st.divider()
-    st.info("📍 Bursa'dan Dünyaya\nTek Sesli Podcast Yayın\nOkeysin → Kerem → Dilay\nOtomatik Sıralı Oynatma")
+    st.info("📍 imaj fm’dan Dünyaya\nTek Sesli Podcast Yayın\nOkeysin → Kerem → Dilay\nOtomatik Sıralı Oynatma")
     st.caption("Dilay & Kenan • OKEYSIN GLOBAL V20")
