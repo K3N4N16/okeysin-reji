@@ -2,49 +2,40 @@ import streamlit as st
 from groq import Groq
 import edge_tts
 import asyncio
-import base64
-import random
 from datetime import datetime
 
-# --- 1. GLOBAL KONFİGÜRASYON ---
-st.set_page_config(page_title="OKEYSIN GLOBAL V18", layout="wide", page_icon="📡")
+# --- 1. SİSTEM AYARLARI ---
+st.set_page_config(page_title="OKEYSIN GLOBAL V19", layout="wide", page_icon="📻")
 
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ API Key Eksik!")
+    st.error("⚠️ API Key Bulunamadı!")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. PROFESYONEL REJİ TASARIMI (QUANTUM V3) ---
+# --- 2. GELİŞMİŞ QUANTUM TASARIM ---
 st.markdown("""
     <style>
-    .stApp { background: #020205; color: #e0e0e0; }
-    .broadcast-card {
-        background: rgba(10, 10, 35, 0.6);
-        border-left: 4px solid #00f2ff;
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 15px;
-        backdrop-filter: blur(5px);
+    .stApp { background: #050505; color: #e0e0e0; }
+    .broadcast-box {
+        background: rgba(15, 15, 35, 0.7);
+        border: 1px solid #00f2ff33;
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6);
     }
-    .playlist-card {
-        background: linear-gradient(90deg, #1a1a1a 0%, #000 100%);
-        border: 1px dashed #00f2ff55;
-        border-radius: 10px;
-        padding: 15px;
-        margin: 10px 0;
-    }
-    .on-air-blink {
-        color: #ff0000;
-        font-weight: bold;
-        animation: blink 1s infinite;
-    }
+    .speaker-okeysin { color: #00f2ff; font-weight: 900; font-size: 1.2rem; }
+    .speaker-kerem { color: #ffaa00; font-weight: 900; font-size: 1.2rem; }
+    .on-air { color: #ff0000; font-weight: bold; animation: blink 1.2s infinite; }
     @keyframes blink { 50% { opacity: 0; } }
+    /* Sesle Yazma İpucu */
+    .mic-hint { font-size: 0.8rem; color: #888; margin-top: 5px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. AKILLI SES & MÜZİK MOTORU ---
-async def generate_voice(text, char):
+# --- 3. SES ÜRETİM MOTORU ---
+async def make_voice(text, char):
     voice = "tr-TR-EmelNeural" if char == "Okeysin" else "tr-TR-AhmetNeural"
     try:
         comm = edge_tts.Communicate(text, voice)
@@ -55,80 +46,98 @@ async def generate_voice(text, char):
         return data
     except: return None
 
-# --- 4. HAFIZA & YAYIN AKIŞI ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# --- 4. YAYIN HAFIZASI ---
+if "broadcast_history" not in st.session_state:
+    st.session_state.broadcast_history = []
 
-# --- 5. ANA EKRAN ---
-st.markdown('### 📡 <span class="on-air-blink">● LIVE:</span> BURSA GLOBAL HUB V18', unsafe_allow_html=True)
+# --- 5. ANA YAYIN EKRANI ---
+st.markdown('### 🎙️ <span class="on-air">● ON-AIR</span> | BURSA GLOBAL RADIO HUB', unsafe_allow_html=True)
 
-for i, msg in enumerate(st.session_state.messages):
+for i, segment in enumerate(st.session_state.broadcast_history):
     with st.container():
-        if msg["role"] == "user":
-            st.info(f"🎤 Yönetmen: {msg['content']}")
+        if segment["role"] == "user":
+            st.markdown(f"**🎬 Yönetmen Komutu:** *{segment['content']}*")
         else:
-            name_color = "#00f2ff" if "Okeysin" in msg["name"] else "#ffaa00"
+            # TEK BİR MESAJ ALTINDA TÜM ARAÇLAR VE KONUŞMALAR
             st.markdown(f"""
-                <div class="broadcast-card">
-                    <b style="color:{name_color}; letter-spacing:1px;">{msg['name']}</b><br>
-                    {msg['content']}
+                <div class="broadcast-box">
+                    <span class="speaker-okeysin">🎙️ OKEYSİN:</span><br>{segment['o_text']}<br><br>
+                    <span class="speaker-kerem">🎧 KEREM:</span><br>{segment['k_text']}<br><br>
+                    <hr style="border-color:#333">
+                    <p style="font-size:0.8rem; color:#666;">🎵 Bu Yayının Playlisti: {segment.get('playlist', 'Hazırlanıyor...')}</p>
                 </div>
             """, unsafe_allow_html=True)
             
-            # Araç Paneli
-            with st.expander("🛠️ Reji Araçları"):
-                c1, c2, c3 = st.columns([2, 2, 4])
-                with c1: 
-                    if "audio" in msg: st.audio(msg["audio"], format="audio/mp3")
-                with c2: st.download_button("📥 Kayıt", msg["content"], file_name=f"yayin_{i}.txt", key=f"dl_{i}")
-                with c3: st.text_area("📋 Kopyala", value=msg["content"], key=f"cp_{i}", label_visibility="collapsed")
+            # ARAÇLAR PANELİ (Tek Satırda)
+            with st.expander("🛠️ YAYIN KONTROL VE ARAÇLAR"):
+                col1, col2, col3 = st.columns([2, 2, 4])
+                with col1:
+                    if segment.get("o_audio"): st.audio(segment["o_audio"], format="audio/mp3")
+                    if segment.get("k_audio"): st.audio(segment["k_audio"], format="audio/mp3")
+                with col2:
+                    full_text = f"OKEYSIN: {segment['o_text']}\n\nKEREM: {segment['k_text']}"
+                    st.download_button("📥 Yayını İndir", full_text, file_name=f"yayin_kaydi_{i}.txt", key=f"dl_{i}")
+                with col3:
+                    st.text_area("📋 Kopyalama Panosu", value=full_text, height=100, key=f"cp_{i}")
 
-# --- 6. YAYIN TETİKLEYİCİ ---
-if prompt := st.chat_input("Yönetmenim, yayına yeni bir yön verin..."):
-    st.session_state.messages.append({"role": "user", "name": "YÖNETMEN", "content": prompt})
+# --- 6. KOMUT GİRİŞİ (SESLE YAZMA DESTEKLİ) ---
+st.markdown('<p class="mic-hint">💡 Mobilde klavyenizdeki mikrofon ikonuna basarak sesli komut verebilirsiniz.</p>', unsafe_allow_html=True)
+if prompt := st.chat_input("Yayına yeni bir konu veya yön verin..."):
+    st.session_state.broadcast_history.append({"role": "user", "content": prompt})
     
-    sys_instruction = """
-    Sen dünyanın en donanımlı radyo istasyonusun. 
-    [OKEYSIN]: Bursa'dan dünyaya seslenen bilge, nazik kadın sunucu. Dünya edebiyatı, şairler ve klasikleşmiş müzikler onun uzmanlığı.
-    [KEREM]: Global gazete manşetleri, sosyal medya gündemi ve teknik reji adamı. 
+    # GELİŞMİŞ SARMAL DİYALOG TALİMATI
+    sys_msg = """
+    Sen dünyanın en profesyonel radyo ekibisin. 
+    Karakterlerin: 
+    1. [OKEYSIN]: Bursa'dan dünyaya konuşan, genel kültürü devasa, sanatçıları ve şairleri tanıyan bilge kadın sunucu.
+    2. [KEREM]: Teknikten ve global gündemden sorumlu, Okeysin'e pas atan esprili reji adamı.
     
-    YAYIN AKIŞI KURALLARI:
-    1. Önce birbirinizi selamlayın (eğer yayın yeni başlıyorsa).
-    2. Yönetmenin konusunu dünya kültürüyle harmanlayarak tartışın.
-    3. HER YAYINDA mutlaka o anki konuya uygun bir "Playlist Önerisi" (3 şarkı: Sanatçı - Şarkı) sunun.
-    4. Cevabın sonunda mutlaka birbirinize bir soru sorarak veya 'Sıradaki haberimize geçelim mi?' diyerek akışı canlı tutun.
-    FORMAT: [OKEYSIN] ... [KEREM] ...
+    KURALLAR:
+    - Okeysin konuyu açar, Kerem cevap verir ve yeni bir bilgi ekler. 
+    - Kerem'in ardından Okeysin tekrar söze girer ve yayını toparlayıp bir soruyla bitirir. 
+    - Kesinlikle konuya uygun 3 şarkılık bir [PLAYLIST] önerisi yapın.
+    FORMAT: [OKEYSIN_BASLANGIC] ... [KEREM_CEVAP] ... [OKEYSIN_KAPANIS] ... [PLAYLIST] ...
     """
 
-    with st.spinner("Stüdyo hazırlanıyor, plaklar dönüyor..."):
+    with st.spinner("Uydu bağlantısı kuruluyor, Okeysin ve Kerem hazırlanıyor..."):
         try:
             res = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": sys_instruction}] + 
-                         [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
+                messages=[{"role": "system", "content": sys_msg}] + 
+                         [{"role": m["role"], "content": m.get("content", f"OK: {m.get('o_text')} KE: {m.get('k_text')}")} for m in st.session_state.broadcast_history]
             ).choices[0].message.content
 
-            if "[OKEYSIN]" in res and "[KEREM]" in res:
-                o_text = res.split("[OKEYSIN]")[1].split("[KEREM]")[0].strip()
-                k_text = res.split("[KEREM]")[1].strip()
+            # Karakter parçalama mantığı
+            o_start = res.split("[OKEYSIN_BASLANGIC]")[1].split("[KEREM_CEVAP]")[0].strip()
+            k_text = res.split("[KEREM_CEVAP]")[1].split("[OKEYSIN_KAPANIS]")[0].strip()
+            o_end = res.split("[OKEYSIN_KAPANIS]")[1].split("[PLAYLIST]")[0].strip()
+            playlist = res.split("[PLAYLIST]")[1].strip()
 
-                audio_o = asyncio.run(generate_voice(o_text, "Okeysin"))
-                audio_k = asyncio.run(generate_voice(k_text, "Kerem"))
+            o_full = f"{o_start} {o_end}" # Okeysin'in tüm konuşması
 
-                st.session_state.messages.append({"role": "assistant", "name": "🎙️ OKEYSİN", "content": o_text, "audio": audio_o})
-                st.session_state.messages.append({"role": "assistant", "name": "🎧 KEREM", "content": k_text, "audio": audio_k})
-                
-                st.rerun()
+            # Sesleri üret
+            audio_o = asyncio.run(make_voice(o_full, "Okeysin"))
+            audio_k = asyncio.run(make_voice(k_text, "Kerem"))
+
+            # Tek bir blok olarak kaydet
+            st.session_state.broadcast_history.append({
+                "role": "assistant",
+                "o_text": o_full,
+                "k_text": k_text,
+                "playlist": playlist,
+                "o_audio": audio_o,
+                "k_audio": audio_k
+            })
+            
+            st.rerun()
         except Exception as e:
-            st.error(f"📡 Kesinti: {e}")
+            st.error(f"📡 Reji Hatası: {e}")
 
 # Sidebar
 with st.sidebar:
-    st.image("https://img.icons8.com/neon/96/microphone.png", width=80)
-    st.markdown("### 🎚️ MIXER")
-    if st.button("🗑️ Arşivi Sıfırla"):
-        st.session_state.messages = []
+    st.markdown("### 🎚️ BROADCAST CONTROL")
+    if st.button("🗑️ Arşivi Temizle"):
+        st.session_state.broadcast_history = []
         st.rerun()
     st.divider()
-    st.markdown("🌍 **Mod:** Global Broadcast")
-    st.markdown("🎶 **Playlist:** Otomatik Kürasyon Aktif")
+    st.info("Bursa'dan dünyaya uzanan entelektüel köprü.")
