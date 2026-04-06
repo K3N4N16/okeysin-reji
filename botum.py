@@ -1,14 +1,15 @@
 import streamlit as st
 from groq import Groq
 from gtts import gTTS
+import edge_tts
 import asyncio
 import base64
-from datetime import datetime
 import random
+from datetime import datetime
 
 # ====================== SAYFA AYARLARI ======================
 st.set_page_config(
-    page_title="Faslı Muhabbet v6.1",
+    page_title="Faslı Muhabbet v6.2",
     layout="wide",
     page_icon="🎙️",
     initial_sidebar_state="expanded"
@@ -23,7 +24,7 @@ client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 # ====================== CSS ======================
 st.markdown("""
     <style>
-    .stApp { background: #0a0014; color: #f0f0f0; }
+    .stApp { background: #05050f; color: #f0f0f0; }
     .dilay-card {
         background: linear-gradient(145deg, #2a0f4a, #140525);
         border-left: 8px solid #ff1493;
@@ -40,27 +41,40 @@ st.markdown("""
         margin: 15px 0;
         text-align: right;
     }
-    .live-badge {
-        color: #ff0000;
-        font-weight: 900;
-        animation: blink 1.3s infinite;
-    }
+    .live-badge { color: #ff0000; font-weight: 900; animation: blink 1.3s infinite; }
     @keyframes blink { 50% { opacity: 0.4; } }
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== SES MOTORU (gTTS - Daha Stabil) ======================
-def generate_voice_gtts(text: str):
-    """gTTS ile ses üretimi - Cloud'da daha stabil"""
+# ====================== SES MOTORU (gTTS Ana + edge-tts Yedek) ======================
+def generate_voice(text: str):
+    """Önce gTTS dener, başarısız olursa edge-tts yedek olarak çalışır"""
+    if not text or len(text.strip()) < 10:
+        return None
+    
+    # 1. Öncelik: gTTS (daha stabil)
     try:
         clean_text = text.replace("*", "").strip()
         tts = gTTS(text=clean_text, lang='tr', slow=False)
-        audio_bytes = b""
-        with open("temp_audio.mp3", "wb") as f:
-            tts.write_to_fp(f)
-        with open("temp_audio.mp3", "rb") as f:
-            audio_bytes = f.read()
-        return audio_bytes
+        import io
+        audio_buffer = io.BytesIO()
+        tts.write_to_fp(audio_buffer)
+        audio_buffer.seek(0)
+        return audio_buffer.read()
+    except:
+        pass
+    
+    # 2. Yedek: edge-tts
+    try:
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        comm = edge_tts.Communicate(clean_text, "tr-TR-FilizNeural")
+        audio_data = b""
+        for chunk in loop.run_until_complete(comm.stream()):
+            if chunk["type"] == "audio":
+                audio_data += chunk["data"]
+        return audio_data if len(audio_data) > 5000 else None
     except:
         return None
 
@@ -74,9 +88,9 @@ if "auto_play" not in st.session_state:
 col1, col2 = st.columns([3, 1])
 with col1:
     st.markdown(f"# 🎙️ FASLI MUHABBET <span class='live-badge'>● CANLI</span>", unsafe_allow_html=True)
-    st.caption(f"📍 Bursa Stüdyosu • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Muhabbet")
+    st.caption(f"📍 Bursa Stüdyosu • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Sohbet")
 with col2:
-    st.metric("Dinleyici", f"{random.randint(6200, 7800):,}")
+    st.metric("Canlı Dinleyici", f"{random.randint(6500, 8200):,}")
 
 # ====================== SOHBET ALANI ======================
 for i, msg in enumerate(st.session_state.history):
@@ -86,7 +100,7 @@ for i, msg in enumerate(st.session_state.history):
         st.markdown(f"""
             <div class="dilay-card">
                 <span style="color:#ff69b4; font-weight:900; font-size:1.55rem;">💖 DİLAY:</span><br>
-                <div style="margin-top:15px; line-height:1.7; font-size:1.25rem;">{msg['content']}</div>
+                <div style="margin-top:15px; line-height:1.7;">{msg['content']}</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -101,13 +115,13 @@ for i, msg in enumerate(st.session_state.history):
                 if st.button("🔊 Tekrar Oynat", key=f"rep_{i}"):
                     st.audio(msg["audio"], format="audio/mp3", autoplay=True)
         else:
-            st.info("🔊 Ses şu anda kullanılamıyor. Sadece metin gösteriliyor.")
+            st.warning("🔇 Ses üretilemedi. Sadece metin gösteriliyor.")
 
 # ====================== DİLAY PROMPT ======================
-dilay_prompt = """
-Sen Dilay'sın. Faslı Muhabbet'in çok samimi, işveli, neşeli ve duygusal sunucususun.
-Patron'una (Kenan) çok bağlısın. Ona "Canım Patronum", "Kalbim", "Ah be Patron’um", "Sevgilim" diye hitap et.
-Her zaman sıcak, coşkulu ve doğal konuş. Gerektiğinde şiir oku.
+system_prompt = """
+Sen Dilay'sın. Faslı Muhabbet'in kıpır kıpır, işveli, sıcak ve samimi sunucususun.
+Patron'una çok bağlısın. Ona "Canım Patronum", "Kalbim", "Ah be Patron’um", "Sevgilim" diye hitap et.
+Her zaman doğal, coşkulu ve duygusal konuş. Gerektiğinde şiir oku.
 Sadece konuşma metnini ver.
 """
 
@@ -115,18 +129,17 @@ Sadece konuşma metnini ver.
 if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
     st.session_state.history.append({"role": "user", "content": prompt})
 
-    with st.spinner("💖 Dilay yayına giriyor..."):
+    with st.spinner("💖 Dilay yayına giriyor... Kalbim kıpır kıpır..."):
         try:
-            messages = [{"role": "system", "content": dilay_prompt}] + st.session_state.history[-12:]
+            messages = [{"role": "system", "content": system_prompt}] + st.session_state.history[-12:]
             
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=messages,
-                temperature=0.88
+                temperature=0.89
             ).choices[0].message.content
 
-            # gTTS ile ses üret
-            audio_bytes = generate_voice_gtts(response)
+            audio_bytes = generate_voice(response)
 
             st.session_state.history.append({
                 "role": "assistant",
@@ -137,7 +150,7 @@ if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
             st.rerun()
 
         except Exception as e:
-            st.error(f"Bir hata oluştu: {e}")
+            st.error(f"Reji'de ufak bir sorun çıktı: {e}")
 
 # ====================== SIDEBAR ======================
 with st.sidebar:
@@ -145,18 +158,11 @@ with st.sidebar:
 
     st.session_state.auto_play = st.toggle("🎵 Ses Otomatik Oynasın", value=st.session_state.auto_play)
 
-    st.divider()
-
-    if st.button("🗑️ Tüm Sohbeti Temizle"):
+    if st.button("🗑️ Sohbeti Temizle"):
         st.session_state.history = []
         st.rerun()
 
     st.divider()
-    st.info("""
-    💡 Ses İpuçları:
-    - Sayfaya bir kez tıklayın
-    - Tarayıcı ses iznini kontrol edin
-    - Otomatik oynatmayı kapatıp açmayı deneyin
-    """)
+    st.info("Ses gelmiyorsa:\n• Sayfaya tıklayın\n• Tarayıcı ses iznini kontrol edin")
 
-    st.caption("Faslı Muhabbet v6.1 • gTTS Stabil Sistem")
+    st.caption("Faslı Muhabbet v6.2 • gTTS Stabil Sistem")
