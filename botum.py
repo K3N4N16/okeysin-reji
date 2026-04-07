@@ -1,122 +1,157 @@
 import streamlit as st
 from groq import Groq
-import edge_tts
-import asyncio
-import io
-import re
+from gtts import gTTS
 import base64
-from datetime import datetime
 import random
+from datetime import datetime
+import io
 
 # ====================== SAYFA AYARLARI ======================
-st.set_page_config(page_title="Faslı Muhabbet v9.5", layout="wide", page_icon="🎙️")
+st.set_page_config(
+    page_title="Faslı Muhabbet v9.6",
+    layout="wide",
+    page_icon="🎙️",
+    initial_sidebar_state="expanded"
+)
 
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ GROQ API Key eksik! Lütfen Streamlit Secrets'a ekleyin.")
+    st.error("⚠️ GROQ API Key eksik! Secrets'a ekleyin.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ====================== SES MOTORU (KESİN ÇÖZÜM) ======================
-async def generate_voice_edge(text: str):
-    """Metni temizler ve asenkron olarak sesi üretir"""
-    try:
-        # AI sesini bozan karakterleri (emoji, yıldız vs.) tamamen temizle
-        clean_text = re.sub(r'[^\w\s\d,?.!]', '', text).strip()
-        if not clean_text:
-            return None
-
-        # Popüler ve stabil: Dilara
-        voice = "tr-TR-DilaraNeural"
-        communicate = edge_tts.Communicate(clean_text, voice, rate="+5%")
-        
-        audio_bytes = b""
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                audio_bytes += chunk["data"]
-        
-        return audio_bytes if audio_bytes else None
-    except Exception as e:
-        st.error(f"Ses motoru hatası: {e}")
-        return None
-
-# ====================== MODERN TASARIM (CSS) ======================
+# ====================== CSS ======================
 st.markdown("""
     <style>
-    .stApp { background-color: #050505; color: #ffffff; }
-    .dilay-bubble {
-        background: linear-gradient(135deg, #2b0040 0%, #000000 100%);
-        border-left: 6px solid #ff007f;
-        padding: 20px; border-radius: 15px; margin: 10px 0;
-        box-shadow: 0 4px 15px rgba(255,0,127,0.3);
+    .stApp { background: #05050f; color: #f0f0f0; }
+    .dilay-card {
+        background: linear-gradient(145deg, #2a0f4a, #140525);
+        border-left: 8px solid #ff1493;
+        border-radius: 20px;
+        padding: 28px;
+        margin: 20px 0;
+        box-shadow: 0 15px 40px rgba(255,20,147,0.3);
     }
-    .patron-bubble {
-        background: #111; border-right: 4px solid #00f2fe;
-        padding: 12px; border-radius: 10px; text-align: right; margin: 10px 0;
+    .patron-card {
+        background: rgba(0, 255, 157, 0.08);
+        border-right: 6px solid #00ff9d;
+        padding: 18px;
+        border-radius: 15px;
+        margin: 15px 0;
+        text-align: right;
     }
+    .live-badge { color: #ff0000; font-weight: 900; animation: blink 1.3s infinite; }
+    @keyframes blink { 50% { opacity: 0.4; } }
     </style>
     """, unsafe_allow_html=True)
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+# ====================== SES MOTORU (gTTS - En Stabil) ======================
+def generate_voice(text: str):
+    """gTTS ile ses üretimi - Streamlit Cloud için en güvenilir yöntem"""
+    try:
+        clean_text = text.replace("*", "").replace("Dilay:", "").strip()
+        if not clean_text:
+            return None
+        
+        tts = gTTS(text=clean_text, lang='tr', slow=False)
+        audio_buffer = io.BytesIO()
+        tts.write_to_fp(audio_buffer)
+        audio_buffer.seek(0)
+        return audio_buffer.read()
+    except:
+        return None
 
-# ====================== EKRAN AKIŞI ======================
-st.markdown("## 🎙️ FASLI MUHABBET <span style='color:red; font-size:14px;'>● CANLI</span>", unsafe_allow_html=True)
+# ====================== SESSION STATE ======================
+if "history" not in st.session_state:
+    st.session_state.history = []
+if "auto_play" not in st.session_state:
+    st.session_state.auto_play = True
 
-for i, msg in enumerate(st.session_state.chat_history):
+# ====================== ÜST PANEL ======================
+col1, col2 = st.columns([3, 1])
+with col1:
+    st.markdown(f"# 🎙️ FASLI MUHABBET <span class='live-badge'>● CANLI</span>", unsafe_allow_html=True)
+    st.caption(f"📍 Bursa Stüdyosu • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Muhabbet")
+with col2:
+    st.metric("Canlı Dinleyici", f"{random.randint(6800, 9200):,}")
+
+# ====================== SOHBET ALANI ======================
+for i, msg in enumerate(st.session_state.history):
     if msg["role"] == "user":
-        st.markdown(f'<div class="patron-bubble">🤵 <b>Patron Kenan:</b> {msg["content"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
     else:
-        st.markdown(f'<div class="dilay-bubble">💖 <b>DİLAY:</b><br>{msg["content"]}</div>', unsafe_allow_html=True)
-        if msg.get("audio_b64"):
-            # HTML5 Audio Player - Manuel buton her zaman görünür
-            audio_html = f"""
-                <audio controls style="width: 100%; border-radius: 10px; margin-top: 5px;">
-                    <source src="data:audio/mp3;base64,{msg['audio_b64']}" type="audio/mp3">
-                </audio>
-            """
-            st.markdown(audio_html, unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="dilay-card">
+                <span style="color:#ff69b4; font-weight:900; font-size:1.55rem;">💖 DİLAY:</span><br>
+                <div style="margin-top:15px; line-height:1.7;">{msg['content']}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
-# ====================== YENİ MESAJ İŞLEME ======================
-if prompt := st.chat_input("Yayına bağlan patron..."):
-    st.session_state.chat_history.append({"role": "user", "content": prompt})
-    
-    with st.spinner("🎧 Dilay hazırlanıyor..."):
+        if msg.get("audio"):
+            st.audio(msg["audio"], format="audio/mp3", 
+                     autoplay=(i == len(st.session_state.history)-1 and st.session_state.auto_play))
+            
+            c1, c2 = st.columns([2, 2])
+            with c1:
+                st.download_button("📥 Ses İndir", msg["audio"], f"dilay_{i}.mp3", mime="audio/mp3", key=f"dl_{i}")
+            with c2:
+                if st.button("🔊 Tekrar Oynat", key=f"rep_{i}"):
+                    st.audio(msg["audio"], format="audio/mp3", autoplay=True)
+        else:
+            st.warning("🔇 Bu sefer ses üretilemedi. Sadece metin gösteriliyor.")
+
+# ====================== DİLAY PROMPT ======================
+system_prompt = """
+Sen Dilay'sın. Faslı Muhabbet'in kıpır kıpır, işveli, sıcak ve samimi sunucususun.
+Patron'una çok bağlısın. Ona "Canım Patronum", "Kalbim", "Ah be Patron’um", "Sevgilim" diye hitap et.
+Her zaman doğal, coşkulu ve duygusal konuş. Gerektiğinde şiir oku.
+Sadece konuşma metnini ver.
+"""
+
+# ====================== MESAJ GİRİŞİ ======================
+if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
+    st.session_state.history.append({"role": "user", "content": prompt})
+
+    with st.spinner("💖 Dilay yayına giriyor... Kalbim kıpır kıpır..."):
         try:
-            # 1. Metin (Groq - Llama 3.3)
-            sys_msg = "Sen Dilay'sın. Samimi, neşeli, işveli radyo sunucususun. Patronun Kenan'a sevgiyle hitap et."
-            messages = [{"role": "system", "content": sys_msg}] + st.session_state.chat_history[-6:]
-            response = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=messages).choices[0].message.content
+            messages = [{"role": "system", "content": system_prompt}] + st.session_state.history[-12:]
             
-            # 2. Ses Üretimi (Asyncio Safe Loop)
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-            
-            # Sesi üret ve Base64'e çevir (Oynatıcı için şart)
-            audio_data = loop.run_until_complete(generate_voice_edge(response))
-            
-            audio_b64 = None
-            if audio_data:
-                audio_b64 = base64.b64encode(audio_data).decode()
-            
-            # 3. Kaydet ve Yenile
-            st.session_state.chat_history.append({
-                "role": "assistant", 
-                "content": response, 
-                "audio_b64": audio_b64
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=messages,
+                temperature=0.89
+            ).choices[0].message.content
+
+            # Ses üretimi (gTTS)
+            audio_bytes = generate_voice(response)
+
+            st.session_state.history.append({
+                "role": "assistant",
+                "content": response,
+                "audio": audio_bytes
             })
+
             st.rerun()
 
         except Exception as e:
-            st.error(f"Yayında Parazit Var: {e}")
+            st.error(f"Reji'de ufak bir sorun çıktı: {e}")
 
+# ====================== SIDEBAR ======================
 with st.sidebar:
-    st.header("🎚️ Reji")
-    if st.button("🗑️ Yayını Sıfırla"):
-        st.session_state.chat_history = []
+    st.title("🎚️ Reji Masası")
+
+    st.session_state.auto_play = st.toggle("🎵 Ses Otomatik Oynasın", value=st.session_state.auto_play)
+
+    if st.button("🗑️ Tüm Sohbeti Temizle"):
+        st.session_state.history = []
         st.rerun()
+
     st.divider()
-    st.caption("Faslı Muhabbet v9.5 | Ses: Dilara AI")
+    st.info("""
+    💡 Ses İpuçları:
+    • Sayfaya bir kez tıklayın
+    • Tarayıcı ses iznini kontrol edin
+    • Otomatik oynatmayı kapatıp açın
+    """)
+
+    st.caption("Faslı Muhabbet v9.6 • gTTS Stabil Sistem")
