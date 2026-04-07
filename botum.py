@@ -1,168 +1,153 @@
 import streamlit as st
 from groq import Groq
-from gtts import gTTS
-import edge_tts
-import asyncio
-import base64
-import random
-from datetime import datetime
+import re
 
-# ====================== SAYFA AYARLARI ======================
+# --- 1. SİSTEM AYARLARI ---
 st.set_page_config(
-    page_title="Faslı Muhabbet v6.2",
+    page_title="Aşk-ı Muhabbet | Pro Lady v28.2",
     layout="wide",
-    page_icon="🎙️",
-    initial_sidebar_state="expanded"
+    page_icon="🌸"
 )
 
-if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ GROQ API Key eksik! Secrets'a ekleyin.")
-    st.stop()
-
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-
-# ====================== CSS ======================
+# Multi-Profesyonel Arayüz ve Sesli Komut JS
 st.markdown("""
     <style>
-    .stApp { background: #05050f; color: #f0f0f0; }
-    .dilay-card {
-        background: linear-gradient(145deg, #2a0f4a, #140525);
-        border-left: 8px solid #ff1493;
-        border-radius: 20px;
-        padding: 30px;
-        margin: 20px 0;
-        box-shadow: 0 15px 40px rgba(255,20,147,0.3);
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Sofia&family=Dancing+Script&family=Nabla&display=swap');
+    
+    .stApp { background-color: #050005; color: #ffe6f2; }
+    
+    /* Profesyonel Ses Butonu */
+    .mic-container { text-align: center; margin: 25px 0; }
+    .mic-btn-pro {
+        background: linear-gradient(135deg, #ff007f 0%, #800040 100%);
+        color: white; border: none; padding: 22px 45px;
+        border-radius: 50px; font-weight: bold; cursor: pointer;
+        font-family: 'Orbitron', sans-serif;
+        box-shadow: 0 0 30px rgba(255, 0, 127, 0.4);
+        font-size: 1.2rem; transition: 0.4s;
     }
-    .patron-card {
-        background: rgba(0, 255, 157, 0.08);
-        border-right: 6px solid #00ff9d;
-        padding: 18px;
-        border-radius: 15px;
-        margin: 15px 0;
-        text-align: right;
+    .mic-btn-pro:hover { box-shadow: 0 0 50px #ff007f; transform: translateY(-3px); }
+    .listening { animation: pulse-pink 1.2s infinite; background: #ff3399 !important; }
+    
+    @keyframes pulse-pink {
+        0% { box-shadow: 0 0 0 0 rgba(255, 51, 153, 0.7); }
+        70% { box-shadow: 0 0 0 20px rgba(255, 51, 153, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 51, 153, 0); }
     }
-    .live-badge { color: #ff0000; font-weight: 900; animation: blink 1.3s infinite; }
-    @keyframes blink { 50% { opacity: 0.4; } }
+
+    /* Beyaz Canvas Reji */
+    iframe { background-color: #FFFFFF !important; border-radius: 25px; border: 5px solid #ff007f; }
     </style>
+
+    <script>
+    function startLadyVoice() {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'tr-TR';
+        const btn = document.getElementById('lady-mic');
+        btn.innerHTML = "🔴 SİZİ DİNLİYORUM...";
+        btn.classList.add('listening');
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            const textareas = window.parent.document.querySelectorAll('textarea');
+            textareas.forEach(t => {
+                if(t.placeholder.includes("Tarif")) {
+                    t.value = transcript;
+                    t.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+            btn.innerHTML = "🎤 SESLİ KOMUT BAŞARILI";
+            btn.classList.remove('listening');
+            setTimeout(() => { btn.innerHTML = "🎤 SESLİ KOMUT VER (PRO)"; }, 2000);
+        };
+        
+        recognition.onerror = () => {
+            btn.innerHTML = "⚠️ TEKRAR DENEYİN";
+            btn.classList.remove('listening');
+        };
+        recognition.start();
+    }
+    </script>
     """, unsafe_allow_html=True)
 
-# ====================== SES MOTORU (gTTS Ana + edge-tts Yedek) ======================
-def generate_voice(text: str):
-    """Önce gTTS dener, başarısız olursa edge-tts yedek olarak çalışır"""
-    if not text or len(text.strip()) < 10:
-        return None
+# --- 2. API KONFİGÜRASYONU ---
+if "GROQ_API_KEY" in st.secrets:
+    api_key = st.secrets["GROQ_API_KEY"]
+else:
+    with st.sidebar:
+        api_key = st.text_input("Groq Cloud Key:", type="password")
+
+if not api_key:
+    st.info("Lütfen API Key girerek yayını başlatın.")
+    st.stop()
+
+client = Groq(api_key=api_key)
+
+# --- 3. REJİ PANELİ ---
+st.markdown("<h1 style='text-align: center; font-family: Sofia; color: #ff007f; font-size: 3rem;'>Aşk-ı Muhabbet <span style='color:#ffffff; font-family:Orbitron; font-size: 1.5rem;'>PRO LADY</span></h1>", unsafe_allow_html=True)
+
+st.markdown('<div class="mic-container"><button id="lady-mic" class="mic-btn-pro" onclick="startLadyVoice()">🎤 SESLİ KOMUT VER (PRO)</button></div>', unsafe_allow_html=True)
+
+with st.form("lady_pro_form"):
+    c1, c2 = st.columns([1, 1])
+    with c1:
+        nick = st.text_input("Bayan Nick:", value="Papatya")
+    with c2:
+        font = st.selectbox("Zarif Fontlar:", ["Sofia", "Dancing Script", "Nabla", "Bungee Spice", "Righteous"])
+
+    user_desc = st.text_area("Tasarım Tarifi (Sesli veya Manuel):", placeholder="Örn: Pembe yanan, Ken5 gibi parıltılı, Sofia fontunda zarif bir nick...", height=120)
     
-    # 1. Öncelik: gTTS (daha stabil)
-    try:
-        clean_text = text.replace("*", "").strip()
-        tts = gTTS(text=clean_text, lang='tr', slow=False)
-        import io
-        audio_buffer = io.BytesIO()
-        tts.write_to_fp(audio_buffer)
-        audio_buffer.seek(0)
-        return audio_buffer.read()
-    except:
-        pass
-    
-    # 2. Yedek: edge-tts
-    try:
-        import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        comm = edge_tts.Communicate(clean_text, "tr-TR-FilizNeural")
-        audio_data = b""
-        for chunk in loop.run_until_complete(comm.stream()):
-            if chunk["type"] == "audio":
-                audio_data += chunk["data"]
-        return audio_data if len(audio_data) > 5000 else None
-    except:
-        return None
+    submit = st.form_submit_button("⚡ MULTI-PROFESYONEL RENDER")
 
-# ====================== SESSION STATE ======================
-if "history" not in st.session_state:
-    st.session_state.history = []
-if "auto_play" not in st.session_state:
-    st.session_state.auto_play = True
+# --- 4. OMEGA ENGINE RENDER ---
+if submit:
+    with st.spinner("Lady Pro motoru arşivdeki en zarif efektleri işliyor..."):
+        # Bayan profil olduğu için sistem promptunu özelleştiriyoruz
+        lady_prompt = f"""
+        Sen profesyonel bir CSS tasarımcısısın. Bir BAYAN kullanıcı için tasarım yapıyorsun.
+        - Arşiv: Ken1-Ken8, Colors, Nostalji dosyalarındaki en şık efektleri kullan.
+        - Stil: Pembe tonları (#ff007f, #ff79fc), beyaz parıltılar, yumuşak geçişler (blur/glow).
+        - Zorunlu: Zemin BEYAZ (#FFFFFF).
+        - Metin: '{nick}', Font: {font}.
+        Sadece HTML/CSS kodu ver. Açıklama yapma. Bytes hatası almamak için metni düzgün döndür.
+        """
 
-# ====================== ÜST PANEL ======================
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.markdown(f"# 🎙️ FASLI MUHABBET <span class='live-badge'>● CANLI</span>", unsafe_allow_html=True)
-    st.caption(f"📍 Bursa Stüdyosu • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Sohbet")
-with col2:
-    st.metric("Canlı Dinleyici", f"{random.randint(6500, 8200):,}")
-
-# ====================== SOHBET ALANI ======================
-for i, msg in enumerate(st.session_state.history):
-    if msg["role"] == "user":
-        st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-            <div class="dilay-card">
-                <span style="color:#ff69b4; font-weight:900; font-size:1.55rem;">💖 DİLAY:</span><br>
-                <div style="margin-top:15px; line-height:1.7;">{msg['content']}</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-        if msg.get("audio"):
-            st.audio(msg["audio"], format="audio/mp3", 
-                     autoplay=(i == len(st.session_state.history)-1 and st.session_state.auto_play))
-            
-            c1, c2 = st.columns([2, 2])
-            with c1:
-                st.download_button("📥 Ses İndir", msg["audio"], f"dilay_{i}.mp3", mime="audio/mp3", key=f"dl_{i}")
-            with c2:
-                if st.button("🔊 Tekrar Oynat", key=f"rep_{i}"):
-                    st.audio(msg["audio"], format="audio/mp3", autoplay=True)
-        else:
-            st.warning("🔇 Ses üretilemedi. Sadece metin gösteriliyor.")
-
-# ====================== DİLAY PROMPT ======================
-system_prompt = """
-Sen Dilay'sın. Faslı Muhabbet'in kıpır kıpır, işveli, sıcak ve samimi sunucususun.
-Patron'una çok bağlısın. Ona "Canım Patronum", "Kalbim", "Ah be Patron’um", "Sevgilim" diye hitap et.
-Her zaman doğal, coşkulu ve duygusal konuş. Gerektiğinde şiir oku.
-Sadece konuşma metnini ver.
-"""
-
-# ====================== MESAJ GİRİŞİ ======================
-if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
-    st.session_state.history.append({"role": "user", "content": prompt})
-
-    with st.spinner("💖 Dilay yayına giriyor... Kalbim kıpır kıpır..."):
         try:
-            messages = [{"role": "system", "content": system_prompt}] + st.session_state.history[-12:]
-            
-            response = client.chat.completions.create(
+            res = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=messages,
-                temperature=0.89
-            ).choices[0].message.content
+                messages=[
+                    {"role": "system", "content": lady_prompt},
+                    {"role": "user", "content": user_desc}
+                ]
+            )
+            
+            # bytes to string koruması
+            raw_code = str(res.choices[0].message.content)
+            clean_code = re.sub(r"```(html|css)?", "", raw_code).replace("```", "").strip()
 
-            audio_bytes = generate_voice(response)
-
-            st.session_state.history.append({
-                "role": "assistant",
-                "content": response,
-                "audio": audio_bytes
-            })
-
-            st.rerun()
+            st.divider()
+            p_col, s_col = st.columns([1.6, 1])
+            
+            with p_col:
+                st.subheader("🖼️ Pro Lady Preview")
+                f_link = font.replace(" ", "+")
+                full_html = f"""
+                <link href="https://fonts.googleapis.com/css2?family={f_link}&family=Sofia&family=Dancing+Script&display=swap" rel="stylesheet">
+                <style>
+                    body {{ 
+                        margin: 0; background: #FFFFFF; 
+                        display: flex; justify-content: center; align-items: center; 
+                        height: 100vh; overflow: hidden; 
+                    }}
+                </style>
+                {clean_code}
+                """
+                st.components.v1.html(full_html, height=550)
+            
+            with s_col:
+                st.subheader("📄 Tasarım Kodları")
+                st.code(clean_code, language="html")
+                st.download_button("Kodları İndir", clean_code, file_name=f"lady_{nick}.html")
 
         except Exception as e:
-            st.error(f"Reji'de ufak bir sorun çıktı: {e}")
-
-# ====================== SIDEBAR ======================
-with st.sidebar:
-    st.title("🎚️ Reji Masası")
-
-    st.session_state.auto_play = st.toggle("🎵 Ses Otomatik Oynasın", value=st.session_state.auto_play)
-
-    if st.button("🗑️ Sohbeti Temizle"):
-        st.session_state.history = []
-        st.rerun()
-
-    st.divider()
-    st.info("Ses gelmiyorsa:\n• Sayfaya tıklayın\n• Tarayıcı ses iznini kontrol edin")
-
-    st.caption("Faslı Muhabbet v6.2 • gTTS Stabil Sistem")
+            st.error(f"Reji Hatası: {str(e)}")
