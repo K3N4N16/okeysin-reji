@@ -1,47 +1,67 @@
 import streamlit as st
 from groq import Groq
-from gtts import gTTS
 import edge_tts
 import asyncio
-import io
-from datetime import datetime
+import base64
 import random
+from datetime import datetime
 
+# ====================== SAYFA AYARLARI ======================
 st.set_page_config(
-    page_title="Faslı Muhabbet",
+    page_title="Faslı Muhabbet v9.7",
     layout="wide",
-    page_icon="🎙️"
+    page_icon="🎙️",
+    initial_sidebar_state="expanded"
 )
 
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ GROQ API Key eksik!")
+    st.error("⚠️ GROQ API Key eksik! Secrets'a ekleyin.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ====================== SES MOTORU (gTTS Ana + Edge Yedek) ======================
-def generate_voice(text: str):
-    # 1. Önce gTTS dene (daha stabil)
-    try:
-        clean_text = text.replace("*", "").strip()
-        tts = gTTS(text=clean_text, lang='tr', slow=False)
-        buffer = io.BytesIO()
-        tts.write_to_fp(buffer)
-        buffer.seek(0)
-        return buffer.read()
-    except:
-        pass
+# ====================== CSS ======================
+st.markdown("""
+    <style>
+    .stApp { background: #05050f; color: #f0f0f0; }
+    .dilay-card {
+        background: linear-gradient(145deg, #2a0f4a, #140525);
+        border-left: 8px solid #ff1493;
+        border-radius: 20px;
+        padding: 28px;
+        margin: 20px 0;
+        box-shadow: 0 15px 40px rgba(255,20,147,0.3);
+    }
+    .patron-card {
+        background: rgba(0, 255, 157, 0.08);
+        border-right: 6px solid #00ff9d;
+        padding: 18px;
+        border-radius: 15px;
+        margin: 15px 0;
+        text-align: right;
+    }
+    .live-badge { color: #ff0000; font-weight: 900; animation: blink 1.3s infinite; }
+    @keyframes blink { 50% { opacity: 0.4; } }
+    </style>
+    """, unsafe_allow_html=True)
 
-    # 2. Yedek olarak edge-tts dene
+# ====================== SES MOTORU (Düzeltildi + DilaraNeural) ======================
+async def generate_voice(text: str):
+    """DilaraNeural ile ses üretimi - Async doğru kullanıldı"""
     try:
-        clean_text = text.replace("*", "").strip()
-        communicate = edge_tts.Communicate(clean_text, "tr-TR-DilaraNeural")
+        clean_text = text.replace("*", "").replace("Dilay:", "").strip()
+        if not clean_text:
+            return None
+
+        communicate = edge_tts.Communicate(clean_text, "tr-TR-DilaraNeural", rate="+5%")
         audio_data = b""
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
                 audio_data += chunk["data"]
-        return audio_data if len(audio_data) > 5000 else None
-    except:
+        
+        return audio_data if len(audio_data) > 6000 else None
+    except Exception as e:
+        st.warning(f"Ses üretilemedi: {e}")
         return None
 
 # ====================== SESSION STATE ======================
@@ -51,10 +71,14 @@ if "auto_play" not in st.session_state:
     st.session_state.auto_play = True
 
 # ====================== ÜST PANEL ======================
-st.markdown(f"# 🎙️ FASLI MUHABBET <span style='color:#ff1493'>● CANLI</span>", unsafe_allow_html=True)
-st.caption(f"📍 Bursa • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Muhabbet")
+col1, col2 = st.columns([3, 1])
+with col1:
+    st.markdown(f"# 🎙️ FASLI MUHABBET <span class='live-badge'>● CANLI</span>", unsafe_allow_html=True)
+    st.caption(f"📍 Bursa Stüdyosu • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Muhabbet")
+with col2:
+    st.metric("Canlı Dinleyici", f"{random.randint(6800, 9500):,}")
 
-# ====================== SOHBET ======================
+# ====================== SOHBET ALANI ======================
 for i, msg in enumerate(st.session_state.history):
     if msg["role"] == "user":
         st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
@@ -67,7 +91,9 @@ for i, msg in enumerate(st.session_state.history):
         """, unsafe_allow_html=True)
 
         if msg.get("audio"):
-            st.audio(msg["audio"], format="audio/mp3", autoplay=(i == len(st.session_state.history)-1 and st.session_state.auto_play))
+            st.audio(msg["audio"], format="audio/mp3", 
+                     autoplay=(i == len(st.session_state.history)-1 and st.session_state.auto_play))
+            
             c1, c2 = st.columns([2, 2])
             with c1:
                 st.download_button("📥 Ses İndir", msg["audio"], f"dilay_{i}.mp3", mime="audio/mp3", key=f"dl_{i}")
@@ -75,7 +101,7 @@ for i, msg in enumerate(st.session_state.history):
                 if st.button("🔊 Tekrar Oynat", key=f"rep_{i}"):
                     st.audio(msg["audio"], format="audio/mp3", autoplay=True)
         else:
-            st.warning("🔇 Ses üretilemedi. Sadece metin gösteriliyor.")
+            st.warning("🔇 Bu sefer ses üretilemedi. Sadece metin gösteriliyor.")
 
 # ====================== DİLAY PROMPT ======================
 system_prompt = """
@@ -89,7 +115,7 @@ Sadece konuşma metnini ver.
 if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
     st.session_state.history.append({"role": "user", "content": prompt})
 
-    with st.spinner("💖 Dilay yayına giriyor..."):
+    with st.spinner("💖 Dilay yayına giriyor... Kalbim kıpır kıpır..."):
         try:
             messages = [{"role": "system", "content": system_prompt}] + st.session_state.history[-12:]
             
@@ -99,7 +125,8 @@ if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
                 temperature=0.89
             ).choices[0].message.content
 
-            audio_bytes = generate_voice(response)
+            # Ses üretimi (async doğru çağrıldı)
+            audio_bytes = asyncio.run(generate_voice(response))
 
             st.session_state.history.append({
                 "role": "assistant",
@@ -110,15 +137,19 @@ if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
             st.rerun()
 
         except Exception as e:
-            st.error(f"Bir hata oluştu: {e}")
+            st.error(f"Reji'de ufak bir sorun çıktı: {e}")
 
 # ====================== SIDEBAR ======================
 with st.sidebar:
     st.title("🎚️ Reji Masası")
+
     st.session_state.auto_play = st.toggle("🎵 Ses Otomatik Oynasın", value=st.session_state.auto_play)
 
-    if st.button("🗑️ Sohbeti Temizle"):
+    if st.button("🗑️ Tüm Sohbeti Temizle"):
         st.session_state.history = []
         st.rerun()
 
-    st.caption("Faslı Muhabbet v9.9 • gTTS + Edge Yedek")
+    st.divider()
+    st.info("Şu an **DilaraNeural** sesini kullanıyoruz.\nDaha yumuşak ve profesyonel bir tını için.")
+
+    st.caption("Faslı Muhabbet v9.7 • Stabil Ses Sistemi")
