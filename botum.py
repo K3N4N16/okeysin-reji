@@ -1,14 +1,14 @@
 import streamlit as st
 from groq import Groq
-import edge_tts
-import asyncio
+from gtts import gTTS
 import base64
 import random
 from datetime import datetime
+import io
 
 # ====================== SAYFA AYARLARI ======================
 st.set_page_config(
-    page_title="Faslı Muhabbet v9.7",
+    page_title="Faslı Muhabbet v9.8",
     layout="wide",
     page_icon="🎙️",
     initial_sidebar_state="expanded"
@@ -28,7 +28,7 @@ st.markdown("""
         background: linear-gradient(145deg, #2a0f4a, #140525);
         border-left: 8px solid #ff1493;
         border-radius: 20px;
-        padding: 28px;
+        padding: 30px;
         margin: 20px 0;
         box-shadow: 0 15px 40px rgba(255,20,147,0.3);
     }
@@ -45,21 +45,18 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== SES MOTORU (Düzeltildi + DilaraNeural) ======================
-async def generate_voice(text: str):
-    """DilaraNeural ile ses üretimi - Async doğru kullanıldı"""
+# ====================== SES MOTORU (gTTS - En Stabil) ======================
+def generate_voice(text: str):
     try:
         clean_text = text.replace("*", "").replace("Dilay:", "").strip()
         if not clean_text:
             return None
-
-        communicate = edge_tts.Communicate(clean_text, "tr-TR-DilaraNeural", rate="+5%")
-        audio_data = b""
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                audio_data += chunk["data"]
         
-        return audio_data if len(audio_data) > 6000 else None
+        tts = gTTS(text=clean_text, lang='tr', slow=False)
+        audio_buffer = io.BytesIO()
+        tts.write_to_fp(audio_buffer)
+        audio_buffer.seek(0)
+        return audio_buffer.read()
     except Exception as e:
         st.warning(f"Ses üretilemedi: {e}")
         return None
@@ -125,8 +122,7 @@ if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
                 temperature=0.89
             ).choices[0].message.content
 
-            # Ses üretimi (async doğru çağrıldı)
-            audio_bytes = asyncio.run(generate_voice(response))
+            audio_bytes = generate_voice(response)
 
             st.session_state.history.append({
                 "role": "assistant",
@@ -150,6 +146,6 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.info("Şu an **DilaraNeural** sesini kullanıyoruz.\nDaha yumuşak ve profesyonel bir tını için.")
+    st.info("Şu an gTTS kullanıyoruz.\nSes stabil çalışmalı.")
 
-    st.caption("Faslı Muhabbet v9.7 • Stabil Ses Sistemi")
+    st.caption("Faslı Muhabbet v9.8 • gTTS Stabil Sistem")
