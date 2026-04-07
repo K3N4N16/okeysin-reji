@@ -1,153 +1,140 @@
 import streamlit as st
 from groq import Groq
-import re
+import edge_tts
+import asyncio
+from datetime import datetime
 
-# --- 1. SİSTEM AYARLARI ---
-st.set_page_config(
-    page_title="Aşk-ı Muhabbet | Pro Lady v28.2",
-    layout="wide",
-    page_icon="🌸"
-)
+# --- 1. SİSTEM VE GÖRSEL AYARLAR ---
+st.set_page_config(page_title="OKEYSIN GLOBAL V20", layout="wide", page_icon="📻")
 
-# Multi-Profesyonel Arayüz ve Sesli Komut JS
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Sofia&family=Dancing+Script&family=Nabla&display=swap');
-    
-    .stApp { background-color: #050005; color: #ffe6f2; }
-    
-    /* Profesyonel Ses Butonu */
-    .mic-container { text-align: center; margin: 25px 0; }
-    .mic-btn-pro {
-        background: linear-gradient(135deg, #ff007f 0%, #800040 100%);
-        color: white; border: none; padding: 22px 45px;
-        border-radius: 50px; font-weight: bold; cursor: pointer;
-        font-family: 'Orbitron', sans-serif;
-        box-shadow: 0 0 30px rgba(255, 0, 127, 0.4);
-        font-size: 1.2rem; transition: 0.4s;
-    }
-    .mic-btn-pro:hover { box-shadow: 0 0 50px #ff007f; transform: translateY(-3px); }
-    .listening { animation: pulse-pink 1.2s infinite; background: #ff3399 !important; }
-    
-    @keyframes pulse-pink {
-        0% { box-shadow: 0 0 0 0 rgba(255, 51, 153, 0.7); }
-        70% { box-shadow: 0 0 0 20px rgba(255, 51, 153, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(255, 51, 153, 0); }
-    }
-
-    /* Beyaz Canvas Reji */
-    iframe { background-color: #FFFFFF !important; border-radius: 25px; border: 5px solid #ff007f; }
-    </style>
-
-    <script>
-    function startLadyVoice() {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'tr-TR';
-        const btn = document.getElementById('lady-mic');
-        btn.innerHTML = "🔴 SİZİ DİNLİYORUM...";
-        btn.classList.add('listening');
-
-        recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
-            const textareas = window.parent.document.querySelectorAll('textarea');
-            textareas.forEach(t => {
-                if(t.placeholder.includes("Tarif")) {
-                    t.value = transcript;
-                    t.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            });
-            btn.innerHTML = "🎤 SESLİ KOMUT BAŞARILI";
-            btn.classList.remove('listening');
-            setTimeout(() => { btn.innerHTML = "🎤 SESLİ KOMUT VER (PRO)"; }, 2000);
-        };
-        
-        recognition.onerror = () => {
-            btn.innerHTML = "⚠️ TEKRAR DENEYİN";
-            btn.classList.remove('listening');
-        };
-        recognition.start();
-    }
-    </script>
-    """, unsafe_allow_html=True)
-
-# --- 2. API KONFİGÜRASYONU ---
-if "GROQ_API_KEY" in st.secrets:
-    api_key = st.secrets["GROQ_API_KEY"]
-else:
-    with st.sidebar:
-        api_key = st.text_input("Groq Cloud Key:", type="password")
-
-if not api_key:
-    st.info("Lütfen API Key girerek yayını başlatın.")
+if "GROQ_API_KEY" not in st.secrets:
+    st.error("⚠️ API Key Bulunamadı! Lütfen Secrets alanına ekleyin.")
     st.stop()
 
-client = Groq(api_key=api_key)
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 3. REJİ PANELİ ---
-st.markdown("<h1 style='text-align: center; font-family: Sofia; color: #ff007f; font-size: 3rem;'>Aşk-ı Muhabbet <span style='color:#ffffff; font-family:Orbitron; font-size: 1.5rem;'>PRO LADY</span></h1>", unsafe_allow_html=True)
+st.markdown("""
+    <style>
+    .stApp { background: #030308; color: #e0e0e0; }
+    .broadcast-container {
+        background: linear-gradient(145deg, #0a0a1a, #050505);
+        border: 1px solid #00f2ff22;
+        border-radius: 25px;
+        padding: 35px;
+        margin-bottom: 30px;
+        box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+    }
+    .tag-o { color: #00f2ff; font-weight: 800; font-size: 1.1rem; border-bottom: 1px solid #00f2ff33; }
+    .tag-k { color: #ffaa00; font-weight: 800; font-size: 1.1rem; border-bottom: 1px solid #ffaa0033; }
+    .on-air { color: #ff0000; font-weight: bold; animation: blink 1.5s infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    </style>
+    """, unsafe_allow_html=True)
 
-st.markdown('<div class="mic-container"><button id="lady-mic" class="mic-btn-pro" onclick="startLadyVoice()">🎤 SESLİ KOMUT VER (PRO)</button></div>', unsafe_allow_html=True)
+# --- 2. SES ÜRETİMİ ---
+async def process_audio(text, char):
+    voice = "tr-TR-EmelNeural" if char == "Okeysin" else "tr-TR-AhmetNeural"
+    try:
+        comm = edge_tts.Communicate(text, voice)
+        audio_bytes = b""
+        async for chunk in comm.stream():
+            if chunk["type"] == "audio":
+                audio_bytes += chunk["data"]
+        return audio_bytes
+    except: return None
 
-with st.form("lady_pro_form"):
-    c1, c2 = st.columns([1, 1])
-    with c1:
-        nick = st.text_input("Bayan Nick:", value="Papatya")
-    with c2:
-        font = st.selectbox("Zarif Fontlar:", ["Sofia", "Dancing Script", "Nabla", "Bungee Spice", "Righteous"])
+# --- 3. GÜVENLİ HAFIZA YÖNETİMİ ---
+if "broadcast_archive" not in st.session_state:
+    st.session_state.broadcast_archive = []
 
-    user_desc = st.text_area("Tasarım Tarifi (Sesli veya Manuel):", placeholder="Örn: Pembe yanan, Ken5 gibi parıltılı, Sofia fontunda zarif bir nick...", height=120)
+# --- 4. YAYIN PANELİ ---
+st.markdown('### 🎙️ <span class="on-air">● CANLI YAYIN</span> | BURSA GLOBAL RADIO HUB V20', unsafe_allow_html=True)
+
+for i, entry in enumerate(st.session_state.broadcast_archive):
+    if entry["role"] == "user":
+        st.markdown(f"🎬 **Yönetmen:** *{entry['content']}*")
+    else:
+        with st.container():
+            st.markdown(f"""
+                <div class="broadcast-container">
+                    <p><span class="tag-o">🎙️ OKEYSİN:</span><br>{entry['o_text']}</p>
+                    <p><span class="tag-k">🎧 KEREM:</span><br>{entry['k_text']}</p>
+                    <hr style="border-color:#222">
+                    <p style="font-size:0.9rem; color:#00f2ff; font-style:italic;">🎵 Playlist: {entry['playlist']}</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # TEK PANEL ARAÇ SETİ
+            with st.expander("🛠️ YAYIN ARAÇLARI (Ses / Kayıt / Metin)"):
+                c1, c2, c3 = st.columns([2, 2, 4])
+                full_txt = f"OKEYSIN: {entry['o_text']}\n\nKEREM: {entry['k_text']}\n\nPLAYLIST: {entry['playlist']}"
+                with c1:
+                    if entry.get("o_audio"): st.audio(entry["o_audio"], format="audio/mp3")
+                    if entry.get("k_audio"): st.audio(entry["k_audio"], format="audio/mp3")
+                with c2:
+                    st.download_button("📥 Kaydı İndir", full_txt, file_name=f"yayin_{i}.txt", key=f"dl_{i}")
+                with c3:
+                    st.text_area("📋 Kopyala", value=full_txt, height=80, key=f"cp_{i}")
+
+# --- 5. YAYIN KOMUT MERKEZİ ---
+if prompt := st.chat_input("Yönetmenim, yayını başlatın veya konuyu değiştirin..."):
+    st.session_state.broadcast_archive.append({"role": "user", "content": prompt})
     
-    submit = st.form_submit_button("⚡ MULTI-PROFESYONEL RENDER")
+    # HATA KORUMALI SİSTEM TALİMATI
+    sys_instruction = """
+    Sen dünyanın en profesyonel radyo yayıncısısın.
+    [OKEYSIN]: Bilge, sanatsever, dünya edebiyatına ve şairlere hakim sunucu.
+    [KEREM]: Global manşetleri ve sosyal medyayı takip eden esprili reji.
+    
+    KURALLAR:
+    1. Her zaman [OKEYSIN_START], [KEREM_REPLY], [OKEYSIN_END] ve [PLAYLIST] etiketlerini kullan.
+    2. Okeysin konuyu açar, Kerem eklemeler yapar, Okeysin yayını bir soruyla veya playlistle bağlar.
+    3. Geçmiş sohbetleri hatırla ve Bursa'dan dünyaya bir entelektüel köprü kur.
+    """
 
-# --- 4. OMEGA ENGINE RENDER ---
-if submit:
-    with st.spinner("Lady Pro motoru arşivdeki en zarif efektleri işliyor..."):
-        # Bayan profil olduğu için sistem promptunu özelleştiriyoruz
-        lady_prompt = f"""
-        Sen profesyonel bir CSS tasarımcısısın. Bir BAYAN kullanıcı için tasarım yapıyorsun.
-        - Arşiv: Ken1-Ken8, Colors, Nostalji dosyalarındaki en şık efektleri kullan.
-        - Stil: Pembe tonları (#ff007f, #ff79fc), beyaz parıltılar, yumuşak geçişler (blur/glow).
-        - Zorunlu: Zemin BEYAZ (#FFFFFF).
-        - Metin: '{nick}', Font: {font}.
-        Sadece HTML/CSS kodu ver. Açıklama yapma. Bytes hatası almamak için metni düzgün döndür.
-        """
-
+    with st.spinner("Uydu bağlantısı kuruluyor..."):
         try:
             res = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": lady_prompt},
-                    {"role": "user", "content": user_desc}
-                ]
-            )
-            
-            # bytes to string koruması
-            raw_code = str(res.choices[0].message.content)
-            clean_code = re.sub(r"```(html|css)?", "", raw_code).replace("```", "").strip()
+                messages=[{"role": "system", "content": sys_instruction}] + 
+                         [{"role": m["role"], "content": m.get("content", f"O: {m.get('o_text')} K: {m.get('k_text')}")} for m in st.session_state.broadcast_archive]
+            ).choices[0].message.content
 
-            st.divider()
-            p_col, s_col = st.columns([1.6, 1])
-            
-            with p_col:
-                st.subheader("🖼️ Pro Lady Preview")
-                f_link = font.replace(" ", "+")
-                full_html = f"""
-                <link href="https://fonts.googleapis.com/css2?family={f_link}&family=Sofia&family=Dancing+Script&display=swap" rel="stylesheet">
-                <style>
-                    body {{ 
-                        margin: 0; background: #FFFFFF; 
-                        display: flex; justify-content: center; align-items: center; 
-                        height: 100vh; overflow: hidden; 
-                    }}
-                </style>
-                {clean_code}
-                """
-                st.components.v1.html(full_html, height=550)
-            
-            with s_col:
-                st.subheader("📄 Tasarım Kodları")
-                st.code(clean_code, language="html")
-                st.download_button("Kodları İndir", clean_code, file_name=f"lady_{nick}.html")
+            # GÜVENLİ PARÇALAMA (ERROR PROTECTION)
+            try:
+                o_text = res.split("[OKEYSIN_START]")[1].split("[KEREM_REPLY]")[0].strip()
+                k_part = res.split("[KEREM_REPLY]")[1].split("[OKEYSIN_END]")[0].strip()
+                o_last = res.split("[OKEYSIN_END]")[1].split("[PLAYLIST]")[0].strip()
+                playlist = res.split("[PLAYLIST]")[1].strip()
+                
+                o_full = f"{o_text} {o_last}"
+            except:
+                # Eğer etiketlerde hata varsa düz metin olarak al
+                o_full = "Yayın akışında bir teknik aksaklık oldu ama devam ediyoruz."
+                k_part = res
+                playlist = "Radyo Klasikleri"
 
+            audio_o = asyncio.run(process_audio(o_full, "Okeysin"))
+            audio_k = asyncio.run(process_audio(k_part, "Kerem"))
+
+            st.session_state.broadcast_archive.append({
+                "role": "assistant",
+                "o_text": o_full,
+                "k_text": k_part,
+                "playlist": playlist,
+                "o_audio": audio_o,
+                "k_audio": audio_k
+            })
+            st.rerun()
+            
         except Exception as e:
-            st.error(f"Reji Hatası: {str(e)}")
+            st.error(f"📡 Reji Hatası: {e}")
+
+# Sidebar
+with st.sidebar:
+    st.markdown("### 🎚️ ANA KONTROL")
+    if st.button("🗑️ Arşivi Sıfırla"):
+        st.session_state.broadcast_archive = []
+        st.rerun()
+    st.divider()
+    st.info("Bursa'dan Dünyaya: Global Kültür Köprüsü")
