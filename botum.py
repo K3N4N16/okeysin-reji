@@ -1,19 +1,19 @@
 import streamlit as st
 from groq import Groq
-from gtts import gTTS
-import io
-import random
+import edge_tts
+import asyncio
+import base64
 from datetime import datetime
+import random
 
 st.set_page_config(
     page_title="Faslı Muhabbet",
     layout="wide",
-    page_icon="🎙️",
-    initial_sidebar_state="expanded"
+    page_icon="🎙️"
 )
 
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ GROQ API Key eksik! Secrets'a ekleyin.")
+    st.error("⚠️ GROQ API Key eksik!")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
@@ -25,7 +25,7 @@ st.markdown("""
     .dilay-card {
         background: linear-gradient(145deg, #2a0f4a, #140525);
         border-left: 8px solid #ff1493;
-        border-radius: 20px;
+        border-radius: 22px;
         padding: 30px;
         margin: 20px 0;
         box-shadow: 0 15px 40px rgba(255,20,147,0.3);
@@ -41,15 +41,16 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== SES MOTORU ======================
-def generate_voice(text: str):
+# ====================== SES MOTORU (Microsoft DilaraNeural) ======================
+async def generate_voice(text: str):
     try:
         clean_text = text.replace("*", "").strip()
-        tts = gTTS(text=clean_text, lang='tr', slow=False)
-        buffer = io.BytesIO()
-        tts.write_to_fp(buffer)
-        buffer.seek(0)
-        return buffer.read()
+        communicate = edge_tts.Communicate(clean_text, "tr-TR-DilaraNeural", rate="+5%")
+        audio_data = b""
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_data += chunk["data"]
+        return audio_data
     except:
         return None
 
@@ -59,7 +60,7 @@ if "history" not in st.session_state:
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = True
 
-# ====================== BAŞLIK ======================
+# ====================== ÜST PANEL ======================
 st.markdown(f"# 🎙️ FASLI MUHABBET <span style='color:#ff1493'>● CANLI</span>", unsafe_allow_html=True)
 st.caption(f"📍 Bursa • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Muhabbet")
 
@@ -70,7 +71,7 @@ for i, msg in enumerate(st.session_state.history):
     else:
         st.markdown(f"""
             <div class="dilay-card">
-                <span style="color:#ff69b4; font-weight:900; font-size:1.55rem;">💖 DİLAY:</span><br>
+                <span style="color:#ff69b4; font-weight:900; font-size:1.6rem;">💖 DİLAY:</span><br>
                 <div style="margin-top:15px; line-height:1.7;">{msg['content']}</div>
             </div>
         """, unsafe_allow_html=True)
@@ -106,7 +107,7 @@ if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
                 temperature=0.89
             ).choices[0].message.content
 
-            audio_bytes = generate_voice(response)
+            audio_bytes = asyncio.run(generate_voice(response))
 
             st.session_state.history.append({
                 "role": "assistant",
@@ -128,4 +129,4 @@ with st.sidebar:
         st.session_state.history = []
         st.rerun()
 
-    st.caption("Faslı Muhabbet v9.8 • gTTS ile")
+    st.caption("Faslı Muhabbet v9.8 • Microsoft DilaraNeural")
