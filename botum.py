@@ -2,7 +2,6 @@ import streamlit as st
 from groq import Groq
 import edge_tts
 import asyncio
-import base64
 from datetime import datetime
 import random
 
@@ -25,7 +24,7 @@ st.markdown("""
     .dilay-card {
         background: linear-gradient(145deg, #2a0f4a, #140525);
         border-left: 8px solid #ff1493;
-        border-radius: 22px;
+        border-radius: 20px;
         padding: 30px;
         margin: 20px 0;
         box-shadow: 0 15px 40px rgba(255,20,147,0.3);
@@ -41,16 +40,18 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== SES MOTORU (Microsoft DilaraNeural) ======================
+# ====================== SES MOTORU (DilaraNeural) ======================
 async def generate_voice(text: str):
     try:
         clean_text = text.replace("*", "").strip()
+        if not clean_text:
+            return None
         communicate = edge_tts.Communicate(clean_text, "tr-TR-DilaraNeural", rate="+5%")
         audio_data = b""
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
                 audio_data += chunk["data"]
-        return audio_data
+        return audio_data if len(audio_data) > 5000 else None
     except:
         return None
 
@@ -64,26 +65,30 @@ if "auto_play" not in st.session_state:
 st.markdown(f"# 🎙️ FASLI MUHABBET <span style='color:#ff1493'>● CANLI</span>", unsafe_allow_html=True)
 st.caption(f"📍 Bursa • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Muhabbet")
 
-# ====================== SOHBET ======================
+# ====================== SOHBET ALANI ======================
 for i, msg in enumerate(st.session_state.history):
     if msg["role"] == "user":
         st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
     else:
         st.markdown(f"""
             <div class="dilay-card">
-                <span style="color:#ff69b4; font-weight:900; font-size:1.6rem;">💖 DİLAY:</span><br>
+                <span style="color:#ff69b4; font-weight:900; font-size:1.55rem;">💖 DİLAY:</span><br>
                 <div style="margin-top:15px; line-height:1.7;">{msg['content']}</div>
             </div>
         """, unsafe_allow_html=True)
 
         if msg.get("audio"):
-            st.audio(msg["audio"], format="audio/mp3", autoplay=(i == len(st.session_state.history)-1 and st.session_state.auto_play))
+            st.audio(msg["audio"], format="audio/mp3", 
+                     autoplay=(i == len(st.session_state.history)-1 and st.session_state.auto_play))
+            
             c1, c2 = st.columns([2, 2])
             with c1:
-                st.download_button("📥 İndir", msg["audio"], f"dilay_{i}.mp3", mime="audio/mp3", key=f"dl_{i}")
+                st.download_button("📥 Ses İndir", msg["audio"], f"dilay_{i}.mp3", mime="audio/mp3", key=f"dl_{i}")
             with c2:
                 if st.button("🔊 Tekrar Oynat", key=f"rep_{i}"):
                     st.audio(msg["audio"], format="audio/mp3", autoplay=True)
+        else:
+            st.warning("🔇 Bu sefer ses üretilemedi. Sadece metin gösteriliyor.")
 
 # ====================== DİLAY PROMPT ======================
 system_prompt = """
@@ -129,4 +134,4 @@ with st.sidebar:
         st.session_state.history = []
         st.rerun()
 
-    st.caption("Faslı Muhabbet v9.8 • Microsoft DilaraNeural")
+    st.caption("Faslı Muhabbet v9.9 • Microsoft DilaraNeural")
