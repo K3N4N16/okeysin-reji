@@ -4,12 +4,13 @@ import edge_tts
 import asyncio
 import io
 import re
+import base64
 from datetime import datetime
 import random
 
 # ====================== SAYFA AYARLARI ======================
 st.set_page_config(
-    page_title="Faslı Muhabbet v7.0",
+    page_title="Faslı Muhabbet v7.5",
     layout="wide",
     page_icon="🎙️"
 )
@@ -21,17 +22,14 @@ if "GROQ_API_KEY" not in st.secrets:
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ====================== SES MOTORU (GÜNCEL & STABİL) ======================
-async def text_to_speech_edge(text):
-    """En popüler AI sesi Dilara ile hata korumalı ses üretimi"""
+# ====================== SES MOTORU & OTOMATİK OYNATICI ======================
+async def get_voice_bytes(text):
+    """Dilara sesiyle kaliteli ses üretir"""
     try:
-        # Metni temizle (Yıldızlar, fazla emojiler ve semboller AI sesini bozabilir)
+        # AI sesini bozan karakterleri temizle
         clean_text = re.sub(r'[*_#~>]', '', text).strip()
-        
-        if not clean_text:
-            return None
+        if not clean_text: return None
 
-        # tr-TR-DilaraNeural: En popüler, akıcı ve doğal Türkçe ses
         voice = "tr-TR-DilaraNeural"
         communicate = edge_tts.Communicate(clean_text, voice, rate="+7%", pitch="+2Hz")
         
@@ -39,40 +37,40 @@ async def text_to_speech_edge(text):
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
                 audio_stream.write(chunk["data"])
-        
         return audio_stream.getvalue()
-    except Exception as e:
-        print(f"Ses Hatası: {e}")
+    except:
         return None
 
-# ====================== MODERN UI (CSS) ======================
+def autoplay_audio(audio_bytes):
+    """Sesi sayfaya gömer ve otomatik oynatmayı tetikler"""
+    b64 = base64.b64encode(audio_bytes).decode()
+    md = f"""
+        <audio autoplay="true" controls style="width: 100%; border-radius: 10px; margin-top: 10px;">
+        <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+        </audio>
+    """
+    st.markdown(md, unsafe_allow_html=True)
+
+# ====================== MODERN UI ======================
 st.markdown("""
     <style>
-    .stApp { background: #0d0d0d; color: #e0e0e0; }
-    .dilay-box {
-        background: linear-gradient(145deg, #1e0035, #0a0014);
-        border-left: 6px solid #ff007f;
+    .stApp { background: #0a0a0a; color: #ffffff; }
+    .dilay-card {
+        background: linear-gradient(135deg, #2b0040 0%, #000000 100%);
+        border-left: 5px solid #ff007f;
+        padding: 20px;
         border-radius: 15px;
-        padding: 25px;
-        margin: 20px 0;
-        box-shadow: 0 10px 25px rgba(255, 0, 127, 0.2);
+        margin: 15px 0;
+        box-shadow: 0 4px 15px rgba(255,0,127,0.3);
     }
-    .patron-box {
+    .patron-card {
         background: #1a1a1a;
         border-right: 4px solid #00f2fe;
-        padding: 15px;
-        border-radius: 12px;
-        margin: 10px 0;
+        padding: 12px;
+        border-radius: 10px;
         text-align: right;
+        margin: 10px 0;
     }
-    .live-dot {
-        height: 10px; width: 10px;
-        background-color: #ff0000;
-        border-radius: 50%;
-        display: inline-block;
-        animation: blink 1s infinite;
-    }
-    @keyframes blink { 50% { opacity: 0; } }
     </style>
     """, unsafe_allow_html=True)
 
@@ -81,75 +79,54 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # ====================== ÜST PANEL ======================
-col1, col2 = st.columns([4, 1])
-with col1:
-    st.markdown(f"## <span class='live-dot'></span> FASLI MUHABBET | CANLI", unsafe_allow_html=True)
-    st.caption(f"📍 Bursa Stüdyoları • {datetime.now().strftime('%H:%M')} • Ses: Dilara AI")
-with col2:
-    st.metric("Dinleyici", f"{random.randint(9200, 11500):,}")
+st.markdown(f"## 🎙️ FASLI MUHABBET <span style='color:red; font-size:15px;'>● CANLI</span>", unsafe_allow_html=True)
+st.caption(f"📍 Bursa Stüdyoları | Popüler Dilara Ses Motoru Aktif")
 
-# ====================== SOHBET GEÇMİŞİ ======================
+# ====================== SOHBET AKIŞI ======================
 for i, msg in enumerate(st.session_state.messages):
     if msg["role"] == "user":
-        st.markdown(f'<div class="patron-box"><b>Patron Kenan:</b> {msg["content"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="patron-card">🤵 <b>Patron Kenan:</b> {msg["content"]}</div>', unsafe_allow_html=True)
     else:
         st.markdown(f"""
-            <div class="dilay-box">
-                <b style="color:#ff007f; font-size:1.3rem;">💖 DİLAY:</b><br>
-                <div style="margin-top:10px; font-size:1.15rem;">{msg['content']}</div>
+            <div class="dilay-card">
+                <b style="color:#ff007f;">💖 DİLAY:</b><br>{msg['content']}
             </div>
         """, unsafe_allow_html=True)
         
+        # Ses verisi varsa oynatıcıyı göster
         if msg.get("audio"):
-            st.audio(msg["audio"], format="audio/mp3", autoplay=(i == len(st.session_state.messages)-1))
-
-# ====================== DİLAY KARAKTER PROMPT ======================
-system_prompt = """
-Sen Dilay'sın. Radyo dünyasının en neşeli, samimi ve biraz da cilveli sunucususun. 
-Patronun Kenan'a (ona bazen Paşam, bazen Canım Patronum dersin) çok bağlısın.
-Cümlelerin doğal olsun, radyo atmosferini hissettir. 
-Asla teknik detay verme, sadece karakterinle konuş.
-"""
+            if i == len(st.session_state.messages) - 1:
+                autoplay_audio(msg["audio"]) # En son mesajı otomatik oynat
+            else:
+                st.audio(msg["audio"], format="audio/mp3") # Eskileri manuel bırak
 
 # ====================== MESAJ GİRİŞİ ======================
-if prompt := st.chat_input("Dilay'a bir şeyler söyle patron..."):
-    # Patron mesajını ekle
+if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     
-    with st.spinner("🎤 Dilay mikrofonu açıyor..."):
+    with st.spinner("🎤 Dilay yayına bağlanıyor..."):
         try:
-            # 1. Metin Üretimi (Groq)
-            history = [{"role": "system", "content": system_prompt}] + st.session_state.messages[-10:]
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=history,
-                temperature=0.85
-            )
-            response_text = completion.choices[0].message.content
+            # 1. Metin (Groq)
+            sys_prompt = "Sen Dilay'sın. Faslı Muhabbet'in neşeli, işveli radyo sunucususun. Patronun Kenan'a sevgiyle hitap et."
+            history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages[-8:]
+            res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=history).choices[0].message.content
 
-            # 2. Ses Üretimi (Edge-TTS)
-            # Streamlit içinde asenkron fonksiyonu çağırmak için:
-            audio_bytes = asyncio.run(text_to_speech_edge(response_text))
+            # 2. Ses (Edge-TTS)
+            audio_data = asyncio.run(get_voice_bytes(res))
 
-            # 3. Geçmişe Kaydet
-            st.session_state.messages.append({
-                "role": "assistant", 
-                "content": response_text,
-                "audio": audio_bytes
-            })
-            
+            # 3. Kaydet
+            st.session_state.messages.append({"role": "assistant", "content": res, "audio": audio_data})
             st.rerun()
 
         except Exception as e:
-            st.error(f"⚠️ Yayında bir parazit var: {e}")
+            st.error(f"Hata oluştu: {e}")
 
-# ====================== SIDEBAR ======================
+# ====================== REJİ ======================
 with st.sidebar:
-    st.title("🎚️ Yayın Kontrol")
+    st.title("🎚️ Reji Masası")
     if st.button("🗑️ Yayını Sıfırla"):
         st.session_state.messages = []
         st.rerun()
-    
-    st.divider()
-    st.info("💡 Not: Sesin otomatik çalması için tarayıcıda sayfa üzerine bir kez tıklamanız gerekebilir.")
-    st.caption("Faslı Muhabbet v7.0 - Powered by Edge AI")
+    st.write("---")
+    st.write("📢 **Ses Duyulmuyor mu?**")
+    st.caption("1. Sayfada herhangi bir yere tıklayın.\n2. Tarayıcı sesinin açık olduğundan emin olun.\n3. Mobil cihazda 'Sessiz Mod'u kapatın.")
