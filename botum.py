@@ -1,14 +1,13 @@
 import streamlit as st
 from groq import Groq
 from gtts import gTTS
-import base64
+import io
 import random
 from datetime import datetime
-import io
 
 # ====================== SAYFA AYARLARI ======================
 st.set_page_config(
-    page_title="Faslı Muhabbet v9.6",
+    page_title="Faslı Muhabbet v9.8",
     layout="wide",
     page_icon="🎙️",
     initial_sidebar_state="expanded"
@@ -28,7 +27,7 @@ st.markdown("""
         background: linear-gradient(145deg, #2a0f4a, #140525);
         border-left: 8px solid #ff1493;
         border-radius: 20px;
-        padding: 28px;
+        padding: 30px;
         margin: 20px 0;
         box-shadow: 0 15px 40px rgba(255,20,147,0.3);
     }
@@ -45,19 +44,15 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== SES MOTORU (gTTS - En Stabil) ======================
+# ====================== SES MOTORU (Sadece gTTS - En Stabil) ======================
 def generate_voice(text: str):
-    """gTTS ile ses üretimi - Streamlit Cloud için en güvenilir yöntem"""
     try:
-        clean_text = text.replace("*", "").replace("Dilay:", "").strip()
-        if not clean_text:
-            return None
-        
+        clean_text = text.replace("*", "").strip()
         tts = gTTS(text=clean_text, lang='tr', slow=False)
-        audio_buffer = io.BytesIO()
-        tts.write_to_fp(audio_buffer)
-        audio_buffer.seek(0)
-        return audio_buffer.read()
+        buffer = io.BytesIO()
+        tts.write_to_fp(buffer)
+        buffer.seek(0)
+        return buffer.read()
     except:
         return None
 
@@ -73,7 +68,7 @@ with col1:
     st.markdown(f"# 🎙️ FASLI MUHABBET <span class='live-badge'>● CANLI</span>", unsafe_allow_html=True)
     st.caption(f"📍 Bursa Stüdyosu • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Muhabbet")
 with col2:
-    st.metric("Canlı Dinleyici", f"{random.randint(6800, 9200):,}")
+    st.metric("Canlı Dinleyici", f"{random.randint(7200, 9800):,}")
 
 # ====================== SOHBET ALANI ======================
 for i, msg in enumerate(st.session_state.history):
@@ -98,7 +93,7 @@ for i, msg in enumerate(st.session_state.history):
                 if st.button("🔊 Tekrar Oynat", key=f"rep_{i}"):
                     st.audio(msg["audio"], format="audio/mp3", autoplay=True)
         else:
-            st.warning("🔇 Bu sefer ses üretilemedi. Sadece metin gösteriliyor.")
+            st.warning("🔇 Ses üretilemedi. Sadece metin gösteriliyor.")
 
 # ====================== DİLAY PROMPT ======================
 system_prompt = """
@@ -122,7 +117,6 @@ if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
                 temperature=0.89
             ).choices[0].message.content
 
-            # Ses üretimi (gTTS)
             audio_bytes = generate_voice(response)
 
             st.session_state.history.append({
@@ -147,11 +141,6 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.info("""
-    💡 Ses İpuçları:
-    • Sayfaya bir kez tıklayın
-    • Tarayıcı ses iznini kontrol edin
-    • Otomatik oynatmayı kapatıp açın
-    """)
+    st.info("Şu an gTTS kullanıyoruz.\nSes biraz robotik gelebilir ama en stabil yöntem bu.")
 
-    st.caption("Faslı Muhabbet v9.6 • gTTS Stabil Sistem")
+    st.caption("Faslı Muhabbet v9.8 • Stabil Sistem")
