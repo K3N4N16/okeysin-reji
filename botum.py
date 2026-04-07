@@ -1,7 +1,9 @@
 import streamlit as st
 from groq import Groq
+from gtts import gTTS
 import edge_tts
 import asyncio
+import io
 from datetime import datetime
 import random
 
@@ -17,36 +19,23 @@ if "GROQ_API_KEY" not in st.secrets:
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ====================== CSS ======================
-st.markdown("""
-    <style>
-    .stApp { background: #05050f; color: #f0f0f0; }
-    .dilay-card {
-        background: linear-gradient(145deg, #2a0f4a, #140525);
-        border-left: 8px solid #ff1493;
-        border-radius: 20px;
-        padding: 30px;
-        margin: 20px 0;
-        box-shadow: 0 15px 40px rgba(255,20,147,0.3);
-    }
-    .patron-card {
-        background: rgba(0, 255, 157, 0.08);
-        border-right: 6px solid #00ff9d;
-        padding: 18px;
-        border-radius: 15px;
-        margin: 15px 0;
-        text-align: right;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# ====================== SES MOTORU (DilaraNeural) ======================
-async def generate_voice(text: str):
+# ====================== SES MOTORU (gTTS Ana + Edge Yedek) ======================
+def generate_voice(text: str):
+    # 1. Önce gTTS dene (daha stabil)
     try:
         clean_text = text.replace("*", "").strip()
-        if not clean_text:
-            return None
-        communicate = edge_tts.Communicate(clean_text, "tr-TR-DilaraNeural", rate="+5%")
+        tts = gTTS(text=clean_text, lang='tr', slow=False)
+        buffer = io.BytesIO()
+        tts.write_to_fp(buffer)
+        buffer.seek(0)
+        return buffer.read()
+    except:
+        pass
+
+    # 2. Yedek olarak edge-tts dene
+    try:
+        clean_text = text.replace("*", "").strip()
+        communicate = edge_tts.Communicate(clean_text, "tr-TR-DilaraNeural")
         audio_data = b""
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
@@ -65,7 +54,7 @@ if "auto_play" not in st.session_state:
 st.markdown(f"# 🎙️ FASLI MUHABBET <span style='color:#ff1493'>● CANLI</span>", unsafe_allow_html=True)
 st.caption(f"📍 Bursa • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Muhabbet")
 
-# ====================== SOHBET ALANI ======================
+# ====================== SOHBET ======================
 for i, msg in enumerate(st.session_state.history):
     if msg["role"] == "user":
         st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
@@ -78,9 +67,7 @@ for i, msg in enumerate(st.session_state.history):
         """, unsafe_allow_html=True)
 
         if msg.get("audio"):
-            st.audio(msg["audio"], format="audio/mp3", 
-                     autoplay=(i == len(st.session_state.history)-1 and st.session_state.auto_play))
-            
+            st.audio(msg["audio"], format="audio/mp3", autoplay=(i == len(st.session_state.history)-1 and st.session_state.auto_play))
             c1, c2 = st.columns([2, 2])
             with c1:
                 st.download_button("📥 Ses İndir", msg["audio"], f"dilay_{i}.mp3", mime="audio/mp3", key=f"dl_{i}")
@@ -88,7 +75,7 @@ for i, msg in enumerate(st.session_state.history):
                 if st.button("🔊 Tekrar Oynat", key=f"rep_{i}"):
                     st.audio(msg["audio"], format="audio/mp3", autoplay=True)
         else:
-            st.warning("🔇 Bu sefer ses üretilemedi. Sadece metin gösteriliyor.")
+            st.warning("🔇 Ses üretilemedi. Sadece metin gösteriliyor.")
 
 # ====================== DİLAY PROMPT ======================
 system_prompt = """
@@ -112,7 +99,7 @@ if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
                 temperature=0.89
             ).choices[0].message.content
 
-            audio_bytes = asyncio.run(generate_voice(response))
+            audio_bytes = generate_voice(response)
 
             st.session_state.history.append({
                 "role": "assistant",
@@ -134,4 +121,4 @@ with st.sidebar:
         st.session_state.history = []
         st.rerun()
 
-    st.caption("Faslı Muhabbet v9.9 • Microsoft DilaraNeural")
+    st.caption("Faslı Muhabbet v9.9 • gTTS + Edge Yedek")
