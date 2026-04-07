@@ -5,9 +5,8 @@ import io
 import random
 from datetime import datetime
 
-# ====================== SAYFA AYARLARI ======================
 st.set_page_config(
-    page_title="Faslı Muhabbet v9.8",
+    page_title="Faslı Muhabbet",
     layout="wide",
     page_icon="🎙️",
     initial_sidebar_state="expanded"
@@ -39,12 +38,10 @@ st.markdown("""
         margin: 15px 0;
         text-align: right;
     }
-    .live-badge { color: #ff0000; font-weight: 900; animation: blink 1.3s infinite; }
-    @keyframes blink { 50% { opacity: 0.4; } }
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== SES MOTORU (Sadece gTTS - En Stabil) ======================
+# ====================== SES MOTORU ======================
 def generate_voice(text: str):
     try:
         clean_text = text.replace("*", "").strip()
@@ -62,15 +59,11 @@ if "history" not in st.session_state:
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = True
 
-# ====================== ÜST PANEL ======================
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.markdown(f"# 🎙️ FASLI MUHABBET <span class='live-badge'>● CANLI</span>", unsafe_allow_html=True)
-    st.caption(f"📍 Bursa Stüdyosu • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Muhabbet")
-with col2:
-    st.metric("Canlı Dinleyici", f"{random.randint(7200, 9800):,}")
+# ====================== BAŞLIK ======================
+st.markdown(f"# 🎙️ FASLI MUHABBET <span style='color:#ff1493'>● CANLI</span>", unsafe_allow_html=True)
+st.caption(f"📍 Bursa • {datetime.now().strftime('%H:%M:%S')} • Dilay ile Özel Muhabbet")
 
-# ====================== SOHBET ALANI ======================
+# ====================== SOHBET ======================
 for i, msg in enumerate(st.session_state.history):
     if msg["role"] == "user":
         st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
@@ -83,17 +76,13 @@ for i, msg in enumerate(st.session_state.history):
         """, unsafe_allow_html=True)
 
         if msg.get("audio"):
-            st.audio(msg["audio"], format="audio/mp3", 
-                     autoplay=(i == len(st.session_state.history)-1 and st.session_state.auto_play))
-            
+            st.audio(msg["audio"], format="audio/mp3", autoplay=(i == len(st.session_state.history)-1 and st.session_state.auto_play))
             c1, c2 = st.columns([2, 2])
             with c1:
-                st.download_button("📥 Ses İndir", msg["audio"], f"dilay_{i}.mp3", mime="audio/mp3", key=f"dl_{i}")
+                st.download_button("📥 İndir", msg["audio"], f"dilay_{i}.mp3", mime="audio/mp3", key=f"dl_{i}")
             with c2:
                 if st.button("🔊 Tekrar Oynat", key=f"rep_{i}"):
                     st.audio(msg["audio"], format="audio/mp3", autoplay=True)
-        else:
-            st.warning("🔇 Ses üretilemedi. Sadece metin gösteriliyor.")
 
 # ====================== DİLAY PROMPT ======================
 system_prompt = """
@@ -107,7 +96,7 @@ Sadece konuşma metnini ver.
 if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
     st.session_state.history.append({"role": "user", "content": prompt})
 
-    with st.spinner("💖 Dilay yayına giriyor... Kalbim kıpır kıpır..."):
+    with st.spinner("💖 Dilay yayına giriyor..."):
         try:
             messages = [{"role": "system", "content": system_prompt}] + st.session_state.history[-12:]
             
@@ -128,19 +117,15 @@ if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
             st.rerun()
 
         except Exception as e:
-            st.error(f"Reji'de ufak bir sorun çıktı: {e}")
+            st.error(f"Bir hata oluştu: {e}")
 
 # ====================== SIDEBAR ======================
 with st.sidebar:
     st.title("🎚️ Reji Masası")
-
     st.session_state.auto_play = st.toggle("🎵 Ses Otomatik Oynasın", value=st.session_state.auto_play)
 
-    if st.button("🗑️ Tüm Sohbeti Temizle"):
+    if st.button("🗑️ Sohbeti Temizle"):
         st.session_state.history = []
         st.rerun()
 
-    st.divider()
-    st.info("Şu an gTTS kullanıyoruz.\nSes biraz robotik gelebilir ama en stabil yöntem bu.")
-
-    st.caption("Faslı Muhabbet v9.8 • Stabil Sistem")
+    st.caption("Faslı Muhabbet v9.8 • gTTS ile")
