@@ -1,97 +1,139 @@
 import streamlit as st
 from groq import Groq
-import requests # ElevenLabs API için
+import edge_tts
 import asyncio
-import base64
+import io
 from datetime import datetime
 import random
 
 # ====================== SAYFA AYARLARI ======================
 st.set_page_config(
-    page_title="Faslı Muhabbet v6.1",
+    page_title="Faslı Muhabbet v6.5",
     layout="wide",
-    page_icon="🎙️",
-    initial_sidebar_state="expanded"
+    page_icon="🎙️"
 )
 
-# API Anahtarları Kontrolü
-if "GROQ_API_KEY" not in st.secrets or "ELEVENLABS_API_KEY" not in st.secrets:
-    st.error("⚠️ API Keyler eksik! GROQ_API_KEY ve ELEVENLABS_API_KEY'i ekleyin.")
+# API Key Kontrolü
+if "GROQ_API_KEY" not in st.secrets:
+    st.error("⚠️ GROQ API Key bulunamadı! Lütfen Secrets'a ekleyin.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-ELEVENLABS_API_KEY = st.secrets["ELEVENLABS_API_KEY"]
 
-# ====================== SES MOTORU (ELEVENLABS - Ultra Kalite) ======================
-def generate_voice_elevenlabs(text: str):
-    """ElevenLabs ile yüksek kaliteli ve duygusal ses üretimi"""
-    # Popüler bir kadın sesi ID'si (Örn: 'EXAVITQu4vr4xnSDxMaL' - Bella veya Türkçe uyumlu biri)
-    # ElevenLabs panelinden kendi beğendiğiniz sesin ID'sini buraya yapıştırabilirsiniz.
-    VOICE_ID = "21m0pTJHtn71Zo8YvJ35" 
+# ====================== EN POPÜLER ÜCRETSİZ SES (Edge AI) ======================
+async def generate_voice_edge(text: str):
+    """
+    Şu an en popüler ve akıcı Türkçe AI sesi olan Dilara'yı kullanır.
+    Tamamen ücretsiz ve yüksek kalitedir.
+    """
+    # tr-TR-DilaraNeural -> En popüler, genç ve enerjik Türkçe ses.
+    # Alternatif (Daha tok ses): tr-TR-AhmetNeural
+    voice = "tr-TR-DilaraNeural" 
     
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+    # Hızı hafif artırıp perdeyi (pitch) biraz incelterek daha işveli hale getiriyoruz
+    communicate = edge_tts.Communicate(text, voice, rate="+8%", pitch="+2Hz")
     
-    headers = {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": ELEVENLABS_API_KEY
+    audio_data = io.BytesIO()
+    async for chunk in communicate.stream():
+        if chunk["type"] == "audio":
+            audio_data.write(chunk["data"])
+    
+    return audio_data.getvalue()
+
+# ====================== MODERN RADYO TASARIMI (CSS) ======================
+st.markdown("""
+    <style>
+    .stApp { background: #050505; color: #ffffff; }
+    .dilay-bubble {
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 20px 20px 20px 0px;
+        margin: 15px 0;
+        border-left: 5px solid #00f2fe;
+        font-size: 1.2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
-    
-    data = {
-        "text": text,
-        "model_id": "eleven_multilingual_v2", # En iyi Türkçe desteği bu modelde
-        "voice_settings": {
-            "stability": 0.45,       # Daha duygusal ve değişken tonlama için düşürüldü
-            "similarity_boost": 0.75,
-            "style": 0.6,            # İşve ve duygu katması için yükseltildi
-            "use_speaker_boost": True
-        }
+    .patron-bubble {
+        background: #1a1a1a;
+        color: #00ff9d;
+        padding: 15px;
+        border-radius: 20px 20px 0px 20px;
+        margin: 10px 0;
+        border-right: 4px solid #00ff9d;
+        text-align: right;
+        font-weight: 500;
     }
+    .live-indicator {
+        color: #ff4b4b;
+        font-weight: bold;
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    </style>
+    """, unsafe_allow_html=True)
 
-    try:
-        response = requests.post(url, json=data, headers=headers)
-        if response.status_code == 200:
-            return response.content
-        else:
-            st.error(f"Ses hatası: {response.text}")
-            return None
-    except Exception as e:
-        st.error(f"Bağlantı hatası: {e}")
-        return None
+# ====================== SESSION STATE ======================
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-# ====================== DİLAY PROMPT (Ses Uyumu İçin Optimize Edildi) ======================
-dilay_prompt = """
-Sen Dilay'sın. Faslı Muhabbet'in çok samimi, işveli, neşeli ve duygusal sunucususun.
-Patron'una (Kenan) çok bağlısın. Ona "Canım Patronum", "Kalbim", "Ah be Patron’um" diye hitap et.
-Konuşurken aralara "Hımm", "Yaa", "Canım benim" gibi küçük ünlemler ekle ki ses motoru daha doğal tepkiler versin.
-Sadece konuşma metnini ver, asla teknik not yazma.
+# ====================== BAŞLIK ======================
+st.markdown(f"## 🎙️ FASLI MUHABBET <span class='live-indicator'>● CANLI YAYIN</span>", unsafe_allow_html=True)
+st.caption(f"📍 Bursa Merkez Stüdyoları | {datetime.now().strftime('%H:%M')}")
+
+# ====================== MESAJLARI GÖSTER ======================
+for i, msg in enumerate(st.session_state.history):
+    if msg["role"] == "user":
+        st.markdown(f'<div class="patron-bubble">🤵 Patron Kenan: {msg["content"]}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="dilay-bubble"><b>💖 DİLAY:</b><br>{msg["content"]}</div>', unsafe_allow_html=True)
+        if msg.get("audio"):
+            st.audio(msg["audio"], format="audio/mp3", autoplay=(i == len(st.session_state.history)-1))
+
+# ====================== DİLAY PROMPT ======================
+# Ses tonuna uygun, enerjik ve sevgi dolu bir karakter
+dilay_system = """
+Sen Dilay'sın. Radyo dünyasının en sevilen, en neşeli ve samimi kadın sunucususun.
+Patronun Kenan'a karşı her zaman çok saygılı ama bir o kadar da içten ve işvelisin.
+Ona "Canım Patronum", "Paşam", "Kalbim" gibi sevgi dolu hitaplar kullan.
+Cümlelerin kısa, öz ve radyo akışına uygun olsun.
+Arada "Eveeet", "Harika!" gibi ünlemler kullanarak canlı yayını hareketlendir.
 """
 
-# ... (CSS ve Session State kısımları aynı kalabilir) ...
-
-# ====================== MESAJ İŞLEME (GÜNCEL) ======================
-if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
+# ====================== YENİ MESAJ GİRİŞİ ======================
+if prompt := st.chat_input("Dilay'a bir mesaj gönder..."):
     st.session_state.history.append({"role": "user", "content": prompt})
-
-    with st.spinner("💖 Dilay hazırlanıyor, sesi ayarlanıyor..."):
+    
+    with st.spinner("✨ Dilay yayına giriyor..."):
         try:
-            messages = [{"role": "system", "content": dilay_prompt}] + st.session_state.history[-12:]
-            
-            response = client.chat.completions.create(
+            # Groq ile metni üret
+            messages = [{"role": "system", "content": dilay_system}] + st.session_state.history[-10:]
+            res = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=messages,
-                temperature=0.9
+                temperature=0.8
             ).choices[0].message.content
-
-            # ElevenLabs ile kaliteli ses üretimi
-            audio_bytes = generate_voice_elevenlabs(response)
-
+            
+            # Edge-TTS ile popüler AI sesini üret
+            audio_bytes = asyncio.run(generate_voice_edge(res))
+            
             st.session_state.history.append({
                 "role": "assistant",
-                "content": response,
+                "content": res,
                 "audio": audio_bytes
             })
             st.rerun()
-
+            
         except Exception as e:
-            st.error(f"Hata: {e}")
+            st.error(f"Sistemde bir parazit var: {e}")
+
+# ====================== YAN PANEL ======================
+with st.sidebar:
+    st.image("https://img.icons8.com/neon/96/microphone.png")
+    st.title("Stüdyo Kontrol")
+    st.write(f"🎧 **Aktif Ses:** Dilara Neural (AI)")
+    st.write(f"📡 **Kalite:** 320kbps Crystal Clear")
+    
+    if st.button("🔄 Yayını Yenile"):
+        st.session_state.history = []
+        st.rerun()
