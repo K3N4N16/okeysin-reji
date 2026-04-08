@@ -1,5 +1,7 @@
 import streamlit as st
+from groq import Groq
 import os
+import random
 from datetime import datetime
 
 st.set_page_config(
@@ -9,6 +11,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+if "GROQ_API_KEY" not in st.secrets:
+    st.error("⚠️ GROQ API Key eksik! Secrets'a ekleyin.")
+    st.stop()
+
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+# ====================== CSS ======================
 st.markdown("""
     <style>
     .stApp { background: #05050f; color: #f0f0f0; }
@@ -71,9 +80,7 @@ for i, msg in enumerate(st.session_state.history):
                 if st.button("🔊 Tekrar Oynat", key=f"rep_{i}"):
                     st.audio(msg["audio"], format="audio/wav", autoplay=True)
 
-# ====================== GROQ + DİLAY SES ======================
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-
+# ====================== GROQ + DİLAY ======================
 system_prompt = """
 Sen Dilay'sın. Faslı Muhabbet'in kıpır kıpır, işveli, sıcak ve samimi sunucususun.
 Patron'una "Canım Patronum", "Ah be Patron’um", "Sevgilim" diye hitap et.
@@ -92,12 +99,12 @@ if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
             temperature=0.89
         ).choices[0].message.content
 
-        # KLONLANMIŞ SESİ KULLAN (sadece ses dosyasını çal)
+        # KLONLANMIŞ SESİ KULLAN
         if os.path.exists(DILAY_SES_DOSYASI):
             audio_bytes = open(DILAY_SES_DOSYASI, "rb").read()
         else:
             audio_bytes = None
-            st.warning("⚠️ Klon ses dosyası bulunamadı. Lütfen 'dilay_klon_sesim.wav' dosyasını yükleyin.")
+            st.warning("⚠️ Klon ses dosyası bulunamadı: dilay_klon_sesim.wav")
 
         st.session_state.history.append({
             "role": "assistant",
