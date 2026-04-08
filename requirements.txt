@@ -1,3 +1,5 @@
 streamlit
-groq
-gTTS
+TTS
+torch
+torchaudio
+soundfile
