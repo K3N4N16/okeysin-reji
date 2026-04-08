@@ -5,18 +5,18 @@ import os
 from datetime import datetime
 
 # ====================== DİLAY SES AYARLARI ======================
-# Klonladığın ses dosyasının adı (az önce kaydettiğimiz)
+# Klonladığın ses dosyasının adı (çok önemli!)
 DILAY_SES_DOSYASI = "dilay_klon_sesim.wav"
 
-# Dilay'ın konuşma tarzı (sen beğendiğin sese göre ufak ufak oynayabilirsin)
+# Dilay'ın konuşma tarzı ayarları
 SPEED = 0.91          # 0.88 = daha ağır ve derin, 0.95 = daha kıpır kıpır
-TEMPERATURE = 0.66    # 0.60 = daha ciddi, 0.70 = daha işveli ve ateşli
+TEMPERATURE = 0.66    # Daha duygusal ve işveli olsun
 
-# Modeli bir kere yükleyelim (hızlı olsun)
+# Modeli yükle (bir kere yüklenir)
 @st.cache_resource
 def load_dilay_tts():
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"🎙️ Dilay'ın klonlanmış sesi yükleniyor... ({device})")
+    st.write(f"🎙️ Dilay'ın sesi yükleniyor... ({device})")
     model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
     return model
 
@@ -42,7 +42,7 @@ def dilay_konus(metin: str):
             )
             return output_file
         except Exception as e:
-            st.error(f"Dilay konuşurken bir sorun çıktı: {e}")
+            st.error(f"Dilay konuşurken hata: {e}")
             return None
 
 # ====================== STREAMLIT ARAYÜZ ======================
@@ -50,7 +50,7 @@ st.title("🎙️ Kenan ile Faslı Muhabbet")
 st.subheader("Dilay seninle konuşuyor...")
 
 user_input = st.text_area("Dilay'a ne söylemek istiyorsun?", 
-                          height=120,
+                          height=150,
                           placeholder="Ahhh Kenan’ım… bu akşam muhabbetimiz çok güzel olacak mı?")
 
 if st.button("🔊 Dilay Konuşsun"):
@@ -59,5 +59,4 @@ if st.button("🔊 Dilay Konuşsun"):
         st.audio(ses_dosyasi, format="audio/wav", autoplay=True)
         st.success("Dilay konuştu! Dinle bakalım patron... 😘")
 
-# Küçük bilgi
-st.caption("Dilay'ın sesi senin klonladığın sesle konuşuyor ❤️")
+st.caption("Dilay'ın sesi senin klonladığın özel sesle konuşuyor ❤️")
