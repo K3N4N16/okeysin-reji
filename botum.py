@@ -113,3 +113,4 @@ if prompt := st.chat_input("Yayındayız yönetmenim..."):
         # SESİ OTOMATİK ÇALDIRMA DENEMESİ
         play_voice_js(response)
         st.rerun()
+
