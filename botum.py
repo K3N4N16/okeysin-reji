@@ -3,139 +3,147 @@ from groq import Groq
 import os
 import random
 
-# ====================== KONFİGÜRASYON ======================
+# ====================== SİSTEM AYARLARI ======================
 st.set_page_config(
-    page_title="Aşk-ı Muhabbet v10.0",
+    page_title="Aşk-ı Muhabbet v10.1",
     layout="wide",
-    page_icon="📻",
+    page_icon="🎙️",
     initial_sidebar_state="expanded"
 )
 
-# API Anahtarı Kontrolü
+# Groq API Bağlantısı
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ GROQ API Key eksik! Lütfen secrets.toml dosyasını kontrol et.")
+    st.error("⚠️ GROQ_API_KEY bulunamadı! Lütfen secrets.toml dosyasını kontrol et.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ====================== SES DOSYALARI YOLU ======================
-# Applio ile eğittiğin sesleri bu isimlerle kök dizine koyabilirsin
-SESLER = {
-    "💖 Dilay": "dilay_klon_sesim.wav",
-    "🎙️ Mert": "mert_klon_sesim.wav"
-}
-
-# ====================== TASARIM (CSS) ======================
+# ====================== STİL VE TASARIM (CSS) ======================
 st.markdown("""
     <style>
-    .stApp { background: #0a0a12; color: #e0e0e0; }
-    /* Dilay Kartı (Pembe/Mor Neon) */
-    .dilay-card { 
-        background: linear-gradient(135deg, #2d0b3d 0%, #1a0525 100%); 
-        border-left: 10px solid #ff1493; 
-        border-radius: 15px; padding: 25px; margin: 15px 0;
-        box-shadow: 0 10px 30px rgba(255,20,147,0.2);
+    /* Ana Tema */
+    .stApp { background-color: #08080e; color: #ffffff; }
+    
+    /* Sunucu Kartları */
+    .host-card {
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+        border-left: 10px solid;
     }
-    /* Mert Kartı (Mavi/Turkuaz Neon) */
-    .mert-card { 
-        background: linear-gradient(135deg, #0b2d3d 0%, #051a25 100%); 
-        border-left: 10px solid #00d4ff; 
-        border-radius: 15px; padding: 25px; margin: 15px 0;
-        box-shadow: 0 10px 30px rgba(0,212,255,0.2);
+    .dilay-theme { 
+        background: linear-gradient(135deg, #320a2e 0%, #15051a 100%); 
+        border-color: #ff007f;
+        box-shadow: 0 10px 25px rgba(255, 0, 127, 0.2);
     }
-    .patron-card { 
-        background: rgba(255, 255, 255, 0.05); 
-        border-right: 4px solid #00ff9d; 
-        padding: 15px; border-radius: 12px; margin: 10px 0; text-align: right; 
+    .mert-theme { 
+        background: linear-gradient(135deg, #0a2332 0%, #05101a 100%); 
+        border-color: #00d4ff;
+        box-shadow: 0 10px 25px rgba(0, 212, 255, 0.2);
     }
-    .live-indicator { color: #ff0000; font-weight: bold; animation: blink 1s infinite; }
-    @keyframes blink { 50% { opacity: 0.2; } }
+    
+    /* Patron Mesajı */
+    .patron-bubble {
+        background: rgba(0, 255, 157, 0.1);
+        border-right: 4px solid #00ff9d;
+        padding: 15px;
+        border-radius: 10px;
+        margin: 10px 0;
+        text-align: right;
+    }
+    
+    /* Canlı Yayın Efekti */
+    .live-text { color: red; font-weight: bold; animation: blinker 1.5s linear infinite; }
+    @keyframes blinker { 50% { opacity: 0; } }
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== SESSION STATE ======================
-if "history" not in st.session_state:
-    st.session_state.history = []
+# ====================== VERİ YÖNETİMİ ======================
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
 # ====================== YAN PANEL (REJİ MASASI) ======================
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3058/3058983.png", width=100)
-    st.title("🎚️ Reji Masası")
+    st.markdown("## 🎚️ REJİ MASASI")
+    st.divider()
     
-    selected_host = st.radio("Yayındaki Sunucu", ["💖 Dilay", "🎙️ Mert"])
+    # Karakter Seçimi
+    secilen_sunucu = st.radio("Mikrofon Kimde?", ["Dilay 💖", "Mert 🎙️"])
+    
+    # Yayın Tonu
+    yayin_tonu = st.select_slider(
+        "Yayın Enerjisi",
+        options=["Sakin", "Duygusal", "Standart", "Coşkulu", "Muzip"]
+    )
     
     st.divider()
-    mood = st.select_slider("Yayın Modu", options=["Duygusal", "Normal", "Enerjik", "Cilveli/Esprili"])
-    
-    st.divider()
-    if st.button("🧹 Yayını Sıfırla"):
-        st.session_state.history = []
+    if st.button("🗑️ Yayını Sıfırla"):
+        st.session_state.chat_history = []
         st.rerun()
 
-# ====================== ANA EKRAN ======================
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.markdown(f"# 📻 AŞK-I MUHABBET <span class='live-indicator'>● CANLI YAYIN</span>", unsafe_allow_html=True)
-    st.caption(f"Şu an mikrofon başında: **{selected_host}** | Mod: **{mood}**")
-with col2:
-    st.metric("Anlık Dinleyici", f"{random.randint(12000, 15500):,}", "+452")
+# ====================== ANA PANEL ======================
+c1, c2 = st.columns([4, 1])
+with c1:
+    st.markdown(f"<h1>🎙️ AŞK-I MUHABBET <span class='live-text'>● CANLI</span></h1>", unsafe_allow_html=True)
+with c2:
+    st.metric("Dinleyici", f"{random.randint(15000, 22000):,}")
 
-# Sohbet Geçmişini Görüntüle
-for msg in st.session_state.history:
-    if msg["role"] == "user":
-        st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
+# Sohbet Akışı
+for chat in st.session_state.chat_history:
+    if chat["role"] == "user":
+        st.markdown(f'<div class="patron-bubble"><b>Patron:</b> {chat["content"]}</div>', unsafe_allow_html=True)
     else:
-        card_class = "dilay-card" if msg["host"] == "💖 Dilay" else "mert-card"
+        tema = "dilay-theme" if chat["host"] == "Dilay 💖" else "mert-theme"
         st.markdown(f"""
-            <div class="{card_class}">
-                <b style="font-size:1.2rem;">{msg['host']}:</b><br>
-                <div style="margin-top:10px;">{msg['content']}</div>
+            <div class="host-card {tema}">
+                <b style="font-size: 1.2em;">{chat['host']}</b><br>
+                <div style="margin-top: 10px;">{chat['content']}</div>
             </div>
         """, unsafe_allow_html=True)
-        if msg.get("audio"):
-            st.audio(msg["audio"], format="audio/wav", autoplay=True)
+        if chat.get("audio"):
+            st.audio(chat["audio"], format="audio/wav", autoplay=True)
 
-# ====================== AI VE SES MANTIĞI ======================
-# Karakter ayarları
-prompts = {
-    "💖 Dilay": f"Sen Dilay'sın. Aşk-ı Muhabbet'in neşeli, samimi, biraz cilveli kadın sunucususun. Patronuna 'Canım Patronum' diye hitap et. Şu an {mood} bir ruh halindesin.",
-    "🎙️ Mert": f"Sen Mert'sin. Aşk-ı Muhabbet'in ağırbaşlı, tok sesli, beyefendi erkek sunucususun. Patronuna 'Üstadım' veya 'Patron' diye hitap et. Şu an {mood} bir ruh halindesin."
+# ====================== AI VE SES TETİKLEME ======================
+# Karakter Tanımları
+personalar = {
+    "Dilay 💖": f"Sen Dilay'sın. Yayının neşesi, Patronun kıymetlisisin. Hitabın: 'Canım Patronum'. Modun: {yayin_tonu}.",
+    "Mert 🎙️": f"Sen Mert'sin. Ağırbaşlı, samimi, beyefendi bir sunucusun. Hitabın: 'Üstadım' veya 'Patron'. Modun: {yayin_tonu}."
 }
 
-if prompt := st.chat_input("Yayına bağlan, Patron..."):
-    # Patron mesajını ekle
-    st.session_state.history.append({"role": "user", "content": prompt})
+# Ses Dosyaları (Applio'dan gelen klonlar)
+ses_dosyalari = {
+    "Dilay 💖": "dilay_klon_sesim.wav",
+    "Mert 🎙️": "mert_klon_sesim.wav"
+}
+
+if prompt := st.chat_input("Patron, yayına bir not bırak..."):
+    # Geçmişe ekle
+    st.session_state.chat_history.append({"role": "user", "content": prompt})
     
-    with st.spinner(f"🎙️ {selected_host} hazırlanıyor..."):
-        # Groq'tan yanıt al
-        messages = [{"role": "system", "content": prompts[selected_host]}] + \
-                   [{"role": h["role"], "content": h["content"]} for h in st.session_state.history[-10:]]
+    # AI Yanıtı
+    with st.spinner(f"{secilen_sunucu} hazırlanıyor..."):
+        messages = [{"role": "system", "content": personalar[secilen_sunucu]}] + \
+                   [{"role": m["role"], "content": m["content"]} for m in st.session_state.chat_history[-8:]]
         
-        completion = client.chat.completions.create(
+        response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
-            temperature=0.9 if mood == "Enerjik" else 0.7
-        )
-        response_text = completion.choices[0].message.content
+            temperature=0.8
+        ).choices[0].message.content
 
-        # Applio klon ses dosyasını oku
-        audio_path = SESLER[selected_host]
+        # Ses Verisi Hazırlama
         audio_data = None
-        if os.path.exists(audio_path):
-            with open(audio_path, "rb") as f:
+        target_audio = ses_dosyalari[secilen_sunucu]
+        if os.path.exists(target_audio):
+            with open(target_audio, "rb") as f:
                 audio_data = f.read()
-        else:
-            st.warning(f"⚠️ {audio_path} bulunamadı. Lütfen Applio'dan aldığın klon sesi klasöre ekle.")
-
-        # Geçmişe ekle
-        st.session_state.history.append({
+        
+        # Geçmişe Yanıtı ve Sesi Ekle
+        st.session_state.chat_history.append({
             "role": "assistant",
-            "host": selected_host,
-            "content": response_text,
+            "host": secilen_sunucu,
+            "content": response,
             "audio": audio_data
         })
         
         st.rerun()
-
-st.divider()
-st.markdown("<center style='opacity:0.5'>Aşk-ı Muhabbet v10.0 | Tasarım ve Kod: K3N4N</center>", unsafe_allow_html=True)
