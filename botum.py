@@ -5,10 +5,10 @@ import edge_tts
 import time
 from datetime import datetime
 
-st.set_page_config(page_title="Aşk-ı Muhabbet v12.5", layout="wide", page_icon="🎙️")
+st.set_page_config(page_title="Aşk-ı Muhabbet v12.6", layout="wide", page_icon="🎙️")
 
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("❌ GROQ_API_KEY secrets.toml dosyasında yok! Lütfen ekleyin.")
+    st.error("❌ GROQ_API_KEY secrets.toml dosyasında yok! Lütfen ekleyin ve uygulamayı yeniden başlatın.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
@@ -16,25 +16,25 @@ client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# ====================== SES ÜRETİMİ ======================
-async def get_voice_bytes(text: str, voice: str = "tr-TR-EmelNeural"):
+# ====================== SES ÜRETİMİ (Güvenli) ======================
+async def get_voice_bytes(text: str):
     if not text or len(text.strip()) < 3:
         return None
     try:
-        communicate = edge_tts.Communicate(text, voice)
+        communicate = edge_tts.Communicate(text, "tr-TR-EmelNeural")
         audio_data = b""
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
                 audio_data += chunk["data"]
         return audio_data
     except Exception as e:
-        st.warning(f"🎙️ Ses üretilemedi: {str(e)[:80]}... Ama metin görünüyor.")
+        st.warning(f"🎙️ Ses üretilemedi: {str(e)[:100]}... Ama Dilay'ın yazısı burada.")
         return None
 
 def run_async_safe(coro):
     try:
         return asyncio.run(coro)
-    except RuntimeError:
+    except:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         return loop.run_until_complete(coro)
@@ -43,12 +43,12 @@ def run_async_safe(coro):
 st.markdown("""
     <style>
     .stApp { background-color: #05050a; color: #ffffff; }
-    .dilay-card { padding: 22px; border-radius: 18px; margin: 15px 0; border-left: 10px solid #ff1493; 
-                  background: linear-gradient(135deg, #2a0a25, #4a1a3a); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-    .patron-bubble { background: rgba(0, 255, 157, 0.15); border-right: 6px solid #00ff9d; padding: 16px; 
-                     border-radius: 14px; margin: 15px 0; text-align: right; }
-    .live-text { color: #ff2d55; font-weight: bold; animation: blinker 1.3s linear infinite; }
-    @keyframes blinker { 50% { opacity: 0.35; } }
+    .dilay-card { padding: 25px; border-radius: 20px; margin: 15px 0; border-left: 12px solid #ff1493; 
+                  background: linear-gradient(135deg, #2a0a25, #4a1a3a); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+    .patron-bubble { background: rgba(0, 255, 157, 0.15); border-right: 8px solid #00ff9d; padding: 18px; 
+                     border-radius: 16px; margin: 15px 0; text-align: right; }
+    .live-text { color: #ff2d55; font-weight: bold; animation: blinker 1.4s linear infinite; }
+    @keyframes blinker { 50% { opacity: 0.3; } }
     </style>
     """, unsafe_allow_html=True)
 
@@ -60,8 +60,8 @@ with st.sidebar:
         st.session_state.chat_history = []
         st.rerun()
 
-st.markdown(f"<h1 style='text-align:center;'>🎙️ AŞK-I MUHABBET <span class='live-text'>● CANLI</span> v12.5</h1>", unsafe_allow_html=True)
-st.caption(f"{datetime.now().strftime('%H:%M')} • Dilay ile Stabil Test")
+st.markdown(f"<h1 style='text-align:center;'>🎙️ AŞK-I MUHABBET <span class='live-text'>● CANLI</span> v12.6</h1>", unsafe_allow_html=True)
+st.caption(f"{datetime.now().strftime('%H:%M')} • Sadece Dilay • Hatasız Mod")
 
 # ====================== SOHBET GÖSTERİM ======================
 for i, chat in enumerate(st.session_state.chat_history):
@@ -70,24 +70,25 @@ for i, chat in enumerate(st.session_state.chat_history):
     else:
         st.markdown(f"""
             <div class="dilay-card">
-                <b>Dilay 💖</b><br>
-                {chat.get('content', '')}
+                <b>Dilay 💖</b><br><br>
+                {chat.get('content', 'Cevap alınamadı...')}
             </div>
             """, unsafe_allow_html=True)
         
-        # SADECE AUDIO VARSA GÖSTER (TypeError önleme)
-        if chat.get("audio") is not None:
+        # SADECE GERÇEK SES VARSA GÖSTER (TypeError önlendi)
+        audio = chat.get("audio")
+        if audio is not None and len(audio) > 100:   # Boş bytes olmasın
             try:
-                st.audio(chat["audio"], format="audio/mpeg", key=f"audio_{i}_{chat.get('ts', i)}")
-            except Exception:
-                st.info("🔊 Ses oynatılamadı ama konuşma metni burada.")
+                st.audio(audio, format="audio/mpeg", key=f"audio_{i}_{chat.get('ts', i)}")
+            except:
+                st.info("🔊 Ses oynatılamadı ama konuşma burada.")
 
 # ====================== DILAY PROMPT ======================
 def get_dilay_prompt(enerji):
     return f"""Sen Dilay'sın. Kenan ile Faslı Muhabbet'in neşeli, cilveli, hayat dolu kadın sunucususun. 
     Dinleyicilere "canım", "ailem", "güzel insanlar" diye hitap edersin. 
     {'Bol bol espri yap, kıpır kıpır ve işveli konuş.' if enerji == 'Tam Gaz Muzip' else 
-     'Daha duygusal ve içten ol.' if enerji == 'Duygusal' else 'Coşkulu ve sıcak konuş.'}
+     'Daha duygusal ve içten konuş.' if enerji == 'Duygusal' else 'Coşkulu ve sıcak bir şekilde cevap ver.'}
     Mod: {enerji}"""
 
 # ====================== YAYIN AKIŞI ======================
@@ -96,27 +97,27 @@ user_input = st.chat_input("👑 Patron, yayına bağlan... Bu akşam ne muhabbe
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input, "ts": int(time.time())})
     
-    with st.spinner("🎙️ Dilay mikrofonu açıyor... Biraz bekle canım ❤️"):
+    with st.spinner("🎙️ Dilay mikrofonu açıyor... Sabret canım, geliyor ❤️"):
         try:
             messages = [{"role": "system", "content": get_dilay_prompt(enerji)}] + \
-                       [{"role": m["role"], "content": m["content"]} for m in st.session_state.chat_history[-7:]]
+                       [{"role": m["role"], "content": m["content"]} for m in st.session_state.chat_history[-6:]]
             
             comp = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=messages,
-                temperature=0.82,
-                max_tokens=650
+                temperature=0.85,
+                max_tokens=700
             )
             response_text = comp.choices[0].message.content.strip()
             
-            st.success("✅ Groq'dan cevap geldi! Dilay konuşuyor...")
+            st.success("✅ Groq çalıştı! Dilay cevap veriyor...")
             
         except Exception as e:
-            response_text = f"Canım patron, ufak bir teknik takılma oldu ama hemen toparladım. {user_input} hakkında ne diyecektim ben?"
-            st.error(f"Groq'da ufak bir sorun çıktı: {str(e)[:120]}")
+            response_text = f"Canım patron, ufak bir teknik takılma oldu ama seni yalnız bırakmadım. {user_input} hakkında ne muhabbet edelim?"
+            st.error(f"Groq hatası: {str(e)[:150]}")
 
-        # Ses üretimi
-        audio_bytes = run_async_safe(get_voice_bytes(response_text, "tr-TR-EmelNeural"))
+        # Ses üret (hata verse bile devam et)
+        audio_bytes = run_async_safe(get_voice_bytes(response_text))
         
         st.session_state.chat_history.append({
             "role": "assistant",
@@ -127,4 +128,4 @@ if user_input:
         
         st.rerun()
 
-st.caption("❤️ v12.5 • TypeError düzeltildi • Ses & Groq stabil • Kenan’la birlikte geliştiriyoruz")
+st.caption("❤️ v12.6 • En basit ve stabil versiyon • Ses opsiyonel • Hata önlendi • Kenan’la devam ediyoruz")
