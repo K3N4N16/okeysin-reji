@@ -5,7 +5,7 @@ import edge_tts
 import time
 
 # --- REJİ AYARLARI ---
-st.set_page_config(page_title="Faslı Muhabbet v10.5", layout="wide")
+st.set_page_config(page_title="Faslı Muhabbet v11.0 - Sarmal Yayın", layout="wide")
 
 if "GROQ_API_KEY" not in st.secrets:
     st.error("⚠️ GROQ API Key Eksik!")
@@ -13,15 +13,17 @@ if "GROQ_API_KEY" not in st.secrets:
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
+# Session State: Yayın akışını ve tur sayısını kontrol eder
 if "history" not in st.session_state:
     st.session_state.history = []
+if "loop_counter" not in st.session_state:
+    st.session_state.loop_counter = 0
 
-# --- SES KÜTÜPHANESİ ---
-# Senin klon sesini entegre edene kadar en doğal kurumsal sesler:
-VOICES = {
-    "Dilay 💖": "tr-TR-EmelNeural", # Cilveli ve enerjik
-    "Mert 🎙️": "tr-TR-AhmetNeural"  # Tok ve samimi erkek sesi
-}
+# --- SES VE KARAKTER TANIMLARI ---
+HOSTS = [
+    {"name": "Dilay 💖", "voice": "tr-TR-EmelNeural", "persona": "İşveli, neşeli, Mert'e laf atan kadın sunucu."},
+    {"name": "Mert 🎙️", "voice": "tr-TR-AhmetNeural", "persona": "Ağırbaşlı, esprili, Dilay'ın paslarını gole çeviren erkek sunucu."}
+]
 
 async def generate_audio(text, voice):
     communicate = edge_tts.Communicate(text, voice, rate="+5%")
@@ -31,67 +33,74 @@ async def generate_audio(text, voice):
             audio_bytes += chunk["data"]
     return audio_bytes
 
-# --- SİSTEM TALİMATLARI (PROMPT) ---
-def get_persona(name, partner):
-    if "Dilay" in name:
-        return f"""Sen Dilay'sın. Faslı Muhabbet'in neşeli, işveli kadın sunucususun. 
-        Yanında partnerin {partner} var. Onunla tatlı sert atış, şakalaş. 
-        Patron'a (Kullanıcı) 'Canım Patronum' de. Radyo dilinde, kısa ve etkileyici konuş."""
-    else:
-        return f"""Sen Mert'sin. Programın ağırbaşlı ama hazırcevap erkek sunucususun. 
-        Yanında {partner} var. Onun cilvelerine beyefendi bir tavırla ama esprili karşılıklar ver. 
-        Programın akışını bozmadan muhabbeti sürdür."""
-
 # --- ARAYÜZ ---
-st.markdown("<h1 style='text-align: center; color: #ff1493;'>🎙️ FASLI MUHABBET CANLI YAYIN</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #ff1493;'>🎙️ FASLI MUHABBET: SARMAL CANLI YAYIN</h1>", unsafe_allow_html=True)
 
-# Yayın Akışı Görüntüleme
+# Yayın Geçmişini Görüntüle
 for msg in st.session_state.history:
-    role_color = "#ff69b4" if "Dilay" in msg.get("host", "") else "#00d4ff"
     if msg["role"] == "user":
-        st.info(f"🤵 **Patron:** {msg['content']}")
+        st.markdown(f"🤵 **Patron:** {msg['content']}")
     else:
+        role_color = "#ff69b4" if "Dilay" in msg["host"] else "#00d4ff"
         with st.chat_message("assistant", avatar="🎙️"):
             st.markdown(f"<span style='color:{role_color}; font-weight:bold;'>{msg['host']}</span>", unsafe_allow_html=True)
             st.write(msg["content"])
             if msg.get("audio"):
-                st.audio(msg["audio"], format="audio/mp3")
+                st.audio(msg["audio"], format="audio/mp3", autoplay=True)
 
-# --- YAYIN TETİKLEME ---
-if prompt := st.chat_input("Yayını başlatacak konuyu girin Patronum..."):
-    # 1. Patron'un mesajını ekle
-    st.session_state.history.append({"role": "user", "content": prompt})
-    st.rerun()
-
-# Eğer en son mesaj kullanıcıdansa, sırayla sunucuları konuştur
-if len(st.session_state.history) > 0 and st.session_state.history[-1]["role"] == "user":
-    
-    current_topic = st.session_state.history[-1]["content"]
-    
-    # SIRA: Önce Dilay, Sonra Mert
-    for speaker, partner in [("Dilay 💖", "Mert 🎙️"), ("Mert 🎙️", "Dilay 💖")]:
-        with st.spinner(f"🎙️ {speaker} mikrofonda..."):
+# --- SARMAL DÖNGÜ MANTIĞI ---
+def start_broadcast(topic):
+    # Eğer yeni bir konu geldiyse geçmişi temizlemeden ekle
+    if not st.session_state.history or st.session_state.history[-1]["role"] == "user":
+        # Döngüyü başlat (Örn: Her turda 4 paslaşma olsun)
+        for i in range(4): 
+            speaker_data = HOSTS[i % 2] # 0, 1, 0, 1 şeklinde sırayla seçer
+            partner_data = HOSTS[(i + 1) % 2]
             
-            # Groq'a gönderilecek mesaj geçmişini hazırla
-            messages = [{"role": "system", "content": get_persona(speaker, partner)}]
-            # Son diyalogları ekle ki birbirlerini duyabilsinler
-            for h in st.session_state.history[-6:]:
-                messages.append({"role": h["role"], "content": h["content"]})
+            with st.spinner(f"🎙️ {speaker_data['name']} yayında..."):
+                # Sistem Prompt'u: Partnerini ve konuyu bilmesini sağlar
+                messages = [{
+                    "role": "system", 
+                    "content": f"Sen {speaker_data['name']}. {speaker_data['persona']} "
+                               f"Partnerin {partner_data['name']} ile sarmal bir sohbettesin. "
+                               f"Ona sorular sor, pas at ve muhabbeti asla koparma. "
+                               f"Radyo akıcılığında kısa cümleler kur."
+                }]
+                
+                # Son 5 mesajı hafızaya ekle (Birbirlerini duymaları için)
+                for h in st.session_state.history[-5:]:
+                    messages.append({"role": h.get("role"), "content": h.get("content")})
 
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=messages,
-                temperature=0.9
-            ).choices[0].message.content
+                # Groq'tan yanıt al
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=messages,
+                    temperature=0.9
+                ).choices[0].message.content
 
-            # Ses üret
-            audio = asyncio.run(generate_audio(response, VOICES[speaker]))
+                # Ses üret
+                audio = asyncio.run(generate_audio(response, speaker_data["voice"]))
 
-            # Kaydet
-            st.session_state.history.append({
-                "role": "assistant",
-                "host": speaker,
-                "content": response,
-                "audio": audio
-            })
-            st.rerun() # Her konuşmadan sonra ekranı tazele ki sırayla sesler çalsın
+                # Kaydet
+                st.session_state.history.append({
+                    "role": "assistant",
+                    "host": speaker_data["name"],
+                    "content": response,
+                    "audio": audio
+                })
+                
+                # Anlık güncelleme için rerun
+                st.rerun()
+
+# Giriş Alanı
+if prompt := st.chat_input("Patronum konuyu ver, onlar kendi aralarında aksın gitsin..."):
+    st.session_state.history.append({"role": "user", "content": prompt})
+    start_broadcast(prompt)
+
+# --- REJİ KONTROL ---
+with st.sidebar:
+    st.title("🎚️ Reji Odası")
+    if st.button("🔴 YAYINI DURDUR VE TEMİZLE"):
+        st.session_state.history = []
+        st.rerun()
+    st.info("Bu modda sunucular 4 tur boyunca (2 Dilay, 2 Mert) birbirlerine pas atarak konuşur.")
