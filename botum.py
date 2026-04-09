@@ -1,18 +1,45 @@
 import streamlit as st
 from groq import Groq
+import asyncio
+import edge_tts
 import time
 from datetime import datetime
 
-st.set_page_config(page_title="Aşk-ı Muhabbet v12.7", layout="wide", page_icon="🎙️")
+st.set_page_config(page_title="Aşk-ı Muhabbet v12.8", layout="wide", page_icon="🎙️")
 
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("❌ GROQ_API_KEY secrets.toml dosyasında yok! Lütfen ekleyin.")
+    st.error("❌ GROQ_API_KEY secrets.toml dosyasında yok!")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+
+# ====================== KURUMSAL SES ÜRETİMİ ======================
+async def get_voice_bytes(text: str):
+    if not text or len(text.strip()) < 3:
+        return None
+    try:
+        communicate = edge_tts.Communicate(text, "tr-TR-EmelNeural")  # Kurumsal kaliteli kadın sesi
+        audio_data = b""
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_data += chunk["data"]
+        return audio_data
+    except:
+        return None  # Sessizce None dön, uygulama çökmesin
+
+def run_async_safe(coro):
+    try:
+        return asyncio.run(coro)
+    except:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(coro)
+        except:
+            return None
 
 # ====================== TASARIM ======================
 st.markdown("""
@@ -31,13 +58,12 @@ st.markdown("""
 with st.sidebar:
     st.title("🎚️ REJİ MASASI")
     enerji = st.select_slider("Enerji Seviyesi", ["Coşkulu", "Tam Gaz Muzip", "Duygusal"], value="Coşkulu")
-    ses_acik = st.checkbox("🔊 Ses Çıksın (edge_tts)", value=False, help="Şu an ses kapalı, istersen açabilirsin")
     if st.button("🔄 Yayını Sıfırla", type="primary"):
         st.session_state.chat_history = []
         st.rerun()
 
-st.markdown(f"<h1 style='text-align:center;'>🎙️ AŞK-I MUHABBET <span class='live-text'>● CANLI</span> v12.7</h1>", unsafe_allow_html=True)
-st.caption(f"{datetime.now().strftime('%H:%M')} • Sadece Dilay • Ses Opsiyonel")
+st.markdown(f"<h1 style='text-align:center;'>🎙️ AŞK-I MUHABBET <span class='live-text'>● CANLI</span> v12.8</h1>", unsafe_allow_html=True)
+st.caption(f"{datetime.now().strftime('%H:%M')} • Kurumsal Ses Modu")
 
 # ====================== SOHBET GÖSTERİM ======================
 for i, chat in enumerate(st.session_state.chat_history):
@@ -51,12 +77,12 @@ for i, chat in enumerate(st.session_state.chat_history):
             </div>
             """, unsafe_allow_html=True)
         
-        # Sadece ses açıksa ve gerçek audio varsa göster
-        if ses_acik and chat.get("audio") is not None and len(chat.get("audio", b"")) > 100:
+        # Ses varsa göster (hata vermeden)
+        if chat.get("audio") is not None and len(chat.get("audio", b"")) > 200:
             try:
                 st.audio(chat["audio"], format="audio/mpeg", key=f"audio_{i}_{chat.get('ts', i)}")
             except:
-                st.info("🔊 Ses oynatılamadı ama konuşma burada.")
+                pass  # Sessizce geç
 
 # ====================== DILAY PROMPT ======================
 def get_dilay_prompt(enerji):
@@ -72,7 +98,7 @@ user_input = st.chat_input("👑 Patron, yayına bağlan... Bu akşam ne muhabbe
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input, "ts": int(time.time())})
     
-    with st.spinner("🎙️ Dilay mikrofonu açıyor... Sabret canım, geliyor ❤️"):
+    with st.spinner("🎙️ Dilay hazırlanıyor... Kurumsal ses yükleniyor ❤️"):
         try:
             messages = [{"role": "system", "content": get_dilay_prompt(enerji)}] + \
                        [{"role": m["role"], "content": m["content"]} for m in st.session_state.chat_history[-6:]]
@@ -84,30 +110,12 @@ if user_input:
                 max_tokens=700
             )
             response_text = comp.choices[0].message.content.strip()
-            
-            st.success("✅ Groq çalıştı! Dilay cevap veriyor...")
-            
-        except Exception as e:
-            response_text = f"Canım patron, ufak bir teknik takılma oldu ama seni yalnız bırakmadım. {user_input} hakkında ne muhabbet edelim?"
-            st.error(f"Groq hatası: {str(e)[:150]}")
+        except Exception:
+            response_text = f"Canım patron, seni duydum. {user_input} hakkında ne güzel muhabbet edelim bu akşam?"
 
-        # Ses üret (sadece ses açıksa)
-        audio_bytes = None
-        if ses_acik:
-            try:
-                import asyncio
-                import edge_tts
-                async def get_voice(text):
-                    communicate = edge_tts.Communicate(text, "tr-TR-EmelNeural")
-                    audio_data = b""
-                    async for chunk in communicate.stream():
-                        if chunk["type"] == "audio":
-                            audio_data += chunk["data"]
-                    return audio_data
-                audio_bytes = asyncio.run(get_voice(response_text))
-            except:
-                st.warning("🎙️ Ses üretilemedi ama metin burada. İstersen sesi kapatıp dene.")
-
+        # Kurumsal ses üret
+        audio_bytes = run_async_safe(get_voice_bytes(response_text))
+        
         st.session_state.chat_history.append({
             "role": "assistant",
             "content": response_text,
@@ -117,4 +125,4 @@ if user_input:
         
         st.rerun()
 
-st.caption("❤️ v12.7 • Ses tamamen opsiyonel ve güvenli • Groq + Dilay stabil • Kenan’la devam ediyoruz 💖")
+st.caption("❤️ v12.8 • Kurumsal Türkçe Ses (EmelNeural) • Stabil mod • Kenan’la geliştiriyoruz")
