@@ -3,153 +3,115 @@ from groq import Groq
 import asyncio
 import edge_tts
 import time
-from datetime import datetime
+import base64
 
-st.set_page_config(
-    page_title="Faslı Muhabbet v9.8",
-    layout="wide",
-    page_icon="🎙️",
-    initial_sidebar_state="expanded"
-)
+# Sayfa Yapılandırması
+st.set_page_config(page_title="Faslı Muhabbet v10.0", layout="wide", page_icon="🎙️")
 
+# API Kontrol
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ GROQ API Key eksik! Secrets.toml dosyasına ekle.")
+    st.error("⚠️ API Key Eksik!")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
+# Session State Yönetimi
 if "history" not in st.session_state:
     st.session_state.history = []
-if "last_speaker" not in st.session_state:
-    st.session_state.last_speaker = None
+if "is_broadcasting" not in st.session_state:
+    st.session_state.is_broadcasting = False
 
-# ====================== KURUMSAL SESLER ======================
+# Ses Tanımları
 VOICES = {
-    "Dilay 💖": "tr-TR-EmelNeural",   # Cilveli, sıcak bayan sesi
-    "Mert 🎙️": "tr-TR-AhmetNeural"    # Samimi, ağırbaşlı erkek sesi
+    "Dilay 💖": "tr-TR-EmelNeural",
+    "Mert 🎙️": "tr-TR-AhmetNeural"
 }
 
-async def produce_voice(text: str, voice: str):
-    if not text or len(text.strip()) < 3:
-        return None
-    try:
-        communicate = edge_tts.Communicate(text, voice)
-        audio_data = b""
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                audio_data += chunk["data"]
-        return audio_data
-    except:
-        return None
+# 
 
-def run_async_safe(coro):
-    try:
-        return asyncio.run(coro)
-    except:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(coro)
-        except:
-            return None
+async def produce_voice(text, voice):
+    communicate = edge_tts.Communicate(text, voice, rate="+5%", pitch="+0Hz")
+    audio_bytes = b""
+    async for chunk in communicate.stream():
+        if chunk["type"] == "audio":
+            audio_bytes += chunk["data"]
+    return audio_bytes
 
-# ====================== CSS ======================
+# CSS: Cyberpunk Radyo Teması
 st.markdown("""
     <style>
-    .stApp { background: #05050f; color: #f0f0f0; }
-    .dilay-card { background: linear-gradient(145deg, #2a0f4a, #140525); border-left: 8px solid #ff1493; 
-                  border-radius: 20px; padding: 28px; margin: 20px 0; box-shadow: 0 15px 40px rgba(255,20,147,0.3); }
-    .mert-card { background: linear-gradient(145deg, #0f2a4a, #051428); border-left: 8px solid #00d4ff; 
-                 border-radius: 20px; padding: 28px; margin: 20px 0; box-shadow: 0 15px 40px rgba(0,212,255,0.3); }
-    .patron-card { background: rgba(0, 255, 157, 0.08); border-right: 6px solid #00ff9d; 
-                   padding: 18px; border-radius: 15px; margin: 15px 0; text-align: right; }
-    .live-badge { color: #ff0000; font-weight: 900; animation: blink 1.3s infinite; }
-    @keyframes blink { 50% { opacity: 0.4; } }
+    .stApp { background: #020205; color: #e0e0e0; }
+    .broadcast-box { 
+        border: 2px solid #ff1493; border-radius: 15px; padding: 20px;
+        background: rgba(255, 20, 147, 0.05); box-shadow: 0 0 20px rgba(255, 20, 147, 0.2);
+    }
+    .host-dilay { color: #ff69b4; text-shadow: 0 0 10px #ff69b4; font-weight: bold; }
+    .host-mert { color: #00d4ff; text-shadow: 0 0 10px #00d4ff; font-weight: bold; }
+    .on-air { background: red; color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== ÜST PANEL ======================
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.markdown(f"# 🎙️ FASLI MUHABBET <span class='live-badge'>● CANLI</span>", unsafe_allow_html=True)
-with col2:
-    st.metric("Canlı Dinleyici", "7,892")
+# Başlık Paneli
+col_title, col_stat = st.columns([4, 1])
+with col_title:
+    st.markdown("## 🎙️ FASLI MUHABBET <span class='on-air'>ON AIR</span>", unsafe_allow_html=True)
+with col_stat:
+    st.write(f"🎧 {7892 + (int(time.time()) % 100)} Dinleyici")
 
-# ====================== SOHBET ALANI ======================
-for i, msg in enumerate(st.session_state.history):
-    if msg["role"] == "user":
-        st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
-    else:
-        card_class = "dilay-card" if "Dilay" in msg["host"] else "mert-card"
-        st.markdown(f"""
-            <div class="{card_class}">
-                <span style="color:#ff69b4; font-weight:900; font-size:1.55rem;">{msg['host']}</span><br>
-                <div style="margin-top:15px; line-height:1.7;">{msg['content']}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        if msg.get("audio"):
-            try:
-                st.audio(msg["audio"], format="audio/mpeg", autoplay=True)
-            except:
-                pass
+# Sohbet Geçmişi Render
+chat_container = st.container()
+with chat_container:
+    for msg in st.session_state.history:
+        if msg["role"] == "user":
+            st.markdown(f"**🤵 Patron:** {msg['content']}")
+        else:
+            style = "host-dilay" if "Dilay" in msg["host"] else "host-mert"
+            st.markdown(f"<div class='broadcast-box'><span class='{style}'>{msg['host']}:</span><br>{msg['content']}</div>", unsafe_allow_html=True)
+            if msg.get("audio"):
+                st.audio(msg["audio"], format="audio/mp3")
 
-# ====================== PROMPT'LAR ======================
-def get_prompt(host):
+# Gelişmiş Prompt Mühendisliği
+def get_system_prompt(host, partner_name):
+    base = f"Sen {host} karakterisin. Faslı Muhabbet isimli radyo programını {partner_name} ile beraber sunuyorsun."
     if "Dilay" in host:
-        return """Sen Dilay'sın. Faslı Muhabbet'in kıpır kıpır, işveli, sıcak ve cilveli kadın sunucususun. 
-        Patron'a "Canım Patronum", "Ah be Patron’um", "Sevgilim" diye hitap et. 
-        Konuşmalarında Mert'le kapışmalı, atışmalı, eğlenceli muhabbet et."""
+        return base + """ Karakterin: Cilveli, neşeli, bazen Mert'e takılan ama ona çok değer veren bir kadın. 
+        Mert'in laflarına mutlaka karşılık ver, onunla şakalaş. Patron'una 'Canım Patronum' diye hitap et. 
+        Kısa, enerjik ve radyo dilinde konuş."""
     else:
-        return """Sen Mert'sin. Faslı Muhabbet'in samimi, ağırbaşlı ve esprili erkek sunucususun. 
-        Dilay'la kapışmalı, atışmalı, birbirinize laf yetiştirerek eğlenceli muhabbet edin."""
+        return base + """ Karakterin: Hafif maço ama beyefendi, esprili ve hazırcevap bir erkek. 
+        Dilay'ın cilvelerine karşı hem onu koruyan hem de ona laf yetiştiren bir tavır takın. 
+        Radyo yayını akıcılığında konuş."""
 
-# ====================== YAYIN AKIŞI ======================
-if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
+# Yayın Tetikleyici
+if prompt := st.chat_input("Patron, bir konu ver yayına başlayalım..."):
     st.session_state.history.append({"role": "user", "content": prompt})
     
-    with st.spinner("🎙️ Mikrofonlar açılıyor... Dilay ve Mert yayına giriyor ❤️"):
-        speakers = ["Dilay 💖", "Mert 🎙️"]
-        start_idx = 0 if st.session_state.last_speaker is None else (speakers.index(st.session_state.last_speaker) + 1) % 2
-        
-        for i in range(2):  # İkisi de sırayla konuşsun
-            speaker = speakers[(start_idx + i) % 2]
-            st.session_state.last_speaker = speaker
+    # Sırasıyla Konuşturma Mantığı
+    hosts = [("Dilay 💖", "Mert 🎙️"), ("Mert 🎙️", "Dilay 💖")]
+    
+    for host_name, partner in hosts:
+        with st.spinner(f"🎙️ {host_name} konuşuyor..."):
+            # Geçmişi hatırla (İkili diyalog için son 10 mesajı gönder)
+            messages = [{"role": "system", "content": get_system_prompt(host_name, partner)}]
+            for h in st.session_state.history[-10:]:
+                messages.append({"role": h["role"], "content": h["content"]})
             
-            try:
-                messages = [{"role": "system", "content": get_prompt(speaker)}] + \
-                           [{"role": m["role"], "content": m["content"]} for m in st.session_state.history[-12:]]
-                
-                response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=messages,
-                    temperature=0.92,
-                    max_tokens=650
-                ).choices[0].message.content
-            except:
-                response = f"{speaker.split()[0]}, ufak bir takılma oldu ama hemen toparladım. Devam edelim mi sevgilim?"
-
-            # Kurumsal ses üret
-            voice_name = VOICES[speaker]
-            audio_bytes = run_async_safe(produce_voice(response, voice_name))
-
+            # Groq'tan yanıt al
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=messages,
+                temperature=0.85
+            ).choices[0].message.content
+            
+            # Ses Üret
+            audio_data = asyncio.run(produce_voice(response, VOICES[host_name]))
+            
+            # Kaydet ve Göster
             st.session_state.history.append({
                 "role": "assistant",
-                "host": speaker,
+                "host": host_name,
                 "content": response,
-                "audio": audio_bytes
+                "audio": audio_data
             })
-            
-            time.sleep(0.6)  # Doğal geçiş hissi
             st.rerun()
-
-# ====================== SIDEBAR ======================
-with st.sidebar:
-    st.title("🎚️ Reji Masası")
-    if st.button("🗑️ Sohbeti Temizle"):
-        st.session_state.history = []
-        st.session_state.last_speaker = None
-        st.rerun()
-    st.caption("Kurumsal Sesler:\n• Dilay → EmelNeural (Bayan)\n• Mert → AhmetNeural (Erkek)")
-
-st.caption("Faslı Muhabbet v9.8 • Sarmal İkili Diyalog • Gerçek Zamanlı Kurumsal Ses 💖🎙️")
