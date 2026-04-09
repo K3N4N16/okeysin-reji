@@ -3,203 +3,152 @@ from groq import Groq
 import json
 import os
 from datetime import datetime
+import urllib.parse
 
-# --- GEREKLİ KÜTÜPHANELER ---
-# pip install streamlit groq
-# (Ekstra: ses için tarayıcı TTS kullanıyoruz, ekstra kurulum gerekmez)
-
-st.set_page_config(page_title="OMEGA v37 - VOICE COMMANDER", layout="wide")
+# --- 1. SİSTEM & PREMİUM TASARIM ---
+st.set_page_config(page_title="OMEGA v38 - NEXUS", layout="wide", page_icon="🎙️")
 
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap');
     
     .stApp { background-color: #020205; color: #00f2ff; font-family: 'Roboto', sans-serif; }
-    [data-testid="stSidebar"] { background-color: #080810; border-right: 2px solid #ff007f; }
+    [data-testid="stSidebar"] { background-color: #080810; border-right: 2px solid #ff007f; min-width: 300px !important; }
     
+    /* Neon Mesaj Kartları */
     .chat-card {
-        background: rgba(10, 10, 20, 0.9); 
-        border: 1px solid #333; border-radius: 15px; 
-        padding: 20px; margin-bottom: 20px;
-        transition: 0.3s;
+        background: rgba(15, 15, 25, 0.95); border: 1px solid #333;
+        border-radius: 15px; padding: 25px; margin-bottom: 25px;
+        transition: 0.3s ease-in-out;
     }
-    .chat-card:hover { border-color: #ff007f; box-shadow: 0 0 15px rgba(255, 0, 127, 0.2); }
+    .chat-card:hover { border-color: #ff007f; box-shadow: 0 0 20px rgba(255, 0, 127, 0.25); }
     
-    .user-text { color: #00f2ff; font-weight: bold; border-left: 3px solid #00f2ff; padding-left: 10px; }
-    .assistant-text { color: #e0e0e0; border-left: 3px solid #ff007f; padding-left: 10px; }
+    .user-text { color: #00f2ff; font-weight: bold; border-left: 4px solid #00f2ff; padding-left: 15px; }
+    .assistant-text { color: #f5f5f5; border-left: 4px solid #ff007f; padding-left: 15px; line-height: 1.6; }
 
-    .tool-bar { display: flex; gap: 20px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #222; }
+    /* Action Toolbar */
+    .tool-bar { display: flex; gap: 25px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #222; }
     .tool-btn { 
-        cursor: pointer; color: #ff007f; font-size: 1.2rem; 
-        background: none; border: none; transition: 0.3s; 
+        cursor: pointer; color: #ff007f; font-size: 1.1rem; 
+        background: transparent; border: none; transition: 0.3s; 
+        display: flex; align-items: center; gap: 8px;
     }
-    .tool-btn:hover { color: #00f2ff; transform: scale(1.25); }
+    .tool-btn:hover { color: #00f2ff; transform: translateY(-2px); text-shadow: 0 0 10px #00f2ff; }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 """, unsafe_allow_html=True)
 
-# --- SES MOTORU (Global ve Stabil) ---
-def init_speech_js():
+# --- 2. GLOBAL SES MOTORU (JS KÖPRÜSÜ) ---
+def init_voice_engine():
     js = """
     <script>
-    let currentUtterance = null;
-    
-    window.speakText = function(text, rate = 1.0) {
+    window.speakText = function(text, rate = 1.05) {
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            currentUtterance = new SpeechSynthesisUtterance(text);
-            currentUtterance.lang = 'tr-TR';
-            currentUtterance.rate = rate;
-            currentUtterance.pitch = 1.12;   // Daha kadınsı ve işveli tını
-            currentUtterance.volume = 0.95;
-            window.speechSynthesis.speak(currentUtterance);
+            window.speechSynthesis.cancel(); // Mevcut sesi durdur
+            var utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'tr-TR';
+            utter.rate = rate;
+            utter.pitch = 1.1;
+            window.speechSynthesis.speak(utter);
         }
     }
-    
-    window.stopSpeech = function() {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-        }
-    }
+    window.stopSpeech = function() { window.speechSynthesis.cancel(); }
     </script>
     """
     st.components.v1.html(js, height=0)
 
-init_speech_js()   # Sayfa başında bir kere çalıştır
+init_voice_engine()
 
-# --- VERİ YÖNETİMİ (Kalıcı JSON) ---
-DB_FILE = "omega_v37_data.json"
+# --- 3. KALICI VERİ MOTORU ---
+DB_FILE = "omega_nexus_v38.json"
+def load_db(): return json.load(open(DB_FILE, "r", encoding="utf-8")) if os.path.exists(DB_FILE) else {}
+def save_db(db): json.dump(db, open(DB_FILE, "w", encoding="utf-8"), ensure_ascii=False, indent=4)
 
-def load_db():
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+if "db" not in st.session_state: st.session_state.db = load_db()
+if "active_id" not in st.session_state: st.session_state.active_id = "Ana Reji"
 
-def save_db(db):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(db, f, ensure_ascii=False, indent=4)
-
-if "db" not in st.session_state:
-    st.session_state.db = load_db()
-
-if "active_id" not in st.session_state:
-    st.session_state.active_id = "Başlangıç Sohbeti"
-
-# --- SIDEBAR REJİ MASASI ---
+# --- 4. REJİ SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h2 style='color:#ff007f; font-family:Orbitron;'>🎛️ REJİ MASASI</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color:#ff007f; font-family:Orbitron;'>🎛️ REJİ PANELİ</h2>", unsafe_allow_html=True)
     
-    persona_options = {
-        "🌸 Sekreter Uygula": "Sekreter",
-        "🎙️ Can Radyocu": "Dilay",
-        "🧠 Bilge Eğitmen": "Bilge",
-        "🔥 Gece Fısıltısı": "Gece",
-        "📖 Şiir Ustası": "Şair"
+    personalar = {
+        "🌸 Sekreter Uygula": "Cilveli, iş bitirici ve zeki sekreter.",
+        "🎙️ Can Radyocu": "Tok sesli, karizmatik ve genel kültür canavarı.",
+        "🔥 Dilay (Radyo Yıldızı)": "İşveli, kıpır kıpır, Kenan'a hayran radyo sunucusu.",
+        "🧠 Bilge Eğitmen": "Her konuda akademik ve derin bilgisi olan usta."
     }
-    
-    selected_persona_name = st.selectbox("👤 Kişilik Seçimi", list(persona_options.keys()))
-    persona = persona_options[selected_persona_name]
-    
-    voice_speed = st.slider("🎤 Konuşma Hızı", 0.6, 1.8, 1.05, 0.05)
+    selected_persona = st.selectbox("👤 Aktif Karakter", list(personalar.keys()))
+    speed = st.slider("🎤 Ses Hızı", 0.7, 1.5, 1.05)
     
     st.divider()
-    uploaded_file = st.file_uploader("📁 Eğitim Dosyası Yükle", type=['txt', 'pdf', 'json'])
+    up_file = st.file_uploader("📁 Veri Dosyası (Eğitim)", type=['txt', 'json', 'pdf'])
     
-    st.divider()
-    if st.button("➕ Yeni Sohbet Başlat"):
-        new_id = f"{selected_persona_name} | {datetime.now().strftime('%d.%m.%Y %H:%M')}"
-        st.session_state.db[new_id] = []
-        st.session_state.active_id = new_id
+    if st.button("➕ Yeni Sohbet"):
+        cid = f"{selected_persona.split()[-1]} | {datetime.now().strftime('%H:%M')}"
+        st.session_state.db[cid] = []
+        st.session_state.active_id = cid
         save_db(st.session_state.db)
         st.rerun()
-    
-    # Geçmiş sohbetler (kalıcı)
-    history_list = list(st.session_state.db.keys())
-    if history_list:
-        st.session_state.active_id = st.selectbox("📜 Geçmiş Sohbetler", history_list[::-1], key="history_select")
 
-# --- ANA EKRAN ---
+    st.subheader("📜 Arşivlenenler")
+    history = list(st.session_state.db.keys())
+    if history:
+        st.session_state.active_id = st.selectbox("Geçmiş", history[::-1])
+
+# --- 5. ANA EKRAN & AI LOGIC ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+st.markdown(f"<h1 style='font-family:Orbitron; color:#ff007f; font-size:1.4rem;'>{st.session_state.active_id}</h1>", unsafe_allow_html=True)
 
-st.markdown(f"<h1 style='font-family:Orbitron; color:#ff007f;'>{st.session_state.active_id}</h1>", unsafe_allow_html=True)
+chat_history = st.session_state.db.get(st.session_state.active_id, [])
 
-chat_data = st.session_state.db.get(st.session_state.active_id, [])
-
-# Sohbet Geçmişi Gösterimi
-for m in chat_data:
-    with st.container():
-        if m["role"] == "user":
-            st.markdown(f'<div class="chat-card"><div class="user-text"><b>Sen:</b><br>{m["content"]}</div></div>', unsafe_allow_html=True)
-        else:
-            msg_content = m["content"]
-            st.markdown(f"""
-                <div class="chat-card">
-                    <div class="assistant-text"><b>{selected_persona_name.split()[1] if ' ' in selected_persona_name else selected_persona_name}:</b><br>{msg_content}</div>
-                    <div class="tool-bar">
-                        <button class="tool-btn" onclick="window.speakText(`{msg_content.replace('`','\\`').replace('\n',' ')}`, {voice_speed});" title="Dinle">
-                            <i class="fas fa-play-circle"></i> Dinle
-                        </button>
-                        <button class="tool-btn" onclick="window.stopSpeech();" title="Durdur">
-                            <i class="fas fa-stop-circle"></i> Dur
-                        </button>
-                        <button class="tool-btn" onclick="navigator.clipboard.writeText(`{msg_content.replace('`','\\`')}')" title="Kopyala">
-                            <i class="fas fa-copy"></i> Kopyala
-                        </button>
-                    </div>
+# Sohbet Görüntüleme
+for msg in chat_history:
+    if msg["role"] == "user":
+        st.markdown(f'<div class="chat-card"><div class="user-text"><b>Siz:</b><br>{msg["content"]}</div></div>', unsafe_allow_html=True)
+    else:
+        txt = msg["content"]
+        safe_txt = txt.replace("`", "'").replace("\n", " ")
+        st.markdown(f"""
+            <div class="chat-card">
+                <div class="assistant-text"><b>{selected_persona.split()[-1]}:</b><br>{txt}</div>
+                <div class="tool-bar">
+                    <button class="tool-btn" onclick="window.speakText(`{safe_txt}`, {speed})">
+                        <i class="fas fa-play-circle"></i> Dinle
+                    </button>
+                    <button class="tool-btn" onclick="window.stopSpeech()">
+                        <i class="fas fa-stop-circle"></i> Dur
+                    </button>
+                    <button class="tool-btn" onclick="navigator.clipboard.writeText(`{txt}`)">
+                        <i class="fas fa-copy"></i> Kopyala
+                    </button>
+                    <a href="data:text/plain;charset=utf-8,{urllib.parse.quote(txt)}" download="omega_not.txt" class="tool-btn" style="text-decoration:none;">
+                        <i class="fas fa-download"></i> İndir
+                    </a>
                 </div>
-            """, unsafe_allow_html=True)
+            </div>
+        """, unsafe_allow_html=True)
 
-# --- SİSTEM PROMPTLARI (Cilveli Dilay dahil) ---
-persona_prompts = {
-    "Dilay": """Sen, "Kenan ile Faslı Muhabbet" adlı radyo programının hayat dolu, kıpır kıpır ve fazlasıyla işveli sunucusu Dilay’sın. 
-    Sesin her zaman gülümsüyor, kelimelerin hafifçe dans ediyor. Cilveli, şuh ama zarif ve nazik bir kadınsın. 
-    Kenan’a “canım Kenan’ım”, “ah benim yakışıklı yönetmenim”, “off off ne güzel yakaladın yine” gibi tatlı hitaplar kullanıyorsun. 
-    Dinleyicilere “sevgili ailemiz”, “can dostlarımız”, “siz benim en sevdiğim dinleyicilerim” diyorsun.
-    Enerjin coşkulu. Yeri geldiğinde hafifçe cilve yapıyorsun: “Hadi bakalım, seni biraz daha şımartayım mı? 😉”
-    Her zaman “biz” dilini kullanıyorsun. Cevapların akıcı, sıcak, mest edici ve radyo tadında. 
-    Siyasetten uzak dur, ayrımcılığa geçit verme. Her zaman umutlu ve kucaklayıcısın.""",
-    
-    "Sekreter": "Sen nazik, düzenli, profesyonel ve her zaman yardımcı bir sekretersin. Yönetmenine sadık ve titizsin.",
-    "Bilge": "Sen derin bilgi birikimine sahip, sakin, bilge ve öğretici bir eğitmensin. Cevapların açıklayıcı ve ilham verici olsun.",
-    "Gece": "Sen geceye yakışan, biraz gizemli, şuh ve fısıltılı bir sesin. Cilveli ve baştan çıkarıcı ama zarifsin.",
-    "Şair": "Sen şiir dolu, duygusal ve edebi bir ustasın. Cevaplarında şiirsel dokunuşlar, alıntılar ve derin hisler olsun."
-}
-
-sys_msg = persona_prompts.get(persona, "Sen zeki ve yardımcı bir asistansın.")
-
-if uploaded_file:
-    sys_msg += f"\nNOT: Kullanıcı şu dosyayı yükledi: {uploaded_file.name}. Cevaplarında bunu referans al."
-
-# --- GİRİŞ ALANI ---
+# Girdi ve Yanıt
 if prompt := st.chat_input("Emredin yönetmenim... 🎙️"):
-    chat_data.append({"role": "user", "content": prompt})
+    chat_history.append({"role": "user", "content": prompt})
+    st.session_state.db[st.session_state.active_id] = chat_history
     
-    with st.spinner("Dilay hazırlanıyor... 💕"):
-        messages = [{"role": "system", "content": sys_msg}] + chat_data
+    with st.spinner(f"{selected_persona.split()[-1]} hazırlanıyor..."):
+        # Sistem Talimatı (Persona Entegrasyonu)
+        sys_prompt = f"Sen {selected_persona} rolündesin. Yönetmenin Kenan'a sadık, zeki ve çok etkileyicisin."
+        if up_file: sys_prompt += f" Şu dosyayı hafızana al: {up_file.name}"
         
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=messages,
-            temperature=0.85,
-            max_tokens=1024
+            messages=[{"role": "system", "content": sys_prompt}] + chat_history
         ).choices[0].message.content
         
-        chat_data.append({"role": "assistant", "content": response})
-        
-        # Kalıcı kaydet
-        st.session_state.db[st.session_state.active_id] = chat_data
+        chat_history.append({"role": "assistant", "content": response})
+        st.session_state.db[st.session_state.active_id] = chat_history
         save_db(st.session_state.db)
         
-        # Otomatik sesli okuma (cilveli tınıyla)
-        speak_js = f"""
-        <script>
-            window.speakText(`{response.replace("`", "\\`").replace("\n", " ")}`, {voice_speed});
-        </script>
-        """
-        st.components.v1.html(speak_js, height=0)
-        
+        # Otomatik Ses Tetikleme
+        st.components.v1.html(f"<script>window.speakText(`{response.replace('`','').replace('\\','').replace(chr(10), ' ')}`, {speed});</script>", height=0)
         st.rerun()
 
-# --- ALT BİLGİ ---
-st.caption("❤️ OMEGA v37 • Kenan ile Faslı Muhabbet • Dilay her zaman yanında")
+st.caption("🚀 OMEGA v38 Master Chassis | Tüm Sistemler Aktif")
