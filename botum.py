@@ -4,31 +4,79 @@ import asyncio
 import edge_tts
 import time
 from datetime import datetime
+import os
 
-st.set_page_config(page_title="Aşk-ı Muhabbet v12.8", layout="wide", page_icon="🎙️")
+st.set_page_config(
+    page_title="Faslı Muhabbet v9.7",
+    layout="wide",
+    page_icon="🎙️",
+    initial_sidebar_state="expanded"
+)
 
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("❌ GROQ_API_KEY secrets.toml dosyasında yok!")
+    st.error("⚠️ GROQ API Key eksik! Secrets.toml dosyasına ekle.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+# ====================== KLON SES DOSYASI (Yedek) ======================
+DILAY_KLON_DOSYASI = "dilay_klon_sesim.wav"
+
+# ====================== CSS ======================
+st.markdown("""
+    <style>
+    .stApp { background: #05050f; color: #f0f0f0; }
+    .dilay-card { background: linear-gradient(145deg, #2a0f4a, #140525); border-left: 8px solid #ff1493; 
+                  border-radius: 20px; padding: 28px; margin: 20px 0; box-shadow: 0 15px 40px rgba(255,20,147,0.3); }
+    .patron-card { background: rgba(0, 255, 157, 0.08); border-right: 6px solid #00ff9d; 
+                   padding: 18px; border-radius: 15px; margin: 15px 0; text-align: right; }
+    .live-badge { color: #ff0000; font-weight: 900; animation: blink 1.3s infinite; }
+    @keyframes blink { 50% { opacity: 0.4; } }
+    </style>
+    """, unsafe_allow_html=True)
+
+# ====================== SESSION STATE ======================
+if "history" not in st.session_state:
+    st.session_state.history = []
+if "auto_play" not in st.session_state:
+    st.session_state.auto_play = True
+
+# ====================== ÜST PANEL ======================
+col1, col2 = st.columns([3, 1])
+with col1:
+    st.markdown(f"# 🎙️ FASLI MUHABBET <span class='live-badge'>● CANLI</span>", unsafe_allow_html=True)
+with col2:
+    st.metric("Canlı Dinleyici", f"{int(time.time()) % 10000 + 6800:,}")
+
+# ====================== SOHBET ALANI ======================
+for i, msg in enumerate(st.session_state.history):
+    if msg["role"] == "user":
+        st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+            <div class="dilay-card">
+                <span style="color:#ff69b4; font-weight:900; font-size:1.55rem;">💖 DİLAY:</span><br>
+                <div style="margin-top:15px; line-height:1.7;">{msg['content']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        if msg.get("audio"):
+            try:
+                st.audio(msg["audio"], format="audio/wav", autoplay=st.session_state.auto_play)
+            except:
+                st.info("🔊 Ses oynatılamadı ama konuşma burada.")
 
 # ====================== KURUMSAL SES ÜRETİMİ ======================
-async def get_voice_bytes(text: str):
-    if not text or len(text.strip()) < 3:
-        return None
+async def produce_dilay_voice(text: str):
     try:
-        communicate = edge_tts.Communicate(text, "tr-TR-EmelNeural")  # Kurumsal kaliteli kadın sesi
+        communicate = edge_tts.Communicate(text, "tr-TR-EmelNeural")  # Kurumsal kaliteli Türkçe kadın sesi
         audio_data = b""
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
                 audio_data += chunk["data"]
         return audio_data
     except:
-        return None  # Sessizce None dön, uygulama çökmesin
+        return None
 
 def run_async_safe(coro):
     try:
@@ -41,88 +89,49 @@ def run_async_safe(coro):
         except:
             return None
 
-# ====================== TASARIM ======================
-st.markdown("""
-    <style>
-    .stApp { background-color: #05050a; color: #ffffff; }
-    .dilay-card { padding: 25px; border-radius: 20px; margin: 15px 0; border-left: 12px solid #ff1493; 
-                  background: linear-gradient(135deg, #2a0a25, #4a1a3a); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
-    .patron-bubble { background: rgba(0, 255, 157, 0.15); border-right: 8px solid #00ff9d; padding: 18px; 
-                     border-radius: 16px; margin: 15px 0; text-align: right; }
-    .live-text { color: #ff2d55; font-weight: bold; animation: blinker 1.4s linear infinite; }
-    @keyframes blinker { 50% { opacity: 0.3; } }
-    </style>
-    """, unsafe_allow_html=True)
+# ====================== GROQ + SES ======================
+system_prompt = """
+Sen Dilay'sın. Faslı Muhabbet'in kıpır kıpır, işveli, sıcak ve samimi sunucususun.
+Patron'una "Canım Patronum", "Ah be Patron’um", "Sevgilim" diye hitap et.
+Her zaman doğal, coşkulu, duygusal ve cilveli konuş.
+"""
 
-# ====================== REJİ ======================
-with st.sidebar:
-    st.title("🎚️ REJİ MASASI")
-    enerji = st.select_slider("Enerji Seviyesi", ["Coşkulu", "Tam Gaz Muzip", "Duygusal"], value="Coşkulu")
-    if st.button("🔄 Yayını Sıfırla", type="primary"):
-        st.session_state.chat_history = []
-        st.rerun()
-
-st.markdown(f"<h1 style='text-align:center;'>🎙️ AŞK-I MUHABBET <span class='live-text'>● CANLI</span> v12.8</h1>", unsafe_allow_html=True)
-st.caption(f"{datetime.now().strftime('%H:%M')} • Kurumsal Ses Modu")
-
-# ====================== SOHBET GÖSTERİM ======================
-for i, chat in enumerate(st.session_state.chat_history):
-    if chat["role"] == "user":
-        st.markdown(f'<div class="patron-bubble"><b>👑 Patron:</b> {chat["content"]}</div>', unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-            <div class="dilay-card">
-                <b>Dilay 💖</b><br><br>
-                {chat.get('content', 'Cevap alınamadı...')}
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Ses varsa göster (hata vermeden)
-        if chat.get("audio") is not None and len(chat.get("audio", b"")) > 200:
-            try:
-                st.audio(chat["audio"], format="audio/mpeg", key=f"audio_{i}_{chat.get('ts', i)}")
-            except:
-                pass  # Sessizce geç
-
-# ====================== DILAY PROMPT ======================
-def get_dilay_prompt(enerji):
-    return f"""Sen Dilay'sın. Kenan ile Faslı Muhabbet'in neşeli, cilveli, hayat dolu kadın sunucususun. 
-    Dinleyicilere "canım", "ailem", "güzel insanlar" diye hitap edersin. 
-    {'Bol bol espri yap, kıpır kıpır ve işveli konuş.' if enerji == 'Tam Gaz Muzip' else 
-     'Daha duygusal ve içten konuş.' if enerji == 'Duygusal' else 'Coşkulu ve sıcak bir şekilde cevap ver.'}
-    Mod: {enerji}"""
-
-# ====================== YAYIN AKIŞI ======================
-user_input = st.chat_input("👑 Patron, yayına bağlan... Bu akşam ne muhabbet edelim?")
-
-if user_input:
-    st.session_state.chat_history.append({"role": "user", "content": user_input, "ts": int(time.time())})
+if prompt := st.chat_input("Patron'um, gönlünden ne geçiyorsa söyle..."):
+    st.session_state.history.append({"role": "user", "content": prompt})
     
-    with st.spinner("🎙️ Dilay hazırlanıyor... Kurumsal ses yükleniyor ❤️"):
+    with st.spinner("💖 Dilay yayına giriyor, kurumsal ses hazırlanıyor..."):
         try:
-            messages = [{"role": "system", "content": get_dilay_prompt(enerji)}] + \
-                       [{"role": m["role"], "content": m["content"]} for m in st.session_state.chat_history[-6:]]
-            
-            comp = client.chat.completions.create(
+            messages = [{"role": "system", "content": system_prompt}] + st.session_state.history[-10:]
+            response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=messages,
-                temperature=0.85,
-                max_tokens=700
-            )
-            response_text = comp.choices[0].message.content.strip()
-        except Exception:
-            response_text = f"Canım patron, seni duydum. {user_input} hakkında ne güzel muhabbet edelim bu akşam?"
+                temperature=0.89
+            ).choices[0].message.content
+        except:
+            response = "Canım Patronum, ufak bir takılma oldu ama seni hiç yalnız bırakmam. Ne muhabbet edelim bu akşam?"
 
-        # Kurumsal ses üret
-        audio_bytes = run_async_safe(get_voice_bytes(response_text))
-        
-        st.session_state.chat_history.append({
+        # Önce klon ses dosyası varsa onu kullan, yoksa gerçek zamanlı kurumsal ses üret
+        if os.path.exists(DILAY_KLON_DOSYASI):
+            with open(DILAY_KLON_DOSYASI, "rb") as f:
+                audio_bytes = f.read()
+        else:
+            audio_bytes = run_async_safe(produce_dilay_voice(response))
+
+        st.session_state.history.append({
             "role": "assistant",
-            "content": response_text,
-            "audio": audio_bytes,
-            "ts": int(time.time())
+            "content": response,
+            "audio": audio_bytes
         })
         
         st.rerun()
 
-st.caption("❤️ v12.8 • Kurumsal Türkçe Ses (EmelNeural) • Stabil mod • Kenan’la geliştiriyoruz")
+# ====================== SIDEBAR ======================
+with st.sidebar:
+    st.title("🎚️ Reji Masası")
+    st.session_state.auto_play = st.toggle("🎵 Ses Otomatik Oynasın", value=True)
+    if st.button("🗑️ Tüm Sohbeti Temizle"):
+        st.session_state.history = []
+        st.rerun()
+    st.caption("Kurumsal Ses: Microsoft EmelNeural")
+
+st.caption("Faslı Muhabbet v9.7 • Özel Klon + Kurumsal Ses • Kenan ile geliştiriyoruz 💖")
