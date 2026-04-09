@@ -3,115 +3,95 @@ from groq import Groq
 import asyncio
 import edge_tts
 import time
-import base64
 
-# Sayfa Yapılandırması
-st.set_page_config(page_title="Faslı Muhabbet v10.0", layout="wide", page_icon="🎙️")
+# --- REJİ AYARLARI ---
+st.set_page_config(page_title="Faslı Muhabbet v10.5", layout="wide")
 
-# API Kontrol
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ API Key Eksik!")
+    st.error("⚠️ GROQ API Key Eksik!")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# Session State Yönetimi
 if "history" not in st.session_state:
     st.session_state.history = []
-if "is_broadcasting" not in st.session_state:
-    st.session_state.is_broadcasting = False
 
-# Ses Tanımları
+# --- SES KÜTÜPHANESİ ---
+# Senin klon sesini entegre edene kadar en doğal kurumsal sesler:
 VOICES = {
-    "Dilay 💖": "tr-TR-EmelNeural",
-    "Mert 🎙️": "tr-TR-AhmetNeural"
+    "Dilay 💖": "tr-TR-EmelNeural", # Cilveli ve enerjik
+    "Mert 🎙️": "tr-TR-AhmetNeural"  # Tok ve samimi erkek sesi
 }
 
-# 
-
-async def produce_voice(text, voice):
-    communicate = edge_tts.Communicate(text, voice, rate="+5%", pitch="+0Hz")
+async def generate_audio(text, voice):
+    communicate = edge_tts.Communicate(text, voice, rate="+5%")
     audio_bytes = b""
     async for chunk in communicate.stream():
         if chunk["type"] == "audio":
             audio_bytes += chunk["data"]
     return audio_bytes
 
-# CSS: Cyberpunk Radyo Teması
-st.markdown("""
-    <style>
-    .stApp { background: #020205; color: #e0e0e0; }
-    .broadcast-box { 
-        border: 2px solid #ff1493; border-radius: 15px; padding: 20px;
-        background: rgba(255, 20, 147, 0.05); box-shadow: 0 0 20px rgba(255, 20, 147, 0.2);
-    }
-    .host-dilay { color: #ff69b4; text-shadow: 0 0 10px #ff69b4; font-weight: bold; }
-    .host-mert { color: #00d4ff; text-shadow: 0 0 10px #00d4ff; font-weight: bold; }
-    .on-air { background: red; color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; animation: blink 1s infinite; }
-    @keyframes blink { 50% { opacity: 0; } }
-    </style>
-    """, unsafe_allow_html=True)
+# --- SİSTEM TALİMATLARI (PROMPT) ---
+def get_persona(name, partner):
+    if "Dilay" in name:
+        return f"""Sen Dilay'sın. Faslı Muhabbet'in neşeli, işveli kadın sunucususun. 
+        Yanında partnerin {partner} var. Onunla tatlı sert atış, şakalaş. 
+        Patron'a (Kullanıcı) 'Canım Patronum' de. Radyo dilinde, kısa ve etkileyici konuş."""
+    else:
+        return f"""Sen Mert'sin. Programın ağırbaşlı ama hazırcevap erkek sunucususun. 
+        Yanında {partner} var. Onun cilvelerine beyefendi bir tavırla ama esprili karşılıklar ver. 
+        Programın akışını bozmadan muhabbeti sürdür."""
 
-# Başlık Paneli
-col_title, col_stat = st.columns([4, 1])
-with col_title:
-    st.markdown("## 🎙️ FASLI MUHABBET <span class='on-air'>ON AIR</span>", unsafe_allow_html=True)
-with col_stat:
-    st.write(f"🎧 {7892 + (int(time.time()) % 100)} Dinleyici")
+# --- ARAYÜZ ---
+st.markdown("<h1 style='text-align: center; color: #ff1493;'>🎙️ FASLI MUHABBET CANLI YAYIN</h1>", unsafe_allow_html=True)
 
-# Sohbet Geçmişi Render
-chat_container = st.container()
-with chat_container:
-    for msg in st.session_state.history:
-        if msg["role"] == "user":
-            st.markdown(f"**🤵 Patron:** {msg['content']}")
-        else:
-            style = "host-dilay" if "Dilay" in msg["host"] else "host-mert"
-            st.markdown(f"<div class='broadcast-box'><span class='{style}'>{msg['host']}:</span><br>{msg['content']}</div>", unsafe_allow_html=True)
+# Yayın Akışı Görüntüleme
+for msg in st.session_state.history:
+    role_color = "#ff69b4" if "Dilay" in msg.get("host", "") else "#00d4ff"
+    if msg["role"] == "user":
+        st.info(f"🤵 **Patron:** {msg['content']}")
+    else:
+        with st.chat_message("assistant", avatar="🎙️"):
+            st.markdown(f"<span style='color:{role_color}; font-weight:bold;'>{msg['host']}</span>", unsafe_allow_html=True)
+            st.write(msg["content"])
             if msg.get("audio"):
                 st.audio(msg["audio"], format="audio/mp3")
 
-# Gelişmiş Prompt Mühendisliği
-def get_system_prompt(host, partner_name):
-    base = f"Sen {host} karakterisin. Faslı Muhabbet isimli radyo programını {partner_name} ile beraber sunuyorsun."
-    if "Dilay" in host:
-        return base + """ Karakterin: Cilveli, neşeli, bazen Mert'e takılan ama ona çok değer veren bir kadın. 
-        Mert'in laflarına mutlaka karşılık ver, onunla şakalaş. Patron'una 'Canım Patronum' diye hitap et. 
-        Kısa, enerjik ve radyo dilinde konuş."""
-    else:
-        return base + """ Karakterin: Hafif maço ama beyefendi, esprili ve hazırcevap bir erkek. 
-        Dilay'ın cilvelerine karşı hem onu koruyan hem de ona laf yetiştiren bir tavır takın. 
-        Radyo yayını akıcılığında konuş."""
-
-# Yayın Tetikleyici
-if prompt := st.chat_input("Patron, bir konu ver yayına başlayalım..."):
+# --- YAYIN TETİKLEME ---
+if prompt := st.chat_input("Yayını başlatacak konuyu girin Patronum..."):
+    # 1. Patron'un mesajını ekle
     st.session_state.history.append({"role": "user", "content": prompt})
+    st.rerun()
+
+# Eğer en son mesaj kullanıcıdansa, sırayla sunucuları konuştur
+if len(st.session_state.history) > 0 and st.session_state.history[-1]["role"] == "user":
     
-    # Sırasıyla Konuşturma Mantığı
-    hosts = [("Dilay 💖", "Mert 🎙️"), ("Mert 🎙️", "Dilay 💖")]
+    current_topic = st.session_state.history[-1]["content"]
     
-    for host_name, partner in hosts:
-        with st.spinner(f"🎙️ {host_name} konuşuyor..."):
-            # Geçmişi hatırla (İkili diyalog için son 10 mesajı gönder)
-            messages = [{"role": "system", "content": get_system_prompt(host_name, partner)}]
-            for h in st.session_state.history[-10:]:
-                messages.append({"role": h["role"], "content": h["content"]})
+    # SIRA: Önce Dilay, Sonra Mert
+    for speaker, partner in [("Dilay 💖", "Mert 🎙️"), ("Mert 🎙️", "Dilay 💖")]:
+        with st.spinner(f"🎙️ {speaker} mikrofonda..."):
             
-            # Groq'tan yanıt al
+            # Groq'a gönderilecek mesaj geçmişini hazırla
+            messages = [{"role": "system", "content": get_persona(speaker, partner)}]
+            # Son diyalogları ekle ki birbirlerini duyabilsinler
+            for h in st.session_state.history[-6:]:
+                messages.append({"role": h["role"], "content": h["content"]})
+
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=messages,
-                temperature=0.85
+                temperature=0.9
             ).choices[0].message.content
-            
-            # Ses Üret
-            audio_data = asyncio.run(produce_voice(response, VOICES[host_name]))
-            
-            # Kaydet ve Göster
+
+            # Ses üret
+            audio = asyncio.run(generate_audio(response, VOICES[speaker]))
+
+            # Kaydet
             st.session_state.history.append({
                 "role": "assistant",
-                "host": host_name,
+                "host": speaker,
                 "content": response,
-                "audio": audio_data
+                "audio": audio
             })
-            st.rerun()
+            st.rerun() # Her konuşmadan sonra ekranı tazele ki sırayla sesler çalsın
