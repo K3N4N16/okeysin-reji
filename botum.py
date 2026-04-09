@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 
 st.set_page_config(
-    page_title="Faslı Muhabbet v11.1 - Sarmal İkili Yayın",
+    page_title="Faslı Muhabbet v11.2 - Nilay & Kerem Sarmal",
     layout="wide",
     page_icon="🎙️"
 )
@@ -21,16 +21,18 @@ if "history" not in st.session_state:
     st.session_state.history = []
 if "last_speaker" not in st.session_state:
     st.session_state.last_speaker = None
+if "ses_acik" not in st.session_state:
+    st.session_state.ses_acik = True
 
-# ====================== KURUMSAL SESLER ======================
-HOSTS = {
-    "Dilay 💖": {"voice": "tr-TR-EmelNeural", "color": "#ff1493", "persona": "İşveli, neşeli, cilveli, Mert'e laf atan, coşkulu kadın sunucu."},
-    "Mert 🎙️": {"voice": "tr-TR-AhmetNeural", "color": "#00d4ff", "persona": "Ağırbaşlı, esprili, Dilay'ın paslarını gole çeviren, samimi erkek sunucu."}
+# ====================== SUNUCULAR (Kurumsal Sesler) ======================
+SUNUCULAR = {
+    "Nilay 💖": {"voice": "tr-TR-EmelNeural", "color": "#ff1493", "persona": "İşveli, neşeli, cilveli, Kerem'e laf atan, coşkulu kadın sunucu."},
+    "Kerem 🎙️": {"voice": "tr-TR-AhmetNeural", "color": "#00d4ff", "persona": "Samimi, esprili, ağırbaşlı, Nilay'ın paslarını gole çeviren erkek sunucu."}
 }
 
 async def generate_audio(text: str, voice: str):
     try:
-        communicate = edge_tts.Communicate(text, voice, rate="+3%")
+        communicate = edge_tts.Communicate(text, voice, rate="+4%")
         audio_bytes = b""
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
@@ -54,10 +56,10 @@ def run_async_safe(coro):
 st.markdown("""
     <style>
     .stApp { background: #05050f; color: #f0f0f0; }
-    .dilay-card { background: linear-gradient(145deg, #2a0f4a, #140525); border-left: 10px solid #ff1493; 
+    .nilay-card { background: linear-gradient(145deg, #2a0f4a, #140525); border-left: 10px solid #ff1493; 
                   border-radius: 22px; padding: 25px; margin: 18px 0; box-shadow: 0 10px 30px rgba(255,20,147,0.25); }
-    .mert-card { background: linear-gradient(145deg, #0f2a4a, #051428); border-left: 10px solid #00d4ff; 
-                 border-radius: 22px; padding: 25px; margin: 18px 0; box-shadow: 0 10px 30px rgba(0,212,255,0.25); }
+    .kerem-card { background: linear-gradient(145deg, #0f2a4a, #051428); border-left: 10px solid #00d4ff; 
+                  border-radius: 22px; padding: 25px; margin: 18px 0; box-shadow: 0 10px 30px rgba(0,212,255,0.25); }
     .patron-card { background: rgba(0, 255, 157, 0.1); border-right: 8px solid #00ff9d; 
                    padding: 18px; border-radius: 16px; margin: 15px 0; text-align: right; }
     .live-badge { color: #ff0000; font-weight: 900; animation: blink 1.4s infinite; }
@@ -65,15 +67,15 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown(f"<h1 style='text-align: center; color: #ff1493;'>🎙️ FASLI MUHABBET <span class='live-badge'>● SARMAL CANLI YAYIN v11.1</span></h1>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='text-align: center; color: #ff1493;'>🎙️ FASLI MUHABBET <span class='live-badge'>● NILAY & KEREM SARMAL v11.2</span></h1>", unsafe_allow_html=True)
 
 # ====================== SOHBET GÖSTERİM ======================
 for msg in st.session_state.history:
     if msg["role"] == "user":
         st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
     else:
-        card_class = "dilay-card" if "Dilay" in msg["host"] else "mert-card"
-        color = HOSTS[msg["host"]]["color"] if msg["host"] in HOSTS else "#ffffff"
+        card_class = "nilay-card" if "Nilay" in msg["host"] else "kerem-card"
+        color = SUNUCULAR[msg["host"]]["color"]
         
         st.markdown(f"""
             <div class="{card_class}">
@@ -82,7 +84,7 @@ for msg in st.session_state.history:
             </div>
             """, unsafe_allow_html=True)
         
-        if msg.get("audio"):
+        if st.session_state.ses_acik and msg.get("audio"):
             try:
                 st.audio(msg["audio"], format="audio/mpeg", autoplay=True)
             except:
@@ -90,21 +92,20 @@ for msg in st.session_state.history:
 
 # ====================== PROMPT ======================
 def get_system_prompt(speaker, partner):
-    return f"""Sen {speaker}. {HOSTS[speaker]['persona']}
+    return f"""Sen {speaker}. {SUNUCULAR[speaker]['persona']}
 Partnerin {partner} ile kapışmalı, atışmalı, eğlenceli bir radyo muhabbetindesin.
-Birbirinize laf yetiştirin, soru sorun, pas atın, muhabbeti asla koparmayın.
-Kısa, akıcı ve doğal konuş. Radyo yayını gibi olsun."""
+Birbirinize soru sorun, laf yetiştirin, pas atın, muhabbeti sıcak ve akıcı tutun.
+Kısa cümleler kur, doğal konuş."""
 
-# ====================== ANA YAYIN AKIŞI ======================
-if prompt := st.chat_input("Patronum, konuyu ver... Onlar kendi aralarında sarmal muhabbet etsin..."):
+# ====================== YAYIN AKIŞI ======================
+if prompt := st.chat_input("Patronum, konuyu veya mesajı ver... Nilay ve Kerem sarmal muhabbete başlasın..."):
     st.session_state.history.append({"role": "user", "content": prompt})
     
-    with st.spinner("🎙️ Yayın başlıyor... Dilay ve Mert yayına giriyor ❤️"):
-        speakers = ["Dilay 💖", "Mert 🎙️"]
+    with st.spinner("🎙️ Mikrofonlar açılıyor... Nilay ve Kerem yayına giriyor ❤️"):
+        speakers = ["Nilay 💖", "Kerem 🎙️"]
         
-        # Konu geldiyse tur başlat
-        for _ in range(6):  # 6 tur = 3 Dilay + 3 Mert (istediğin kadar artırabilirsin)
-            # Son konuşanı bul, diğerine geç
+        for _ in range(6):  # 6 tur (3 Nilay + 3 Kerem) - Daha fazla istersen artır
+            # Sırayı belirle
             if st.session_state.last_speaker is None:
                 speaker = speakers[0]
             else:
@@ -114,28 +115,27 @@ if prompt := st.chat_input("Patronum, konuyu ver... Onlar kendi aralarında sarm
             partner = speakers[1] if speaker == speakers[0] else speakers[0]
             
             try:
-                messages = [
-                    {"role": "system", "content": get_system_prompt(speaker, partner)}
-                ]
-                # Son konuşmaları hafızaya ekle
-                for h in st.session_state.history[-8:]:
-                    if h["role"] == "assistant":
-                        messages.append({"role": "assistant", "content": h["content"]})
-                    elif h["role"] == "user":
+                messages = [{"role": "system", "content": get_system_prompt(speaker, partner)}]
+                for h in st.session_state.history[-10:]:
+                    if h["role"] == "user":
                         messages.append({"role": "user", "content": h["content"]})
+                    elif h["role"] == "assistant":
+                        messages.append({"role": "assistant", "content": h["content"]})
 
                 response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=messages,
-                    temperature=0.92,
-                    max_tokens=680
+                    temperature=0.93,
+                    max_tokens=700
                 ).choices[0].message.content
 
             except Exception:
-                response = f"{speaker.split()[0]}, canım, ufak bir takılma oldu ama seni bekletmem. Devam edelim mi?"
+                response = f"{speaker.split()[0]}, canım, ufak bir takılma oldu ama hemen devam ediyoruz!"
 
-            # Ses üret
-            audio = run_async_safe(generate_audio(response, HOSTS[speaker]["voice"]))
+            # Ses üret (sadece ses açıksa)
+            audio = None
+            if st.session_state.ses_acik:
+                audio = run_async_safe(generate_audio(response, SUNUCULAR[speaker]["voice"]))
 
             st.session_state.history.append({
                 "role": "assistant",
@@ -144,12 +144,14 @@ if prompt := st.chat_input("Patronum, konuyu ver... Onlar kendi aralarında sarm
                 "audio": audio
             })
             
-            time.sleep(0.7)   # Doğal geçiş için kısa bekleme
-            st.rerun()        # Her konuşmadan sonra ekranı yenile → ses sırayla çalsın
+            time.sleep(0.8)   # Doğal radyo geçiş hissi
+            st.rerun()
 
-# ====================== REJİ ======================
+# ====================== REJİ MASASI ======================
 with st.sidebar:
     st.title("🎚️ Reji Odası")
+    st.session_state.ses_acik = st.toggle("🔊 Ses Açık (Otomatik Çalsın)", value=st.session_state.ses_acik)
+    
     if st.button("🔴 Yayını Durdur ve Temizle"):
         st.session_state.history = []
         st.session_state.last_speaker = None
@@ -157,12 +159,12 @@ with st.sidebar:
     
     st.info("""
     ✨ Nasıl Çalışır?
-    • Patron konu verir
-    • Dilay ve Mert sırayla konuşur
-    • Biri bitince diğeri devam eder
-    • Tam sarmal, kapışmalı muhabbet!
+    • Konu veya mesaj yaz
+    • Nilay başlar, Kerem cevap verir
+    • Biri bitince diğeri devam eder (sarmal atışma)
+    • Ses toggle ile aç/kapa
     """)
     
-    st.caption("Kurumsal Sesler:\n• Dilay → EmelNeural\n• Mert → AhmetNeural")
+    st.caption("Kurumsal Sesler:\n• Nilay → EmelNeural (Cilveli Bayan)\n• Kerem → AhmetNeural (Samimi Erkek)")
 
-st.caption("Faslı Muhabbet v11.1 • Sarmal İkili Yayın • Kenan ile geliştiriyoruz 💖🎙️")
+st.caption("Faslı Muhabbet v11.2 • Nilay & Kerem Sarmal Yayın • Kenan ile geliştiriyoruz 💖🎙️")
