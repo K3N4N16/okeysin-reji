@@ -1,177 +1,107 @@
 import streamlit as st
 from groq import Groq
-import asyncio
-import edge_tts
-import time
-from datetime import datetime
+import re
 
-st.set_page_config(
-    page_title="Faslı Muhabbet v12.1 - Nilay & Kerem Sarmal",
-    layout="wide",
-    page_icon="🎙️"
-)
+# --- 1. SAYFA VE PANEL AYARLARI ---
+st.set_page_config(page_title="K3N4N OMEGA PANEL", layout="wide", page_icon="🕹️")
 
-if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ GROQ API Key eksik! Secrets.toml dosyasına ekleyin.")
-    st.stop()
-
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-
-if "history" not in st.session_state:
-    st.session_state.history = []
-if "last_speaker" not in st.session_state:
-    st.session_state.last_speaker = None
-if "ses_acik" not in st.session_state:
-    st.session_state.ses_acik = True
-
-# ====================== İKİ SUNUCU ======================
-SUNUCULAR = {
-    "Nilay 💖": {
-        "voice": "tr-TR-EmelNeural",
-        "color": "#ff1493",
-        "persona": "Cilveli, nazlı, işveli, şiirsel, duygusal ve neşeli kadın sunucu. Kerem'e nazlı nazlı laf atar, pas verir."
-    },
-    "Kerem 🎙️": {
-        "voice": "tr-TR-AhmetNeural",
-        "color": "#00d4ff",
-        "persona": "Samimi, esprili, genel kültürü yüksek, şarkı yorumları yapan, ağırbaşlı erkek sunucu."
-    }
-}
-
-async def generate_audio(text: str, voice: str):
-    try:
-        communicate = edge_tts.Communicate(text, voice, rate="+4%")
-        audio_bytes = b""
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                audio_bytes += chunk["data"]
-        return audio_bytes
-    except:
-        return None
-
-def run_async_safe(coro):
-    try:
-        return asyncio.run(coro)
-    except:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(coro)
-        except:
-            return None
-
-# ====================== TASARIM ======================
+# Görsel Stil (Premium Dark Mode)
 st.markdown("""
     <style>
-    .stApp { background: #05050f; color: #f0f0f0; }
-    .nilay-card { background: linear-gradient(145deg, #2a0f4a, #140525); border-left: 10px solid #ff1493; 
-                  border-radius: 22px; padding: 25px; margin: 18px 0; box-shadow: 0 10px 30px rgba(255,20,147,0.25); }
-    .kerem-card { background: linear-gradient(145deg, #0f2a4a, #051428); border-left: 10px solid #00d4ff; 
-                  border-radius: 22px; padding: 25px; margin: 18px 0; box-shadow: 0 10px 30px rgba(0,212,255,0.25); }
-    .patron-card { background: rgba(0, 255, 157, 0.1); border-right: 8px solid #00ff9d; 
-                   padding: 18px; border-radius: 16px; margin: 15px 0; text-align: right; }
-    .live-badge { color: #ff0000; font-weight: 900; animation: blink 1.4s infinite; }
-    @keyframes blink { 50% { opacity: 0.35; } }
+    .main { background-color: #0e1117; }
+    .stSidebar { background-color: #161b22; border-right: 1px solid #30363d; }
+    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #238636; color: white; }
+    .chat-card { padding: 20px; border-radius: 15px; background: #161b22; border: 1px solid #30363d; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown(f"<h1 style='text-align: center; color: #ff1493;'>🎙️ FASLI MUHABBET <span class='live-badge'>● NILAY & KEREM SARMAL v12.1</span></h1>", unsafe_allow_html=True)
-
-# ====================== SOHBET GÖSTERİM ======================
-for msg in st.session_state.history:
-    if msg["role"] == "user":
-        st.markdown(f'<div class="patron-card"><b>🤵 Patron:</b> {msg["content"]}</div>', unsafe_allow_html=True)
-    else:
-        card_class = "nilay-card" if "Nilay" in msg["host"] else "kerem-card"
-        color = SUNUCULAR[msg["host"]]["color"]
-        
-        st.markdown(f"""
-            <div class="{card_class}">
-                <span style="color:{color}; font-weight:900; font-size:1.6rem;">{msg['host']}</span><br><br>
-                <div style="line-height:1.75;">{msg['content']}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        if st.session_state.ses_acik and msg.get("audio"):
-            try:
-                st.audio(msg["audio"], format="audio/mpeg", autoplay=True)
-            except:
-                pass
-
-# ====================== SİSTEM PROMPT ======================
-def get_system_prompt(speaker, partner):
-    return f"""Sen {speaker}'sın. Faslı Muhabbet'in çok yetenekli, genel kültürü yüksek, şiirsel ve profesyonel sunucususun.
-Partnerin {partner} ile sarmal, kapışmalı, cilveli ve sıcak bir radyo programı yapıyorsun.
-Şarkı öner, şarkılar üzerine yorum yap, şiir oku, nazlı ve işveli konuş, espri yap.
-Muhabbeti akıcı ve sıcak tut, birbirinize güzel paslar atın. Radyo yayını gibi profesyonel olsun."""
-
-# ====================== ANA YAYIN AKIŞI ======================
-if prompt := st.chat_input("Patronum, bu akşam ne muhabbeti açalım? Nilay ve Kerem sarmala girsin..."):
-    st.session_state.history.append({"role": "user", "content": prompt})
-    
-    with st.spinner("🎙️ Stüdyo hazır... Nilay ve Kerem yayına giriyor ❤️"):
-        speakers = ["Nilay 💖", "Kerem 🎙️"]
-        
-        for _ in range(8):  # 8 tur = 4 Nilay + 4 Kerem (daha uzun olsun istersen artır)
-            # Sırayı belirle (son konuşandan sonra diğerine geç)
-            if st.session_state.last_speaker is None:
-                speaker = speakers[0]
-            else:
-                speaker = speakers[1] if st.session_state.last_speaker == speakers[0] else speakers[0]
-            
-            st.session_state.last_speaker = speaker
-            partner = speakers[1] if speaker == speakers[0] else speakers[0]
-            
-            try:
-                messages = [{"role": "system", "content": get_system_prompt(speaker, partner)}]
-                for h in st.session_state.history[-10:]:
-                    role = "user" if h["role"] == "user" else "assistant"
-                    messages.append({"role": role, "content": h["content"]})
-
-                response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=messages,
-                    temperature=0.92,
-                    max_tokens=720
-                ).choices[0].message.content
-
-            except Exception:
-                response = f"{speaker.split()[0]}, canım, ufak bir takılma oldu ama hemen devam ediyoruz!"
-
-            # Ses üretimi
-            audio = None
-            if st.session_state.ses_acik:
-                audio = run_async_safe(generate_audio(response, SUNUCULAR[speaker]["voice"]))
-
-            st.session_state.history.append({
-                "role": "assistant",
-                "host": speaker,
-                "content": response,
-                "audio": audio
-            })
-            
-            time.sleep(0.85)   # Doğal geçiş için kısa bekleme
-            st.rerun()
-
-# ====================== REJİ MASASI ======================
+# --- 2. SIDEBAR (KONTROL PANELİ) ---
 with st.sidebar:
-    st.title("🎚️ Reji Odası")
-    st.session_state.ses_acik = st.toggle("🔊 Sesleri Açık Tut (Otomatik Çalsın)", value=st.session_state.ses_acik)
+    st.image("https://img.icons8.com/clouds/200/000000/artificial-intelligence.png")
+    st.title("OMEGA CONTROL")
+    st.divider()
     
-    if st.button("🔴 Yayını Durdur ve Temizle"):
-        st.session_state.history = []
-        st.session_state.last_speaker = None
+    # 1. ARAÇ SEÇİMİ
+    app_mode = st.selectbox("Modül Seçin", ["🤖 Gölge Asistan", "🎨 Nick Tasarımcısı", "⚙️ Sistem Ayarları"])
+    
+    st.divider()
+    
+    # 2. KARAKTER/ROL SEÇİMİ (Sadece Asistan Modunda Aktif)
+    if app_mode == "🤖 Gölge Asistan":
+        st.subheader("Karakter Seçimi")
+        persona = st.radio("Asistan Kişiliği", ["Laf Ebesi (Genel Kültür)", "Bilge (Strateji)", "Yazılım Dehası", "Radyocu (Duygusal)"])
+        
+        st.divider()
+        st.subheader("Ses Ayarları")
+        voice_active = st.checkbox("Sesli Yanıtları Aç", value=False)
+    
+    st.divider()
+    if st.button("🗑️ Sohbeti Temizle"):
+        st.session_state.messages = []
         st.rerun()
-    
-    st.info("""
-    ✨ Nasıl Çalışır?
-    • Sen konu verirsin
-    • Nilay başlar → sesi çalar
-    • Kerem ona cevap verir → sesi çalar
-    • Nilay tekrar cevap verir...
-    • Bu döngü sonsuza kadar devam eder (paslaşma)
-    """)
-    
-    st.caption("Sesler:\n• Nilay → EmelNeural (Cilveli Bayan)\n• Kerem → AhmetNeural (Samimi Erkek)")
 
-st.caption("Faslı Muhabbet v12.1 • Nilay & Kerem Sarmal İkili Yayın • Kenan ile birlikte geliştiriyoruz 💖🎙️")
+# --- 3. API VE HAFIZA YÖNETİMİ ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "GROQ_API_KEY" in st.secrets:
+    api_key = st.secrets["GROQ_API_KEY"]
+else:
+    api_key = st.text_input("Sistem Anahtarı (API Key):", type="password")
+
+if not api_key:
+    st.warning("Lütfen API anahtarını girin.")
+    st.stop()
+
+client = Groq(api_key=api_key)
+
+# --- 4. MODÜL ÇALIŞTIRICILAR ---
+
+# --- MODÜL A: GÖLGE ASİSTAN ---
+if app_mode == "🤖 Gölge Asistan":
+    st.title(f"🕶️ {persona} Modu")
+    
+    # Sohbet Geçmişini Görüntüle
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # Giriş Alanı
+    if prompt := st.chat_input("Mesajınızı yazın..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.chat_message("assistant"):
+            # Persona'ya göre talimat belirle
+            instruction = f"Sen {persona} rolündesin. K3N4N OMEGA sisteminin parçasısın. Çok hızlı ve zekice cevap ver."
+            
+            chat_completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "system", "content": instruction}] + 
+                         [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
+            )
+            response = str(chat_completion.choices[0].message.content)
+            st.markdown(response)
+            
+            # Eğer sesli yanıt açıksa (Basit bir uyarı mekanizması şimdilik)
+            if voice_active:
+                st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3") # Örnek ses tetikleyici
+        
+        st.session_state.messages.append({"role": "assistant", "content": response})
+
+# --- MODÜL B: NİCK TASARIMCISI ---
+elif app_mode == "🎨 Nick Tasarımcısı":
+    st.title("🎨 OMEGA Nick Designer")
+    with st.container():
+        nick_name = st.text_input("Metin Girin", "K3N4N")
+        design_desc = st.text_area("Tasarım Tarifi", "Ken7 gold sparkle tarzında olsun...")
+        if st.button("Render Et"):
+            st.info("AI Tasarım kodlarını oluşturuyor...")
+            # Burada önceki projedeki tasarım kodlarını çalıştıran fonksiyonu çağırabiliriz.
+
+# --- MODÜL C: SİSTEM AYARLARI ---
+elif app_mode == "⚙️ Sistem Ayarları":
+    st.title("⚙️ Sistem Konfigürasyonu")
+    st.write("Buradan API limitlerini, tema renklerini ve kullanıcı tercihlerini yönetebilirsiniz.")
+    st.color_picker("Panel Tema Rengi", "#58a6ff")
