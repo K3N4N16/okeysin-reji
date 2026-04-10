@@ -1,105 +1,108 @@
 import streamlit as st
 from groq import Groq
 from gtts import gTTS
-import io
+from rvc_python.infer import RVCInference # RVC Motoru
 import os
 import requests
+import io
 import base64
-import random
 from datetime import datetime
 
-# ====================== HF MODEL DOSYALARI ======================
-# Linkleri indirme formatına (resolve) çevirdim Patron
+# ====================== MODEL MERKEZİ ======================
 PTH_URL = "https://huggingface.co/matroks/dilay/resolve/main/my-project_60e_660s.pth"
 INDEX_URL = "https://huggingface.co/matroks/dilay/resolve/main/my-project.index"
 
-# Dosyaları yerel klasöre indirme fonksiyonu
-def download_models():
+# Dosyaları İndirme Kontrolü
+def setup_rvc_model():
     if not os.path.exists("models"):
         os.makedirs("models")
     
-    files = {
-        "models/dilay.pth": PTH_URL,
-        "models/dilay.index": INDEX_URL
-    }
+    pth_path = "models/dilay.pth"
+    index_path = "models/dilay.index"
     
-    for path, url in files.items():
-        if not os.path.exists(path):
-            with st.spinner(f"📥 {path} indiriliyor, biraz sabret Patron..."):
-                response = requests.get(url)
-                with open(path, "wb") as f:
-                    f.write(response.content)
+    if not os.path.exists(pth_path):
+        with st.spinner("📥 Dilay Modeli (PTH) indiriliyor..."):
+            r = requests.get(PTH_URL)
+            open(pth_path, "wb").write(r.content)
+            
+    if not os.path.exists(index_path):
+        with st.spinner("📥 İndeks dosyası indiriliyor..."):
+            r = requests.get(INDEX_URL)
+            open(index_path, "wb").write(r.content)
+    
+    return pth_path, index_path
 
 # ====================== SAYFA AYARLARI ======================
-st.set_page_config(page_title="Dilay RVC v12.0", layout="wide", page_icon="🎙️")
+st.set_page_config(page_title="Dilay RVC v14.0", layout="wide", page_icon="🎙️")
 
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ GROQ API Key Eksik! Secrets'a ekleyin.")
+    st.error("⚠️ GROQ API Key Eksik!")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+pth_file, index_file = setup_rvc_model()
 
-# Modelleri başlangıçta indir
-download_models()
-
-# ====================== SES MOTORU & RVC MANTIĞI ======================
-def process_rvc(text):
-    """
-    gTTS ile temel sesi üretir. 
-    Not: Gerçek RVC dönüşümü (inference) için fairseq ve torch yüklü olmalıdır.
-    """
+# ====================== RVC DÖNÜŞÜM MOTORU ======================
+def get_klon_ses(text):
+    """Metni gTTS ile üretir, RVC ile senin sesine çevirir."""
     try:
-        # 1. Aşama: Temel Ses (gTTS)
+        # 1. Ham Ses (Kaynak)
         tts = gTTS(text=text, lang='tr')
-        audio_io = io.BytesIO()
-        tts.write_to_fp(audio_io)
-        raw_audio = audio_io.getvalue()
+        source_path = "temp_source.mp3"
+        output_path = "temp_output.wav"
+        tts.save(source_path)
+
+        # 2. RVC Dönüşümü (Senin Modeline Göre)
+        rvc = RVCInference()
+        rvc.set_model(pth_file) # Senin .pth dosyanı takıyoruz
         
-        # 2. Aşama: RVC Dönüşümü (Model dosyalarını kullanarak)
-        # BURASI KRİTİK: Streamlit Cloud'da RVC çalıştırmak için 
-        # rvc-python veya benzeri bir kütüphane entegrasyonu gerekir.
-        # Şimdilik altyapıyı model dosyalarına bağlıyoruz.
-        
-        return raw_audio # Şimdilik ham sesi dönüyoruz, RVC kütüphanesi eklenince burası tetiklenecek
+        # Sesi Dönüştür (f0_method: 'rmvpe' en kalitelisidir)
+        rvc.infer(
+            input_path=source_path,
+            output_path=output_path,
+            index_path=index_file, # Senin .index dosyan
+            f0_method="rmvpe", 
+            f0_up_key=0 # Gerekirse sesi inceltmek/kalınlaştırmak için burayı oynarız
+        )
+
+        with open(output_path, "rb") as f:
+            return f.read()
+            
     except Exception as e:
-        st.error(f"Ses hatası: {e}")
+        st.error(f"Klonlama Hatası: {e}")
         return None
 
-# ====================== SOHBET ARAYÜZÜ ======================
-st.markdown(f"## 🎙️ FASLI MUHABBET <span style='color:red;'>● RVC MODE</span>", unsafe_allow_html=True)
-st.caption("📍 Bursa Stüdyosu | Klon Ses Modeli: my-project_60e_660s.pth")
+# ====================== RADYO ARAYÜZÜ ======================
+st.markdown(f"## 🎙️ FASLI MUHABBET <span style='color:#ff1493;'>● RVC AKTİF</span>", unsafe_allow_html=True)
+st.caption(f"Bursa Stüdyosu | Model: {pth_file}")
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+if "chat" not in st.session_state:
+    st.session_state.chat = []
 
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
-        if "audio" in msg:
-            st.audio(msg["audio"], format="audio/mp3")
+# Mesajları Görüntüle
+for m in st.session_state.chat:
+    with st.chat_message(m["role"]):
+        st.write(m["content"])
+        if "audio" in m:
+            st.audio(m["audio"])
 
-# Mesaj Girişi
-if prompt := st.chat_input("Dilay'ına bir mesaj bırak..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.write(prompt)
+# Yeni Mesaj
+if prompt := st.chat_input("Patron, modelini konuştur..."):
+    st.session_state.chat.append({"role": "user", "content": prompt})
+    with st.chat_message("user"): st.write(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("🎙️ Dilay modelinle sesini klonluyor..."):
-            # Llama 3.3 Zekası
-            response = client.chat.completions.create(
+        with st.spinner("💖 Dilay ruhunu modele üflüyor..."):
+            # Llama Cevabı
+            res = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": "Sen Dilay'sın. Bursa'dan sunucusun."}] + st.session_state.messages[-5:]
+                messages=[{"role": "system", "content": "Sen Dilay'sın, Bursa'dan neşeli bir radyo sunucususun."}] + st.session_state.chat[-5:]
             ).choices[0].message.content
             
-            # Ses Üretimi
-            audio_bytes = process_rvc(response)
+            # Ses Dönüşümü
+            audio = get_klon_ses(res)
             
-            st.write(response)
-            if audio_bytes:
-                st.audio(audio_bytes, format="audio/mp3")
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": response, 
-                    "audio": audio_bytes
-                })
+            st.write(res)
+            if audio:
+                st.audio(audio)
+                st.session_state.chat.append({"role": "assistant", "content": res, "audio": audio})
