@@ -1,5 +1,5 @@
 streamlit
 groq
 gTTS
-rvc-python
-requests
+edge-tts
+numpy
