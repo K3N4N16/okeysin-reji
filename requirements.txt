@@ -2,5 +2,3 @@ streamlit
 groq
 edge-tts
 requests
-numpy==1.23.5
-rvc-python
