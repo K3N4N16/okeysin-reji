@@ -4,6 +4,15 @@ import json
 import os
 import asyncio
 import requests
+import subprocess
+import sys
+# RVC kütüphanesi kurulu değilse çalışma anında kurmayı dene
+try:
+    from rvc_python.infer import RVCInference
+except ImportError:
+    st.info("🎙️ Ses motoru ilk kez yükleniyor, lütfen 1-2 dakika bekleyin...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "rvc-python"])
+    from rvc_python.infer import RVCInference
 from datetime import datetime
 from rvc_python.infer import RVCInference
 
