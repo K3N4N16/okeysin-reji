@@ -1,4 +1,23 @@
 import streamlit as st
+import streamlit as st
+
+try:
+    from rvc_python.infer import RVCInference
+    RVC_AVAILABLE = True
+except ImportError:
+    RVC_AVAILABLE = False
+    st.error("""
+    ❌ **RVC Motoru Yüklenemedi!** Lütfen `packages.txt` ve `requirements.txt` dosyalarının ana dizinde olduğundan emin ol Patron. 
+    Streamlit Cloud'un bu kütüphaneyi derlemesi 2-3 dakika sürebilir.
+    """)
+
+# ... (Kodun geri kalanı)
+
+def get_klon_ses(text):
+    if not RVC_AVAILABLE:
+        # RVC yoksa gTTS ile devam et ki yayın kesilmesin
+        tts = gTTS(text=text, lang='tr')
+        # ...
 from groq import Groq
 from gtts import gTTS
 from rvc_python.infer import RVCInference # RVC Motoru
