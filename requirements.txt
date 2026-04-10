@@ -1,5 +1,8 @@
 streamlit
 groq
-edge-tts
 gTTS
-asyncio
+torch
+numpy
+fairseq
+librosa
+scipy
