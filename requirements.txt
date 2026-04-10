@@ -2,7 +2,7 @@ streamlit
 groq
 gTTS
 torch
-numpy
-fairseq
 librosa
+fairseq
 scipy
+numpy
