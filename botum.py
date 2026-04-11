@@ -1,84 +1,75 @@
 import streamlit as st
 from groq import Groq
-import edge_tts
-from gtts import gTTS
-import asyncio
 import os
-import io
-import base64
-from datetime import datetime
 
-# ====================== RVC GÜVENLİK KONTROLÜ ======================
-# Kütüphane yüklenemezse hata vermemesi için korumaya alıyoruz
-try:
-    from rvc_python.infer import RVCInference
-    RVC_AVAILABLE = True
-except (ImportError, ModuleNotFoundError):
-    RVC_AVAILABLE = False
+# ====================== SMART TV ENGINE ======================
+GROQ_KEY = os.environ.get("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
+client = Groq(api_key=GROQ_KEY)
 
-# ====================== SAYFA AYARLARI ======================
-st.set_page_config(page_title="Faslı Muhabbet v16.0", layout="wide", page_icon="🎙️")
+st.set_page_config(page_title="Kenan Quantum AI TV", layout="wide", initial_sidebar_state="collapsed")
 
-if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ GROQ API Key Eksik! Lütfen Streamlit Secrets'a ekle Patron.")
-    st.stop()
+# TV Teması ve Stil Ayarları
+st.markdown("""
+    <style>
+    .main { background-color: #050505; color: white; }
+    .stTextInput>div>div>input { background-color: #1a1a1a; color: #00ffcc; border: 1px solid #00ffcc; }
+    .video-card { border: 2px solid #333; border-radius: 15px; padding: 5px; background: #111; }
+    .ai-badge { background: linear-gradient(45deg, #ff00ff, #00ffff); padding: 5px 10px; border-radius: 20px; font-weight: bold; }
+    </style>
+    """, unsafe_allow_html=True)
 
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+# ====================== REJİ & KAYNAK YÖNETİMİ ======================
+if "playlist" not in st.session_state:
+    st.session_state.playlist = [
+        {"name": "Bursa Canlı Mobese", "url": "https://www.youtube.com/watch?v=L2G57e7N_9E"},
+        {"name": "Global Haber (NASA TV)", "url": "https://www.youtube.com/watch?v=21X5lGlDOfg"}
+    ]
 
-# ====================== SES ÜRETİM MOTORLARI ======================
+# Üst Menü
+col_logo, col_search = st.columns([1, 4])
+with col_logo:
+    st.markdown("<h2 style='color:#00ffcc;'>K-QUANTUM TV</h2>", unsafe_allow_html=True)
 
-async def generate_edge_voice(text):
-    """Edge-TTS: En kaliteli yedek ses (Filiz)"""
-    try:
-        communicate = edge_tts.Communicate(text, "tr-TR-FilizNeural")
-        audio_data = b""
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                audio_data += chunk["data"]
-        return audio_data
-    except:
-        return None
+with col_search:
+    target_source = st.text_input("🔍 İzlemek istediğin kaynağı veya YouTube linkini buraya yaz...", placeholder="Örn: Haberler, Belgeseller veya bir URL...")
 
-def generate_gtts_voice(text):
-    """gTTS: En garantici yedek ses"""
-    tts = gTTS(text=text, lang='tr')
-    fp = io.BytesIO()
-    tts.write_to_fp(fp)
-    return fp.getvalue()
+# ====================== SMART OYNATICI (PLAYER) ======================
+col_main, col_side = st.columns([3, 1])
 
-# ====================== ANA REJİ MANTIĞI ======================
-st.markdown(f"## 🎙️ FASLI MUHABBET <span style='color:red;'>● CANLI</span>", unsafe_allow_html=True)
-st.caption(f"📍 Bursa Stüdyosu | Sunucu: Dilay | {datetime.now().strftime('%H:%M')}")
-
-if not RVC_AVAILABLE:
-    st.info("ℹ️ **Bilgi:** Klon motoru bu sunucuda desteklenmiyor. Dilay şu an **Yedek Ses Sistemi (Filiz)** üzerinden konuşuyor.")
-
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-# Mesajları Göster
-for msg in st.session_state.history:
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
-        if "audio" in msg:
-            st.audio(msg["audio"])
-
-# Giriş Alanı
-if prompt := st.chat_input("Patron, bir şeyler fısılda..."):
-    st.session_state.history.append({"role": "user", "content": prompt})
-    
-    with st.spinner("💖 Dilay hazırlanıyor..."):
-        # Llama 3.3 Cevabı
-        sys_msg = "Sen Dilay'sın. Bursa'dan neşeli, işveli bir radyo sunucususun. Patronuna (Kenan) aşıksın."
-        res = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": sys_msg}] + st.session_state.history[-5:]
-        ).choices[0].message.content
+with col_main:
+    if target_source:
+        # AI Analiz (Groq kaynağı yorumluyor)
+        with st.spinner("AI Kaynağı Analiz Ediyor..."):
+            ai_analysis = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "system", "content": "Sen bir Smart TV asistanısın. Kullanıcının girdiği kaynağı analiz et ve kısa bir açıklama yap."} ,
+                         {"role": "user", "content": f"Şu kaynağı açıyorum: {target_source}"}],
+                max_tokens=100
+            )
+            st.markdown(f"<div class='ai-badge'>🤖 AI Analizi: {ai_analysis.choices[0].message.content}</div>", unsafe_allow_html=True)
         
-        # Önce Edge-TTS deniyoruz, olmazsa gTTS
-        audio = asyncio.run(generate_edge_voice(res))
-        if not audio:
-            audio = generate_gtts_voice(res)
-            
-        st.session_state.history.append({"role": "assistant", "content": res, "audio": audio})
-        st.rerun()
+        # Video Oynatıcı
+        st.video(target_source)
+    else:
+        # Varsayılan Karşılama Ekranı
+        st.image("https://images.unsplash.com/photo-1593784991095-a205039470b6?w=1200", caption="Kenan Quantum TV OS Yayına Hazır")
+
+# ====================== KANAL LİSTESİ & KÜTÜPHANE ======================
+with col_side:
+    st.markdown("### 📋 Kanal Listesi")
+    for item in st.session_state.playlist:
+        if st.button(f"📺 {item['name']}", use_container_width=True):
+            st.rerun()
+    
+    st.divider()
+    st.markdown("### ⚙️ TV Özellikleri")
+    st.checkbox("Otomatik Altyazı (AI)", value=True)
+    st.checkbox("Görüntü İyileştirme", value=True)
+    st.slider("AI Ses Düzeyi", 0, 100, 80)
+
+# Alt Bilgi Bandı
+st.markdown("""
+    <div style="position: fixed; bottom: 0; left: 0; width: 100%; background: #ff0000; color: white; padding: 5px; text-align: center; font-weight: bold;">
+        LIVE: Bursa Merkez Stüdyoları AI TV Aktif | Quantum İşlemci Devrede | Patron: KENAN
+    </div>
+    """, unsafe_allow_html=True)
