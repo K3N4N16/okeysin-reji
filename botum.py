@@ -2,86 +2,80 @@ import streamlit as st
 from groq import Groq
 import os
 import streamlit.components.v1 as components
-import requests
-import re
+import json
 
-# ====================== 1. CORE CONFIG ======================
+# ====================== 1. REJİ MERKEZİ (GROQ CONFIG) ======================
 GROQ_KEY = os.environ.get("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_KEY)
 
-st.set_page_config(page_title="K-QUANTUM INFINITY PRO", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="K-QUANTUM INFINITY v12", layout="wide", initial_sidebar_state="collapsed")
 
-# ====================== 2. ULTRA-NEON CYBER UI ======================
+# ====================== 2. GÖRSEL SUNUM (NEON CYBER UI) ======================
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap');
     
-    .main { background: #050505; color: #00ffcc; font-family: 'Rajdhani', sans-serif; }
+    .main { background: #050505; color: #fff; font-family: 'Rajdhani', sans-serif; }
     
-    /* Gelişmiş TV Çerçevesi */
-    .tv-bezel {
-        border: 12px solid #1a1a1a;
-        border-radius: 35px;
+    /* Radyo/TV Reji Kasası */
+    .reji-frame {
+        border: 15px solid #111;
+        border-radius: 40px;
         background: #000;
-        box-shadow: 0 0 60px rgba(0, 255, 204, 0.25);
-        padding: 8px;
+        box-shadow: 0 0 70px rgba(0, 255, 204, 0.2);
+        padding: 5px;
         position: relative;
     }
 
-    /* Netflix Tarzı Dinamik Kartlar */
+    /* Mod ve Seçim Kartları (Netflix Stil) */
     .media-card {
-        background: rgba(15, 15, 25, 0.9);
-        border-radius: 12px;
-        border: 1px solid #222;
-        padding: 15px;
-        transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        cursor: pointer;
+        background: rgba(20, 20, 30, 0.9);
+        border: 1px solid #333;
+        border-radius: 15px;
+        padding: 20px;
         text-align: center;
+        transition: 0.4s all ease;
+        cursor: pointer;
+        border-bottom: 4px solid transparent;
     }
     .media-card:hover {
-        border-color: #00ffcc;
-        transform: scale(1.03);
-        box-shadow: 0 10px 30px rgba(0, 255, 204, 0.3);
+        border-bottom: 4px solid #00ffcc;
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 255, 204, 0.3);
     }
 
-    /* Görseldeki Neon Arama Kutusu */
+    /* Arama ve Mod Girişi */
     .stTextInput>div>div>input { 
         background: #0d0d0d !important; color: #00ffcc !important;
-        border: 2px solid #00ffcc !important; border-radius: 60px !important;
-        padding: 22px !important; font-size: 20px !important; font-family: 'Orbitron';
-        text-align: center; box-shadow: 0 0 25px rgba(0, 255, 204, 0.4);
+        border: 2px solid #00ffcc !important; border-radius: 100px !important;
+        padding: 25px !important; font-size: 22px !important; font-family: 'Orbitron';
+        text-align: center; box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
     }
-    
-    .status-bar {
+
+    .status-ticker {
         position: fixed; bottom: 0; left: 0; width: 100%;
         background: linear-gradient(90deg, #00ffcc, #0088ff);
         color: black; font-weight: bold; padding: 5px;
-        text-align: center; font-size: 11px; letter-spacing: 5px; z-index: 1000;
+        text-align: center; letter-spacing: 5px; font-size: 11px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== 3. GERÇEK MEDYA MÜHENDİSLİĞİ (SEARCH & VALIDATE) ======================
+# ====================== 3. MEDYA MÜHENDİSİ BEYNİ (AI ENGINE) ======================
 
-def validate_url(url):
-    """URL'nin gerçekten bir yayın verip vermediğini kontrol eder (Hızlı Check)."""
-    try:
-        r = requests.head(url, timeout=3)
-        return r.status_code < 400
-    except:
-        return False
-
-def groq_media_radar(query):
-    """Groq, internetteki güncel m3u8 depolarını tarar ve doğrulanmış linkler önerir."""
+def ai_content_engine(mood_or_query):
+    """Groq AI: Moduna göre interneti tarar ve OYNATILABİLİR linkler bulur."""
     prompt = f"""
-    Sen bir Medya Mühendisisin. '{query}' araması için dünya çapındaki en güncel, stabil ve açık kaynaklı IPTV linklerini (m3u8) bulmalısın.
-    Sadece çalışan resmi yayın linklerini (ör: TRT, BBC, Haber kanalları veya global film kanalları) listele.
-    Lütfen yanıtı şu JSON yapısında ver:
+    Sen bir Global Medya Mühendisi ve Radyo Sunucususun. Kullanıcının modu/isteği: '{mood_or_query}'.
+    Görevin: İnternet üzerindeki (YouTube, IPTV, Film Portalları) en iyi 4 içeriği bulmak.
+    Önemli: Linklerin m3u8 veya doğrudan izlenebilir URL olması için tahminde bulunma, gerçekçi ol.
+    Yanıtı SADECE aşağıdaki JSON formatında ver:
     {{
-      "results": [
-        {{"name": "Kanal/Video Adı", "url": "m3u8_linki", "desc": "Çözünürlük/Stabilite", "provider": "Kaynak"}},
-        ...
-      ]
+        "presentation": "Kısa bir radyo sunucusu anonsu (Patron bu senin için... gibi)",
+        "results": [
+            {{"title": "Başlık", "url": "video_veya_stream_url", "type": "Live/Movie/Music", "desc": "Neden seçildi?"}},
+            ...
+        ]
     }}
     """
     try:
@@ -90,59 +84,62 @@ def groq_media_radar(query):
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
         )
-        return json.loads(response.choices[0].message.content).get("results", [])
+        return json.loads(response.choices[0].message.content)
     except:
-        return []
+        return {"presentation": "Bağlantı hatası, reji beklemede.", "results": []}
 
-# ====================== 4. PROFESYONEL OYNATICI (HLS-ENGINE) ======================
-def play_quantum_stream(url):
-    html_code = f"""
-    <div class="tv-bezel">
+def inject_pro_player(url):
+    """Profesyonel Video.js + HLS Engine"""
+    html = f"""
+    <div class="reji-frame">
         <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
         <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
-        <video id="quantum-v" class="video-js vjs-big-play-centered vjs-theme-city" 
+        <video id="k-player" class="video-js vjs-big-play-centered vjs-theme-city" 
                controls preload="auto" width="auto" height="auto" data-setup='{{"fluid": true, "autoplay": true}}'
-               style="width:100%; height:550px; border-radius:20px;">
+               style="width:100%; height:550px; border-radius:25px;">
             <source src="{url}" type="application/x-mpegURL">
             <source src="{url}" type="video/mp4">
         </video>
     </div>
     """
-    components.html(html_code, height=580)
+    components.html(html, height=580)
 
-# ====================== 5. REJİ DASHBOARD ======================
+# ====================== 4. ANA REJİ MASASI ======================
 st.markdown("<h1 style='text-align:center; font-family:Orbitron; letter-spacing:15px; color:#00ffcc;'>K-QUANTUM INFINITY</h1>", unsafe_allow_html=True)
 
-# Arama Alanı
-q = st.text_input("", placeholder="🔍 İzlemek istediğiniz kanalı veya içeriği yazın...")
+# Mod Girişi
+user_input = st.text_input("", placeholder="🎙️ Modunu söyle veya ne izlemek istediğini yaz... (Örn: 'Bugün çok enerjiğim, hareketli konserler bul')")
 
-if q:
+if user_input:
+    # 1. AI Sunumu Al
+    with st.spinner("⚡ Reji Masası Hazırlanıyor..."):
+        ai_data = ai_content_engine(user_input)
+    
+    st.markdown(f"### 🎙️ AI SUNUCU: *\"{ai_data['presentation']}\"*")
+    
     col_play, col_menu = st.columns([2.5, 1])
-    
-    with st.spinner("🛰️ Quantum Radar Dünyayı Tarıyor ve Linkleri Doğruluyor..."):
-        all_results = groq_media_radar(q)
-    
+
     with col_menu:
-        st.markdown("### 🎬 BULUNAN KAYNAKLAR")
-        for idx, res in enumerate(all_results):
+        st.markdown("### 🎬 SANA ÖZEL SEÇİMLER")
+        for idx, item in enumerate(ai_data['results']):
             with st.container():
                 st.markdown(f"""
                 <div class="media-card">
-                    <strong style="color:#00ffcc;">{res['name']}</strong><br>
-                    <small>{res['desc']} | {res['provider']}</small>
+                    <strong style="color:#00ffcc;">{item['title']}</strong><br>
+                    <small>{item['type']} • {item['desc']}</small>
                 </div>
                 """, unsafe_allow_html=True)
-                if st.button(f"YAYINA AL: {res['name']}", key=f"btn_{idx}"):
-                    st.session_state.active_url = res['url']
+                if st.button(f"YAYINA AL: {item['title']}", key=f"btn_{idx}"):
+                    st.session_state.current_url = item['url']
 
     with col_play:
-        if 'active_url' in st.session_state:
-            play_quantum_stream(st.session_state.active_url)
-        elif all_results:
-            play_quantum_stream(all_results[0]['url'])
+        if 'current_url' in st.session_state:
+            inject_pro_player(st.session_state.current_url)
+        elif ai_data['results']:
+            inject_pro_player(ai_data['results'][0]['url'])
 else:
-    # Boş Ekran - Şık Bir Karşılama
-    st.image("https://images.unsplash.com/photo-1593359677771-082f18269532?w=1200", caption="REJİ MASASI HAZIR. KOMUTUNUZU BEKLİYORUZ PATRON.")
+    # Bekleme Ekranı
+    st.image("https://images.unsplash.com/photo-1478737270239-2fccd27ee086?w=1200", caption="REJİ SİNYAL BEKLİYOR. MODUNU SÖYLE, DÜNYAYI ÖNÜNE SEREYİM PATRON.")
 
 # Ticker
-st.markdown("<div class='status-bar'>● K-QUANTUM INFINITY ENGINE v11 | REAL-TIME STREAM VALIDATION | OWNER: PATRON KENAN</div>", unsafe_allow_html=True)
+st.markdown("<div class='status-ticker'>● GLOBAL MEDIA ARCHITECT v12 | MOOD-SYNC ACTIVE | OWNER: KENAN | 📍 BURSA HUB</div>", unsafe_allow_html=True)
