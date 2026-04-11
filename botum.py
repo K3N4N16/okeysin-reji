@@ -4,143 +4,147 @@ import os
 import streamlit.components.v1 as components
 import json
 
-# ====================== 1. K-QUANTUM CORE ======================
+# ====================== 1. RADAR MERKEZİ (GROQ) ======================
 GROQ_KEY = os.environ.get("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_KEY)
 
-st.set_page_config(page_title="K-QUANTUM MULTI-ENGINE", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="K-QUANTUM MULTIVERSE", layout="wide", initial_sidebar_state="collapsed")
 
-# ====================== 2. GÖRSEL MİMARİ (PROFESYONEL REJİ) ======================
+# ====================== 2. GÖRSEL REJİ TASARIMI (MASTER UI) ======================
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
     
-    .main { background: #020205; color: #00ffcc; font-family: 'Rajdhani', sans-serif; }
+    .main { background: #000; color: #00ffcc; font-family: 'Rajdhani', sans-serif; }
     
-    /* Gelişmiş TV Çerçevesi */
-    .tv-bezel {
-        border: 10px solid #1a1a1a;
-        border-radius: 30px;
+    /* Neon TV Kasası */
+    .master-screen {
+        border: 10px solid #111;
+        border-radius: 25px;
         background: #000;
-        box-shadow: 0 0 40px rgba(0, 255, 204, 0.2);
+        box-shadow: 0 0 50px rgba(0, 255, 204, 0.3);
         overflow: hidden;
         position: relative;
     }
 
-    /* "İkramiye" Panel (Gelişmiş Kartlar) */
-    .bonus-card {
-        background: linear-gradient(145deg, #0d0d18, #151528);
-        border: 1px solid #222;
+    /* Medya Kartları (Netflix Tarzı) */
+    .media-shelf {
+        background: rgba(10, 10, 20, 0.9);
+        border: 1px solid #1a1a2e;
         border-radius: 15px;
         padding: 15px;
-        margin-bottom: 15px;
-        transition: 0.3s;
+        margin: 10px 0;
+        transition: 0.4s;
         cursor: pointer;
     }
-    .bonus-card:hover {
+    .media-shelf:hover {
         border-color: #00ffcc;
-        box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
-        transform: scale(1.02);
+        box-shadow: 0 0 15px #00ffcc;
+        transform: translateX(10px);
     }
 
     .stTextInput>div>div>input { 
-        background: #080808 !important; color: #00ffcc !important;
+        background: #0d0d0d !important; color: #00ffcc !important;
         border: 2px solid #00ffcc !important; border-radius: 50px !important;
-        font-family: 'Orbitron'; text-align: center; font-size: 18px !important;
+        font-family: 'Orbitron'; text-align: center; font-size: 1.2rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== 3. AI MEDYA MÜHENDİSİ (IFRAME & STREAM ANALİZ) ======================
+# ====================== 3. MULTIVERSE SEARCH ENGINE ======================
 
-def ai_resource_scanner(user_mood):
-    """Groq: Moduna göre interneti tarar ve doğru 'Oynatma Modu'nu seçer."""
+def multiverse_radar(user_input):
+    """Groq: İnterneti, YouTube'u ve Global Film Sunucularını tarar."""
     prompt = f"""
-    Sen bir Medya Mühendisisin. Kullanıcının isteği/modu: '{user_mood}'.
-    Lütfen internetteki en iyi 4 içeriği bul. 
-    İçerik tipine göre 'iframe', 'hls' veya 'youtube' modunu belirle.
+    Sen bir Medya Mimarı ve Global Reji Şefisin. Kullanıcının isteği: '{user_input}'.
+    İnternetteki YouTube listelerini, m3u8 streamlerini, sosyal medya videolarını ve dizi/film klasörlerini tara.
+    Bana 4 adet kesin çalışan kaynak bul. YouTube için 'youtube', web siteleri için 'iframe', direkt stream için 'hls' modunu seç.
     Yanıtı SADECE bu JSON formatında ver:
     {{
-        "ai_speech": "Patron için kısa bir sunum mesajı",
-        "playlist": [
-            {{"title": "Kanal/Video Adı", "url": "URL", "mode": "iframe/hls/youtube", "info": "Kalite/Tür"}},
+        "intro": "Patron için havalı bir sunum cümlesi",
+        "library": [
+            {{"title": "İçerik Adı", "url": "URL", "mode": "youtube/hls/iframe", "info": "Tür/Kalite"}},
             ...
         ]
     }}
     """
     try:
-        response = client.chat.completions.create(
+        res = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
         )
-        return json.loads(response.choices[0].message.content)
+        return json.loads(res.choices[0].message.content)
     except:
-        return {"ai_speech": "Reji masasında sinyal kaybı.", "playlist": []}
+        return {"intro": "Sinyal zayıf, tekrar taranıyor...", "library": []}
 
-# ====================== 4. ÇOKLU OYNATICI MOTORU (THE ENGINE) ======================
+# ====================== 4. THE ULTIMATE PLAYER (HIBRYD ENGINE) ======================
 
-def multi_player(url, mode):
-    """İçerik tipine göre en iyi oynatıcıyı (IFrame veya HLS) tetikler."""
+def render_multiverse_player(url, mode):
+    """YouTube, IFrame ve HLS'yi tek bir ekranda birleştirir."""
     if mode == "youtube":
-        # YouTube linkini IFrame dostu yap
-        if "watch?v=" in url: url = url.replace("watch?v=", "embed/")
-        st.video(url)
-    
-    elif mode == "iframe":
-        # Harici bir web platformunu veya portalı "ikramiye" olarak sığdırır
-        components.iframe(url, height=550, scrolling=True)
+        # YouTube URL Dönüştürücü (Embed modu)
+        if "watch?v=" in url: url = url.split("watch?v=")[1].split("&")[0]
+        elif "youtu.be/" in url: url = url.split("youtu.be/")[1]
+        embed_url = f"https://www.youtube.com/embed/{url}?autoplay=1&rel=0"
+        components.iframe(embed_url, height=580)
         
-    else: # HLS / IPTV Modu
-        html_hls = f"""
-        <div class="tv-bezel">
+    elif mode == "iframe":
+        # Dizi siteleri, Portal veya Web içerikleri
+        components.iframe(url, height=580, scrolling=True)
+        
+    else: # HLS / IPTV / Klasör Video (.m3u8, .mp4)
+        html_code = f"""
+        <div class="master-screen">
             <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
             <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
-            <video id="k-pro" class="video-js vjs-big-play-centered" 
+            <video id="multiverse-v" class="video-js vjs-big-play-centered" 
                    controls preload="auto" width="auto" height="auto" data-setup='{{"fluid": true, "autoplay": true}}'
-                   style="width:100%; height:540px;">
+                   style="width:100%; height:570px;">
                 <source src="{url}" type="application/x-mpegURL">
+                <source src="{url}" type="video/mp4">
             </video>
         </div>
         """
-        components.html(html_hls, height=560)
+        components.html(html_code, height=600)
 
-# ====================== 5. REJİ DASHBOARD ======================
-st.markdown("<h1 style='text-align:center; font-family:Orbitron; letter-spacing:10px; color:#00ffcc;'>K-QUANTUM REJI</h1>", unsafe_allow_html=True)
+# ====================== 5. MASTER REJI INTERFACE ======================
+st.markdown("<h1 style='text-align:center; font-family:Orbitron; letter-spacing:10px; color:#00ffcc; text-shadow: 0 0 10px #00ffcc;'>K-QUANTUM MULTIVERSE</h1>", unsafe_allow_html=True)
 
-# ARAMA VE MOD PANELİ
-q = st.text_input("", placeholder="🎙️ Patron, bugün nasıl bir yayın yapalım? Modunu veya istediğin içeriği yaz...")
+# GİRİŞ PANELİ (MOD VEYA İSİM)
+cmd = st.text_input("", placeholder="🎙️ 'Hakan Bey için nostaljik bir türkü listesi', 'Bursa canlı kamera' veya 'Matrix 4'...")
 
-if q:
-    with st.spinner("⚡ Quantum AI kaynakları ve ikramiyeleri topluyor..."):
-        data = ai_resource_scanner(q)
+if cmd:
+    with st.spinner("🌌 Multiverse Radarı Taranıyor..."):
+        data = multiverse_radar(cmd)
     
-    st.write(f"🎙️ **Sunucu:** {data['ai_speech']}")
+    st.markdown(f"**🎙️ REJİ:** *\"{data['intro']}\"*")
     
-    col_play, col_side = st.columns([2.5, 1])
+    col_v, col_l = st.columns([3, 1])
     
-    with col_side:
-        st.markdown("### 🎁 YAYIN İKRAMİYELERİ")
-        for idx, item in enumerate(data['playlist']):
+    with col_l:
+        st.markdown("### 📚 MEDYA KÜTÜPHANESİ")
+        for idx, m in enumerate(data['library']):
             with st.container():
                 st.markdown(f"""
-                <div class="bonus-card">
-                    <b style="color:#00ffcc;">{item['title']}</b><br>
-                    <small>{item['mode'].upper()} | {item['info']}</small>
+                <div class="media-shelf">
+                    <b style="color:#00ffcc;">{m['title']}</b><br>
+                    <small style="color:#888;">{m['mode'].upper()} | {m['info']}</small>
                 </div>
                 """, unsafe_allow_html=True)
-                if st.button(f"YAYINA VER: {item['title']}", key=f"btn_{idx}"):
-                    st.session_state.active_res = item
+                if st.button(f"YÜKLE: {m['title']}", key=f"m_{idx}"):
+                    st.session_state.target_res = m
 
-    with col_play:
-        if 'active_res' in st.session_state:
-            res = st.session_state.active_res
-            multi_player(res['url'], res['mode'])
-        elif data['playlist']:
-            res = data['playlist'][0]
-            multi_player(res['url'], res['mode'])
+    with col_v:
+        if 'target_res' in st.session_state:
+            sel = st.session_state.target_res
+            render_multiverse_player(sel['url'], sel['mode'])
+        elif data['library']:
+            sel = data['library'][0]
+            render_multiverse_player(sel['url'], sel['mode'])
 
 else:
-    st.image("https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200", caption="REJİ MASASI AKTİF. EMREDİN YÖNETMENİM.")
+    st.image("https://images.unsplash.com/photo-1485846234645-a62644f84728?w=1200", caption="RADAR BEKLEMEDE. DÜNYAYI IŞINLAMAK İÇİN BİR ŞEYLER YAZ PATRON.")
 
-st.markdown("<div style='position:fixed; bottom:0; left:0; width:100%; background:#00ffcc; color:000; text-align:center; font-weight:bold; padding:5px; font-size:10px; letter-spacing:5px;'>● K-QUANTUM INFINITY ENGINE v13 | BURSA HUB | OPERATOR: KENAN</div>", unsafe_allow_html=True)
+# Status Bar
+st.markdown("<div style='position:fixed; bottom:0; left:0; width:100%; background:linear-gradient(90deg, #00ffcc, #001111); color:white; text-align:center; font-weight:bold; padding:5px; font-size:10px; letter-spacing:5px;'>● K-QUANTUM MULTIVERSE ENGINE v14 | ALL-IN-ONE MEDIA HUB | OWNER: KENAN</div>", unsafe_allow_html=True)
