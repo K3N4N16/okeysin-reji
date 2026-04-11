@@ -2,114 +2,86 @@ import streamlit as st
 from groq import Groq
 import json
 import os
-from datetime import datetime
 
-st.set_page_config(page_title="K-QUANTUM RADAR", layout="wide", page_icon="🌌")
+st.set_page_config(page_title="K-QUANTUM TV", layout="wide", page_icon="📺")
 
-# ====================== GROQ ======================
+# Groq
 GROQ_KEY = os.getenv("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
-if not GROQ_KEY:
-    st.error("❌ GROQ_API_KEY eksik!")
-    st.stop()
-
 client = Groq(api_key=GROQ_KEY)
 
-# ====================== BAŞLIK ======================
-st.markdown("<h1 style='text-align:center; color:#a855f7;'>🌌 K-QUANTUM MULTIVERSE RADAR</h1>", unsafe_allow_html=True)
+st.title("📺 K-QUANTUM TELEVİZYON")
+st.markdown("**Kenan ile Faslı Muhabbet** Rejisi - Radar + Televizyon")
 
-query = st.text_input("🔍 Ne arıyorsun?", placeholder="Beşiktaş maçı, nostaljik türkü, Matrix, Bursa canlı kamera...")
+query = st.text_input("Ne izlemek istiyorsun?", placeholder="Beşiktaş maçı, nostaljik türkü, Matrix, canlı kamera...")
 
 if st.button("🌌 RADAR TARASIN", type="primary"):
     if query:
-        with st.spinner("🌌 Radar taranıyor..."):
+        with st.spinner("Radar taranıyor..."):
             try:
-                prompt = f'Kullanıcı "{query}" arıyor. 4-5 tane kesin çalışan kaynak bul. JSON formatı: {{"intro": "...", "results": [{{"title":"..", "url":"..", "mode":"youtube/hls/iframe", "info":".."}}]}}'
+                prompt = f'Kullanıcı "{query}" arıyor. 4 tane kesin çalışan kaynak bul. JSON formatı: {{"intro": "...", "results": [{{"title":"..", "url":"..", "mode":"youtube/hls/iframe", "info":".."}}]}}'
 
-                response = client.chat.completions.create(
+                resp = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "user", "content": prompt}],
                     response_format={"type": "json_object"}
                 )
 
-                data = json.loads(response.choices[0].message.content)
+                data = json.loads(resp.choices[0].message.content)
 
-                st.success(data.get("intro", "Kaynaklar bulundu!"))
+                st.success(data.get("intro", "Kaynaklar bulundu"))
 
                 for idx, item in enumerate(data.get("results", [])):
-                    col1, col2 = st.columns([5, 1])
+                    col1, col2 = st.columns([4,1])
                     with col1:
-                        st.markdown(f"**{item.get('title', 'İsimsiz')}**")
-                        st.caption(f"{item.get('mode','hls').upper()} • {item.get('info','')}")
+                        st.write(f"**{item.get('title')}**")
+                        st.caption(f"{item.get('mode','hls').upper()} - {item.get('info','')}")
                     with col2:
-                        if st.button("▶️ Oynat", key=f"play_btn_{idx}"):
-                            st.session_state.play_url = item.get('url')
-                            st.session_state.play_mode = item.get('mode', 'hls').lower()
-                            st.session_state.play_title = item.get('title', 'Yayın')
+                        if st.button("📺 OYNAT", key=f"btn_{idx}"):
+                            st.session_state.tv_url = item.get('url')
+                            st.session_state.tv_mode = item.get('mode', 'hls').lower()
+                            st.session_state.tv_title = item.get('title')
                             st.rerun()
-            except Exception as e:
-                st.error(f"Radar hatası: {e}")
+            except:
+                st.error("Radar şu anda çalışmıyor.")
 
-# ====================== GÜÇLÜ PLAYER (Televizyon Ekranı) ======================
-if 'play_url' in st.session_state:
+# ====================== TELEVİZYON EKRANI ======================
+if 'tv_url' in st.session_state:
     st.divider()
-    st.subheader(f"📺 {st.session_state.play_title}")
+    st.subheader(f"📺 {st.session_state.tv_title}")
 
-    url = st.session_state.play_url
-    mode = st.session_state.play_mode
-
-    st.info(f"Mod: **{mode.upper()}** | URL: {url[:100]}...")
+    url = st.session_state.tv_url
+    mode = st.session_state.tv_mode
 
     if mode == "youtube":
-        if "watch?v=" in url:
-            vid = url.split("watch?v=")[1].split("&")[0]
-        elif "youtu.be/" in url:
-            vid = url.split("youtu.be/")[1].split("?")[0]
-        else:
-            vid = url.split("/")[-1]
-        st.components.v1.iframe(f"https://www.youtube.com/embed/{vid}?autoplay=1", height=560)
-
+        vid = url.split("v=")[-1].split("&")[0] if "v=" in url else url.split("/")[-1]
+        st.components.v1.iframe(f"https://www.youtube.com/embed/{vid}?autoplay=1", height=600)
     elif mode == "iframe":
-        st.components.v1.iframe(url, height=560, scrolling=True)
-
+        st.components.v1.iframe(url, height=600, scrolling=True)
     else:
-        # HLS ve diğer streamler için en güçlü player
-        player_code = f"""
-        <video id="player" controls autoplay style="width:100%; background:#000; max-height:560px;">
-            Tarayıcınız video oynatmayı desteklemiyor.
+        # HLS ve diğer linkler için
+        html_code = f"""
+        <video id="tvplayer" controls autoplay style="width:100%; height:600px; background:black;">
+            <source src="{url}" type="application/x-mpegURL">
         </video>
         <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
         <script>
-            var video = document.getElementById('player');
-            var url = "{url}";
+            var video = document.getElementById('tvplayer');
             if (Hls.isSupported()) {{
                 var hls = new Hls();
-                hls.loadSource(url);
+                hls.loadSource('{url}');
                 hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {{ video.play(); }});
-            }} else if (video.canPlayType('application/vnd.apple.mpegurl')) {{
-                video.src = url;
-                video.addEventListener('loadedmetadata', function() {{ video.play(); }});
             }} else {{
-                video.src = url;
-                video.play();
+                video.src = '{url}';
             }}
+            video.play();
         </script>
         """
-        st.components.v1.html(player_code, height=600)
+        st.components.v1.html(html_code, height=650)
 
-    # Kontrol butonları
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔄 Başka Kaynak Dene"):
-            for key in list(st.session_state.keys()):
-                if key.startswith('play_'):
-                    del st.session_state[key]
-            st.rerun()
-    with col2:
-        if st.button("🗑️ Player'ı Kapat"):
-            for key in list(st.session_state.keys()):
-                if key.startswith('play_'):
-                    del st.session_state[key]
-            st.rerun()
+    if st.button("🗑️ Televizyonu Kapat"):
+        for key in ['tv_url', 'tv_mode', 'tv_title']:
+            if key in st.session_state:
+                del st.session_state[key]
+        st.rerun()
 
-st.caption(f"🕒 {datetime.now().strftime('%H:%M:%S')} | K-QUANTUM RADAR")
+st.caption("K-QUANTUM TELEVİZYON • Kenan ile Faslı Muhabbet")
