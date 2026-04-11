@@ -4,144 +4,148 @@ import os
 import streamlit.components.v1 as components
 import json
 
-# ====================== 1. MEDYA MÜHENDİSİ BEYNİ (GROQ) ======================
+# ====================== 1. CORE ARCHITECTURE ======================
 GROQ_KEY = os.environ.get("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_KEY)
 
-st.set_page_config(page_title="K-QUANTUM TV OS", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="K-QUANTUM INFINITY", layout="wide", initial_sidebar_state="collapsed")
 
-# ====================== 2. CYBER-PUNK TV ARAYÜZÜ (GÖRSEL TASARIM) ======================
+# ====================== 2. THE "NETFLIX" CYBER UI ======================
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap');
     
-    .main { background: radial-gradient(circle, #101015 0%, #050505 100%); color: #00ffcc; font-family: 'Rajdhani', sans-serif; }
+    :root {
+        --neon-cyan: #00ffcc;
+        --deep-black: #050505;
+        --card-bg: rgba(20, 20, 25, 0.8);
+    }
+
+    .main { background: var(--deep-black); font-family: 'Rajdhani', sans-serif; color: white; }
     
-    /* TV Kasa Tasarımı */
-    .tv-frame {
-        border: 12px solid #1a1a1a;
-        border-radius: 40px;
-        background: #000;
-        box-shadow: 0 0 50px rgba(0, 255, 204, 0.2), inset 0 0 20px #000;
+    /* Netflix Tarzı Kart Yapısı */
+    .media-card {
+        background: var(--card-bg);
+        border: 1px solid #222;
+        border-radius: 10px;
         padding: 10px;
-        margin-top: 10px;
+        transition: all 0.4s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    .media-card:hover {
+        transform: scale(1.05);
+        border-color: var(--neon-cyan);
+        box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+    }
+    
+    .tv-frame {
+        border: 10px solid #1a1a1a;
+        border-radius: 20px;
+        box-shadow: 0 0 40px rgba(0, 255, 204, 0.15);
+        background: #000;
     }
 
-    /* Görseldeki Neon Arama Çubuğu */
+    /* Görseldeki Search Bar */
     .stTextInput>div>div>input { 
-        background-color: #0d0d0d !important; 
-        color: #00ffcc !important; 
-        border: 2px solid #00ffcc !important;
-        border-radius: 50px !important; 
-        padding: 20px !important; 
-        font-size: 22px !important;
-        font-family: 'Orbitron', sans-serif;
-        box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
-        text-align: center;
-    }
-
-    .ai-status {
-        background: rgba(0, 255, 204, 0.1);
-        border-left: 5px solid #00ffcc;
-        padding: 15px;
-        border-radius: 5px;
-        margin: 10px 0;
-        font-size: 14px;
-    }
-
-    .ticker-tape {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background: #00ffcc;
-        color: #000;
-        font-weight: bold;
-        padding: 5px;
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        z-index: 100;
+        background: #0d0d0d !important; color: var(--neon-cyan) !important;
+        border: 2px solid var(--neon-cyan) !important; border-radius: 50px !important;
+        padding: 20px !important; font-size: 22px !important; font-family: 'Orbitron';
+        text-align: center; box-shadow: 0 0 15px var(--neon-cyan);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== 3. AKILLI KAYNAK BULUCU (AI ENGINE) ======================
-def ai_media_engineer(user_input):
-    """Groq kullanarak internetteki IPTV/Stream linklerini analiz eder ve JSON döner."""
+# ====================== 3. AI BRAIN: GLOBAL DISCOVERY ENGINE ======================
+def quantum_discovery(query):
+    """Groq: Global Medya Mühendisi modunda çalışır ve sonuçları bir Grid için hazırlar."""
+    prompt = f"""
+    Sen K-QUANTUM Global Medya Mühendisisin. Kullanıcı sorgusu: '{query}'.
+    Görevin: İnternet üzerindeki film, dizi veya IPTV kaynaklarını analiz etmek. 
+    YouTube, açık IPTV listeleri ve film portalı verilerini simüle et.
+    Her zaman 4 farklı seçenek (farklı kaynaklar: 4K, HD, Live, Trailer) üret.
+    Yanıtı SADECE şu JSON yapısında ver:
+    [
+      {{"title": "Başlık", "type": "Movie/Live", "url": "stream_url", "desc": "Kısa Bilgi", "thumb": "poster_url"}},
+      ...
+    ]
+    """
     try:
-        prompt = f"""
-        Sen bir Medya Mühendisisin. Kullanıcının isteği: '{user_input}'.
-        Görevin: Bu kanal veya içerik için internetteki en güncel ve açık kaynaklı .m3u8 (HLS) yayın linkini bulmak.
-        Eğer linki tam bilmiyorsan, en muhtemel çalışan resmi stream URL'sini tahmin et veya YouTube canlı yayınını hedefle.
-        Yanıtını sadece şu JSON formatında ver:
-        {{"channel_name": "Kanal Adı", "stream_url": "link", "analysis": "Neden bu linki seçtiğin hakkında kısa bilgi"}}
-        """
-        
-        chat_completion = client.chat.completions.create(
+        response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             response_format={ "type": "json_object" }
         )
-        return json.loads(chat_completion.choices[0].message.content)
-    except Exception as e:
-        return {"channel_name": "Hata", "stream_url": "", "analysis": f"Sistem hatası: {str(e)}"}
+        # JSON yapısını temizle ve döndür
+        data = json.loads(response.choices[0].message.content)
+        return data if isinstance(data, list) else list(data.values())[0]
+    except:
+        return []
 
-# ====================== 4. PROFESYONEL HLS/IPTV PLAYER ======================
-def render_player(url):
-    html_code = f"""
-    <div style="background:black; border-radius:25px; overflow:hidden;">
+# ====================== 4. PLAYER ENGINE (M3U8 / HLS / YT) ======================
+def inject_player(url):
+    html = f"""
+    <div class="tv-frame">
         <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
-        <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
         <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
-        <video id="k-player" class="video-js vjs-big-play-centered vjs-theme-city" 
-               controls preload="auto" width="auto" height="auto" 
-               data-setup='{{"fluid": true, "autoplay": true}}'
-               style="width:100%; height:540px;">
+        <video id="v-play" class="video-js vjs-big-play-centered vjs-theme-city" 
+               controls preload="auto" width="auto" height="auto" data-setup='{{"fluid": true, "autoplay": true}}'
+               style="width:100%; height:500px; border-radius:15px;">
             <source src="{url}" type="application/x-mpegURL">
             <source src="{url}" type="video/mp4">
         </video>
     </div>
     """
-    components.html(html_code, height=560)
+    components.html(html, height=520)
 
-# ====================== 5. TV KONTROL PANELİ (REJİ) ======================
-st.markdown("<h1 style='text-align:center; font-family:Orbitron; letter-spacing:10px;'>K-QUANTUM TV</h1>", unsafe_allow_html=True)
+# ====================== 5. MAIN REJI DASHBOARD ======================
+st.markdown("<h1 style='text-align:center; font-family:Orbitron; letter-spacing:20px; color:#00ffcc;'>INFINITY AI</h1>", unsafe_allow_html=True)
 
-# Görseldeki Search Panel
-search_query = st.text_input("", placeholder="🎙️ 'TRT 1 aç', 'Bursa Mobese bul' veya 'Bilim Kurgu filmi oynat'...")
+search = st.text_input("", placeholder="🔍 Ne izlemek istersin? (Örn: 'The Matrix 4', 'Haber Kanalları', 'Bursa Belgeseli')")
 
-if search_query:
-    col_main, col_side = st.columns([3, 1])
+if search:
+    # 1. Aşama: Groq Discovery
+    with st.spinner("⚡ Quantum Radar Dünyayı Tarıyor..."):
+        results = quantum_discovery(search)
     
-    with st.spinner("🚀 Medya Mühendisi kaynakları tarıyor..."):
-        ai_data = ai_media_engineer(search_query)
-        stream_url = ai_data.get("stream_url")
-        
-    with col_main:
-        st.markdown("<div class='tv-frame'>", unsafe_allow_html=True)
-        if stream_url:
-            render_player(stream_url)
+    col_player, col_grid = st.columns([2, 1])
+    
+    with col_grid:
+        st.markdown("### 🎬 BULUNAN KAYNAKLAR")
+        for res in results:
+            with st.container():
+                st.markdown(f"""
+                <div class="media-card">
+                    <h4 style="color:#00ffcc; margin:0;">{res['title']}</h4>
+                    <p style="font-size:12px; color:#888;">{res['type']} • {res['desc']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"Oynat: {res['title']}", key=res['url']):
+                    st.session_state.active_url = res['url']
+
+    with col_player:
+        if 'active_url' in st.session_state:
+            inject_player(st.session_state.active_url)
         else:
-            st.error("Kaynak bulunamadı. Lütfen başka bir komut verin.")
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-    with col_side:
-        st.markdown("### 🤖 REJİ RAPORU")
-        st.markdown(f"<div class='ai-status'><b>Kanal:</b> {ai_data.get('channel_name')}<br><br><b>Analiz:</b> {ai_data.get('analysis')}</div>", unsafe_allow_html=True)
-        
-        st.markdown("### ⚙️ SİSTEM")
-        st.info("🛰️ HLS Engine: Aktif")
-        st.info("🧠 AI Mode: Engineer v8")
-        if st.button("🔄 Kaynağı Yenile"):
-            st.rerun()
+            # İlk sonucu otomatik yükle
+            if results: inject_player(results[0]['url'])
 
 else:
-    st.image("https://images.unsplash.com/photo-1461151304267-38535e770d79?w=1200", caption="PATRON KENAN İÇİN HAZIR. KOMUT BEKLENİYOR.")
+    # HOŞGELDİN EKRANI (NETFLIX STYLE CATEGORIES)
+    st.markdown("### 🔥 TREND OLANLAR")
+    cols = st.columns(4)
+    for i, category in enumerate(["Aksiyon", "Canlı TV", "Belgesel", "Bilim Kurgu"]):
+        with cols[i]:
+            st.markdown(f"""
+            <div class="media-card" style="height:150px; display:flex; align-items:center; justify-content:center; text-align:center;">
+                <h2 style="color:#00ffcc;">{category}</h2>
+            </div>
+            """, unsafe_allow_html=True)
 
-# Alt Bant
+# Status Ticker
 st.markdown("""
-    <div class="ticker-tape">
-        ● K-QUANTUM MEDIA OS | OWNER: KENAN | AI ENGINEER ACTIVE | SIGNAL: 100% | LOCATION: BURSA HUB
+    <div style="position:fixed; bottom:0; left:0; width:100%; background:#00ffcc; color:black; padding:5px; text-align:center; font-weight:bold; font-size:12px; letter-spacing:5px;">
+        K-QUANTUM INFINITY | GROQ-CORE v9 | GLOBAL SYNC ACTIVE | PATRON: KENAN
     </div>
     """, unsafe_allow_html=True)
