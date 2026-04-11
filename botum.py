@@ -4,76 +4,66 @@ import os
 import streamlit.components.v1 as components
 import json
 
-# ====================== 1. REJİ MERKEZİ (GROQ CONFIG) ======================
+# ====================== 1. K-QUANTUM CORE ======================
 GROQ_KEY = os.environ.get("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_KEY)
 
-st.set_page_config(page_title="K-QUANTUM INFINITY v12", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="K-QUANTUM MULTI-ENGINE", layout="wide", initial_sidebar_state="collapsed")
 
-# ====================== 2. GÖRSEL SUNUM (NEON CYBER UI) ======================
+# ====================== 2. GÖRSEL MİMARİ (PROFESYONEL REJİ) ======================
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
     
-    .main { background: #050505; color: #fff; font-family: 'Rajdhani', sans-serif; }
+    .main { background: #020205; color: #00ffcc; font-family: 'Rajdhani', sans-serif; }
     
-    /* Radyo/TV Reji Kasası */
-    .reji-frame {
-        border: 15px solid #111;
-        border-radius: 40px;
+    /* Gelişmiş TV Çerçevesi */
+    .tv-bezel {
+        border: 10px solid #1a1a1a;
+        border-radius: 30px;
         background: #000;
-        box-shadow: 0 0 70px rgba(0, 255, 204, 0.2);
-        padding: 5px;
+        box-shadow: 0 0 40px rgba(0, 255, 204, 0.2);
+        overflow: hidden;
         position: relative;
     }
 
-    /* Mod ve Seçim Kartları (Netflix Stil) */
-    .media-card {
-        background: rgba(20, 20, 30, 0.9);
-        border: 1px solid #333;
+    /* "İkramiye" Panel (Gelişmiş Kartlar) */
+    .bonus-card {
+        background: linear-gradient(145deg, #0d0d18, #151528);
+        border: 1px solid #222;
         border-radius: 15px;
-        padding: 20px;
-        text-align: center;
-        transition: 0.4s all ease;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: 0.3s;
         cursor: pointer;
-        border-bottom: 4px solid transparent;
     }
-    .media-card:hover {
-        border-bottom: 4px solid #00ffcc;
-        transform: translateY(-10px);
-        box-shadow: 0 15px 30px rgba(0, 255, 204, 0.3);
+    .bonus-card:hover {
+        border-color: #00ffcc;
+        box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+        transform: scale(1.02);
     }
 
-    /* Arama ve Mod Girişi */
     .stTextInput>div>div>input { 
-        background: #0d0d0d !important; color: #00ffcc !important;
-        border: 2px solid #00ffcc !important; border-radius: 100px !important;
-        padding: 25px !important; font-size: 22px !important; font-family: 'Orbitron';
-        text-align: center; box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
-    }
-
-    .status-ticker {
-        position: fixed; bottom: 0; left: 0; width: 100%;
-        background: linear-gradient(90deg, #00ffcc, #0088ff);
-        color: black; font-weight: bold; padding: 5px;
-        text-align: center; letter-spacing: 5px; font-size: 11px;
+        background: #080808 !important; color: #00ffcc !important;
+        border: 2px solid #00ffcc !important; border-radius: 50px !important;
+        font-family: 'Orbitron'; text-align: center; font-size: 18px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# ====================== 3. MEDYA MÜHENDİSİ BEYNİ (AI ENGINE) ======================
+# ====================== 3. AI MEDYA MÜHENDİSİ (IFRAME & STREAM ANALİZ) ======================
 
-def ai_content_engine(mood_or_query):
-    """Groq AI: Moduna göre interneti tarar ve OYNATILABİLİR linkler bulur."""
+def ai_resource_scanner(user_mood):
+    """Groq: Moduna göre interneti tarar ve doğru 'Oynatma Modu'nu seçer."""
     prompt = f"""
-    Sen bir Global Medya Mühendisi ve Radyo Sunucususun. Kullanıcının modu/isteği: '{mood_or_query}'.
-    Görevin: İnternet üzerindeki (YouTube, IPTV, Film Portalları) en iyi 4 içeriği bulmak.
-    Önemli: Linklerin m3u8 veya doğrudan izlenebilir URL olması için tahminde bulunma, gerçekçi ol.
-    Yanıtı SADECE aşağıdaki JSON formatında ver:
+    Sen bir Medya Mühendisisin. Kullanıcının isteği/modu: '{user_mood}'.
+    Lütfen internetteki en iyi 4 içeriği bul. 
+    İçerik tipine göre 'iframe', 'hls' veya 'youtube' modunu belirle.
+    Yanıtı SADECE bu JSON formatında ver:
     {{
-        "presentation": "Kısa bir radyo sunucusu anonsu (Patron bu senin için... gibi)",
-        "results": [
-            {{"title": "Başlık", "url": "video_veya_stream_url", "type": "Live/Movie/Music", "desc": "Neden seçildi?"}},
+        "ai_speech": "Patron için kısa bir sunum mesajı",
+        "playlist": [
+            {{"title": "Kanal/Video Adı", "url": "URL", "mode": "iframe/hls/youtube", "info": "Kalite/Tür"}},
             ...
         ]
     }}
@@ -86,60 +76,71 @@ def ai_content_engine(mood_or_query):
         )
         return json.loads(response.choices[0].message.content)
     except:
-        return {"presentation": "Bağlantı hatası, reji beklemede.", "results": []}
+        return {"ai_speech": "Reji masasında sinyal kaybı.", "playlist": []}
 
-def inject_pro_player(url):
-    """Profesyonel Video.js + HLS Engine"""
-    html = f"""
-    <div class="reji-frame">
-        <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
-        <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
-        <video id="k-player" class="video-js vjs-big-play-centered vjs-theme-city" 
-               controls preload="auto" width="auto" height="auto" data-setup='{{"fluid": true, "autoplay": true}}'
-               style="width:100%; height:550px; border-radius:25px;">
-            <source src="{url}" type="application/x-mpegURL">
-            <source src="{url}" type="video/mp4">
-        </video>
-    </div>
-    """
-    components.html(html, height=580)
+# ====================== 4. ÇOKLU OYNATICI MOTORU (THE ENGINE) ======================
 
-# ====================== 4. ANA REJİ MASASI ======================
-st.markdown("<h1 style='text-align:center; font-family:Orbitron; letter-spacing:15px; color:#00ffcc;'>K-QUANTUM INFINITY</h1>", unsafe_allow_html=True)
-
-# Mod Girişi
-user_input = st.text_input("", placeholder="🎙️ Modunu söyle veya ne izlemek istediğini yaz... (Örn: 'Bugün çok enerjiğim, hareketli konserler bul')")
-
-if user_input:
-    # 1. AI Sunumu Al
-    with st.spinner("⚡ Reji Masası Hazırlanıyor..."):
-        ai_data = ai_content_engine(user_input)
+def multi_player(url, mode):
+    """İçerik tipine göre en iyi oynatıcıyı (IFrame veya HLS) tetikler."""
+    if mode == "youtube":
+        # YouTube linkini IFrame dostu yap
+        if "watch?v=" in url: url = url.replace("watch?v=", "embed/")
+        st.video(url)
     
-    st.markdown(f"### 🎙️ AI SUNUCU: *\"{ai_data['presentation']}\"*")
-    
-    col_play, col_menu = st.columns([2.5, 1])
+    elif mode == "iframe":
+        # Harici bir web platformunu veya portalı "ikramiye" olarak sığdırır
+        components.iframe(url, height=550, scrolling=True)
+        
+    else: # HLS / IPTV Modu
+        html_hls = f"""
+        <div class="tv-bezel">
+            <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+            <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+            <video id="k-pro" class="video-js vjs-big-play-centered" 
+                   controls preload="auto" width="auto" height="auto" data-setup='{{"fluid": true, "autoplay": true}}'
+                   style="width:100%; height:540px;">
+                <source src="{url}" type="application/x-mpegURL">
+            </video>
+        </div>
+        """
+        components.html(html_hls, height=560)
 
-    with col_menu:
-        st.markdown("### 🎬 SANA ÖZEL SEÇİMLER")
-        for idx, item in enumerate(ai_data['results']):
+# ====================== 5. REJİ DASHBOARD ======================
+st.markdown("<h1 style='text-align:center; font-family:Orbitron; letter-spacing:10px; color:#00ffcc;'>K-QUANTUM REJI</h1>", unsafe_allow_html=True)
+
+# ARAMA VE MOD PANELİ
+q = st.text_input("", placeholder="🎙️ Patron, bugün nasıl bir yayın yapalım? Modunu veya istediğin içeriği yaz...")
+
+if q:
+    with st.spinner("⚡ Quantum AI kaynakları ve ikramiyeleri topluyor..."):
+        data = ai_resource_scanner(q)
+    
+    st.write(f"🎙️ **Sunucu:** {data['ai_speech']}")
+    
+    col_play, col_side = st.columns([2.5, 1])
+    
+    with col_side:
+        st.markdown("### 🎁 YAYIN İKRAMİYELERİ")
+        for idx, item in enumerate(data['playlist']):
             with st.container():
                 st.markdown(f"""
-                <div class="media-card">
-                    <strong style="color:#00ffcc;">{item['title']}</strong><br>
-                    <small>{item['type']} • {item['desc']}</small>
+                <div class="bonus-card">
+                    <b style="color:#00ffcc;">{item['title']}</b><br>
+                    <small>{item['mode'].upper()} | {item['info']}</small>
                 </div>
                 """, unsafe_allow_html=True)
-                if st.button(f"YAYINA AL: {item['title']}", key=f"btn_{idx}"):
-                    st.session_state.current_url = item['url']
+                if st.button(f"YAYINA VER: {item['title']}", key=f"btn_{idx}"):
+                    st.session_state.active_res = item
 
     with col_play:
-        if 'current_url' in st.session_state:
-            inject_pro_player(st.session_state.current_url)
-        elif ai_data['results']:
-            inject_pro_player(ai_data['results'][0]['url'])
-else:
-    # Bekleme Ekranı
-    st.image("https://images.unsplash.com/photo-1478737270239-2fccd27ee086?w=1200", caption="REJİ SİNYAL BEKLİYOR. MODUNU SÖYLE, DÜNYAYI ÖNÜNE SEREYİM PATRON.")
+        if 'active_res' in st.session_state:
+            res = st.session_state.active_res
+            multi_player(res['url'], res['mode'])
+        elif data['playlist']:
+            res = data['playlist'][0]
+            multi_player(res['url'], res['mode'])
 
-# Ticker
-st.markdown("<div class='status-ticker'>● GLOBAL MEDIA ARCHITECT v12 | MOOD-SYNC ACTIVE | OWNER: KENAN | 📍 BURSA HUB</div>", unsafe_allow_html=True)
+else:
+    st.image("https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200", caption="REJİ MASASI AKTİF. EMREDİN YÖNETMENİM.")
+
+st.markdown("<div style='position:fixed; bottom:0; left:0; width:100%; background:#00ffcc; color:000; text-align:center; font-weight:bold; padding:5px; font-size:10px; letter-spacing:5px;'>● K-QUANTUM INFINITY ENGINE v13 | BURSA HUB | OPERATOR: KENAN</div>", unsafe_allow_html=True)
