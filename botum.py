@@ -1,97 +1,98 @@
 import streamlit as st
 from groq import Groq
 import os
+import requests
 
-# ====================== SMART TV ENGINE ======================
+# ====================== SMART MEDIA ENGINE ======================
 GROQ_KEY = os.environ.get("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_KEY)
 
-st.set_page_config(page_title="K-QUANTUM TV", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="K-QUANTUM TV OS", layout="wide", initial_sidebar_state="collapsed")
 
-# TV Teması ve Gelişmiş Stil
+# TV Teması (Quantum Neon Style)
 st.markdown("""
     <style>
     .main { background-color: #000000; color: #e0e0e0; }
     .stTextInput>div>div>input { 
         background-color: #111; 
         color: #00ffcc !important; 
-        border: 2px solid #222 !important;
-        border-radius: 10px;
-        font-size: 20px;
+        border: 2px solid #00ffcc !important;
+        border-radius: 30px;
+        padding: 20px;
+        font-size: 22px;
+        text-align: center;
     }
-    .stTextInput>div>div>input:focus { border: 2px solid #00ffcc !important; }
-    .ai-box {
-        background: rgba(0, 255, 204, 0.05);
-        border-left: 5px solid #00ffcc;
+    .tv-status { color: #00ffcc; font-family: 'Courier New', monospace; font-size: 14px; text-align: center; }
+    .ai-bubble {
+        background: rgba(0, 255, 204, 0.1);
+        border: 1px solid #00ffcc;
         padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 20 inline;
-    }
-    .status-bar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background: rgba(0,0,0,0.8);
-        border-top: 1px solid #333;
-        color: #00ffcc;
-        padding: 5px 20px;
-        font-family: monospace;
-        z-index: 999;
+        border-radius: 15px;
+        margin: 10px 0;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# Üst Header
-st.markdown("<h1 style='text-align: center; color: #00ffcc; letter-spacing: 5px;'>K-QUANTUM TV SYSTEM</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #666;'>Ultra Pro AI Media Center v2.0</p>", unsafe_allow_html=True)
+# Üst Bilgi
+st.markdown("<h1 style='text-align: center; color: #00ffcc;'>K-QUANTUM MEDIA AGENT</h1>", unsafe_allow_html=True)
+st.markdown("<div class='tv-status'>● SİSTEM ÇALIŞIYOR: EMEL AI ASİSTAN DEVREDE</div>", unsafe_allow_html=True)
 
-# ====================== REJİ MERKEZİ ======================
-col_search, col_info = st.columns([3, 1])
+# ====================== AI KOMUT MERKEZİ ======================
+col_a, col_b, col_c = st.columns([1, 6, 1])
+with col_b:
+    user_command = st.text_input("", placeholder="🎙️ 'TRT 1 canlı izle', 'Bursa haberleri aç' veya '90lar pop çal'...", key="cmd_input")
 
-with col_search:
-    target_source = st.text_input("", placeholder="🔍 İzlemek istediğin kaynağı, kanalı veya URL'yi buraya gir...", key="tv_input")
+if user_command:
+    with st.spinner("🔍 Medya kaynakları taranıyor..."):
+        # 1. Adım: Groq ile kullanıcının ne izlemek istediğini ve URL tipini belirle
+        ai_decision = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{
+                "role": "system", 
+                "content": "Sen bir Media Center asistanısın. Kullanıcının isteğine göre en iyi YouTube arama terimini belirle. Yanıtın sadece aranacak kelime olsun."
+            },
+            {"role": "user", "content": f"Kullanıcı şunu izlemek istiyor: {user_command}"}],
+            max_tokens=50
+        )
+        search_query = ai_decision.choices[0].message.content.strip()
+        
+        # 2. Adım: YouTube üzerinde arama yap (Link oluşturma)
+        # Not: Profesyonel sürümde burada YouTube API kullanılır, 
+        # şimdilik akıllı yönlendirme ile en popüler sonucu hedefliyoruz.
+        formatted_query = search_query.replace(" ", "+")
+        search_url = f"https://www.youtube.com/results?search_query={formatted_query}"
+        
+        # 3. Adım: Oynatıcıyı Başlat
+        st.markdown(f"<div class='ai-bubble'>🤖 <b>Asistan:</b> '{user_command}' isteğini anladım. Senin için en uygun yayını buldum ve açıyorum Patron.</div>", unsafe_allow_html=True)
+        
+        # TRT 1 gibi spesifik canlı yayınlar için manuel yönlendirme (Opsiyonel)
+        if "trt 1" in user_command.lower():
+            final_link = "https://www.youtube.com/watch?v=68E6XG6y_v4" # Örnek Canlı TRT1
+        else:
+            # Genel arama sonuçları için YouTube'un 'en iyi eşleşme' algoritmasını tetikleyen embed yapı
+            final_link = f"https://www.youtube.com/embed?listType=search&list={formatted_query}"
 
-# Hata Yönetimli Oynatıcı
-if target_source:
-    try:
-        # AI Analiz Paneli
-        with st.expander("🤖 K-QUANTUM AI ANALİZİ", expanded=True):
-            with st.spinner("Sistem analiz ediliyor..."):
-                ai_analysis = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": "Sen bir teknoloji asistanısın. Kullanıcının girdiği medya kaynağını (link veya isim) profesyonelce yorumla. Eğer K3N4N veya QUANTUM ifadeleri geçerse, bunun Kenan'ın özel sistemi olduğunu vurgula."} ,
-                             {"role": "user", "content": f"Kaynak: {target_source}"}],
-                    max_tokens=150
-                )
-                st.markdown(f"<div class='ai-box'>{ai_analysis.choices[0].message.content}</div>", unsafe_allow_html=True)
+        st.video(final_link)
+        st.caption(f"📺 Şu an oynatılıyor: {search_query}")
 
-        # Video Oynatma Alanı
-        st.video(target_source)
-        st.success(f"✅ Yayın Bağlandı: {target_source}")
-
-    except Exception as e:
-        st.error(f"❌ Kaynak Hatası: Girilen URL formatı TV motoru tarafından desteklenmiyor. Lütfen geçerli bir YouTube veya m3u8 linki girin.")
-        st.info("İpucu: Linkin başında http:// veya https:// olduğundan emin olun.")
 else:
-    # Boş Ekran Görseli (TV Kapalı Modu)
-    st.image("https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200", caption="K-QUANTUM Bekleme Modunda... Lütfen bir kaynak girin.")
+    st.image("https://images.unsplash.com/photo-1461151304267-38535e770d79?w=1200", caption="Komut Bekleniyor...")
 
-# ====================== ALT DURUM ÇUBUĞU ======================
-st.markdown(f"""
-    <div class="status-bar">
-        ● SYSTEM: ONLINE | ● SIGNAL: OPTIMAL | ● ENGINE: GROQ-LLAMA3 | ● OPERATOR: KENAN | ● DATE: 11-04-2026
+# ====================== SMART TV KONTROLLERİ ======================
+st.divider()
+c1, c2, c3 = st.columns(3)
+with c1:
+    if st.button("🔴 CANLI TV MODU"):
+        st.info("Haber kanalları taranıyor...")
+with c2:
+    if st.button("🎬 SİNEMA MODU"):
+        st.info("Film fragmanları ve açık kaynaklar listeleniyor...")
+with c3:
+    if st.button("📻 RADYO (AŞK-I MUHABBET)"):
+        st.info("Emel v49.0 radyo yayınına bağlanıyor...")
+
+st.markdown("""
+    <div style="position: fixed; bottom: 0; left: 0; width: 100%; background: #00ffcc; color: black; padding: 3px; text-align: center; font-weight: bold; font-size: 12px;">
+        K-QUANTUM OS | ULTRA-SPEED MEDIA AGENT | OPERATOR: KENAN
     </div>
     """, unsafe_allow_html=True)
-
-# Kanal Favorileri (Yan panel yerine butonlarla aşağıda)
-st.markdown("### 📡 HIZLI ERİŞİM KANALLARI")
-c1, c2, c3, c4 = st.columns(4)
-with c1: 
-    if st.button("📽️ Bursa Canlı"): st.info("Link girilmedi")
-with c2:
-    if st.button("🌐 Uzay İstasyonu (Live)"): st.info("https://www.youtube.com/watch?v=EEIk7gwjgIM")
-with c3:
-    if st.button("🎮 Gaming Stream"): st.info("Twitch URL")
-with c4:
-    if st.button("🎵 Quantum Music"): st.info("YouTube Lofi URL")
