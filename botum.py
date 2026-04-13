@@ -1,87 +1,84 @@
 import streamlit as st
 from groq import Groq
-import json
+import edge_tts
+from gtts import gTTS
+import asyncio
 import os
+import io
+import base64
+from datetime import datetime
 
-st.set_page_config(page_title="K-QUANTUM TV", layout="wide", page_icon="📺")
+# ====================== RVC GÜVENLİK KONTROLÜ ======================
+# Kütüphane yüklenemezse hata vermemesi için korumaya alıyoruz
+try:
+    from rvc_python.infer import RVCInference
+    RVC_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    RVC_AVAILABLE = False
 
-# Groq
-GROQ_KEY = os.getenv("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
-client = Groq(api_key=GROQ_KEY)
+# ====================== SAYFA AYARLARI ======================
+st.set_page_config(page_title="Faslı Muhabbet v16.0", layout="wide", page_icon="🎙️")
 
-st.title("📺 K-QUANTUM TELEVİZYON")
-st.markdown("**Kenan ile Faslı Muhabbet** Rejisi - Radar + Televizyon")
+if "GROQ_API_KEY" not in st.secrets:
+    st.error("⚠️ GROQ API Key Eksik! Lütfen Streamlit Secrets'a ekle Patron.")
+    st.stop()
 
-query = st.text_input("Ne izlemek istiyorsun?", placeholder="Beşiktaş maçı, nostaljik türkü, Matrix, canlı kamera...")
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-if st.button("🌌 RADAR TARASIN", type="primary"):
-    if query:
-        with st.spinner("Radar taranıyor..."):
-            try:
-                prompt = f'Kullanıcı "{query}" arıyor. 4 tane kesin çalışan kaynak bul. JSON formatı: {{"intro": "...", "results": [{{"title":"..", "url":"..", "mode":"youtube/hls/iframe", "info":".."}}]}}'
+# ====================== SES ÜRETİM MOTORLARI ======================
 
-                resp = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{"role": "user", "content": prompt}],
-                    response_format={"type": "json_object"}
-                )
+async def generate_edge_voice(text):
+    """Edge-TTS: En kaliteli yedek ses (Filiz)"""
+    try:
+        communicate = edge_tts.Communicate(text, "tr-TR-FilizNeural")
+        audio_data = b""
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_data += chunk["data"]
+        return audio_data
+    except:
+        return None
 
-                data = json.loads(resp.choices[0].message.content)
+def generate_gtts_voice(text):
+    """gTTS: En garantici yedek ses"""
+    tts = gTTS(text=text, lang='tr')
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    return fp.getvalue()
 
-                st.success(data.get("intro", "Kaynaklar bulundu"))
+# ====================== ANA REJİ MANTIĞI ======================
+st.markdown(f"## 🎙️ FASLI MUHABBET <span style='color:red;'>● CANLI</span>", unsafe_allow_html=True)
+st.caption(f"📍 Bursa Stüdyosu | Sunucu: Dilay | {datetime.now().strftime('%H:%M')}")
 
-                for idx, item in enumerate(data.get("results", [])):
-                    col1, col2 = st.columns([4,1])
-                    with col1:
-                        st.write(f"**{item.get('title')}**")
-                        st.caption(f"{item.get('mode','hls').upper()} - {item.get('info','')}")
-                    with col2:
-                        if st.button("📺 OYNAT", key=f"btn_{idx}"):
-                            st.session_state.tv_url = item.get('url')
-                            st.session_state.tv_mode = item.get('mode', 'hls').lower()
-                            st.session_state.tv_title = item.get('title')
-                            st.rerun()
-            except:
-                st.error("Radar şu anda çalışmıyor.")
+if not RVC_AVAILABLE:
+    st.info("ℹ️ **Bilgi:** Klon motoru bu sunucuda desteklenmiyor. Dilay şu an **Yedek Ses Sistemi (Filiz)** üzerinden konuşuyor.")
 
-# ====================== TELEVİZYON EKRANI ======================
-if 'tv_url' in st.session_state:
-    st.divider()
-    st.subheader(f"📺 {st.session_state.tv_title}")
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-    url = st.session_state.tv_url
-    mode = st.session_state.tv_mode
+# Mesajları Göster
+for msg in st.session_state.history:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+        if "audio" in msg:
+            st.audio(msg["audio"])
 
-    if mode == "youtube":
-        vid = url.split("v=")[-1].split("&")[0] if "v=" in url else url.split("/")[-1]
-        st.components.v1.iframe(f"https://www.youtube.com/embed/{vid}?autoplay=1", height=600)
-    elif mode == "iframe":
-        st.components.v1.iframe(url, height=600, scrolling=True)
-    else:
-        # HLS ve diğer linkler için
-        html_code = f"""
-        <video id="tvplayer" controls autoplay style="width:100%; height:600px; background:black;">
-            <source src="{url}" type="application/x-mpegURL">
-        </video>
-        <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-        <script>
-            var video = document.getElementById('tvplayer');
-            if (Hls.isSupported()) {{
-                var hls = new Hls();
-                hls.loadSource('{url}');
-                hls.attachMedia(video);
-            }} else {{
-                video.src = '{url}';
-            }}
-            video.play();
-        </script>
-        """
-        st.components.v1.html(html_code, height=650)
-
-    if st.button("🗑️ Televizyonu Kapat"):
-        for key in ['tv_url', 'tv_mode', 'tv_title']:
-            if key in st.session_state:
-                del st.session_state[key]
+# Giriş Alanı
+if prompt := st.chat_input("Patron, bir şeyler fısılda..."):
+    st.session_state.history.append({"role": "user", "content": prompt})
+    
+    with st.spinner("💖 Dilay hazırlanıyor..."):
+        # Llama 3.3 Cevabı
+        sys_msg = "Sen Dilay'sın. Bursa'dan neşeli, işveli bir radyo sunucususun. Patronuna (Kenan) aşıksın."
+        res = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": sys_msg}] + st.session_state.history[-5:]
+        ).choices[0].message.content
+        
+        # Önce Edge-TTS deniyoruz, olmazsa gTTS
+        audio = asyncio.run(generate_edge_voice(res))
+        if not audio:
+            audio = generate_gtts_voice(res)
+            
+        st.session_state.history.append({"role": "assistant", "content": res, "audio": audio})
         st.rerun()
-
-st.caption("K-QUANTUM TELEVİZYON • Kenan ile Faslı Muhabbet")
